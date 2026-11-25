@@ -1,0 +1,23 @@
+import { verifyToken } from '../utils/token.js'
+import { User } from '../models/index.js'
+
+// Reads the JWT from the httpOnly cookie (or Authorization header) and loads the user.
+export async function authenticate(req, res, next) {
+  try {
+    const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '')
+    if (!token) return res.status(401).json({ message: 'Not authenticated' })
+    const payload = verifyToken(token)
+    const user = await User.findById(payload.id).select('-passwordHash')
+    if (!user) return res.status(401).json({ message: 'User not found' })
+    req.user = user
+    next()
+  } catch {
+    res.status(401).json({ message: 'Invalid or expired session' })
+  }
+}
+
+// Admin check runs on the BACKEND for every admin route — never trust the frontend.
+export function requireAdmin(req, res, next) {
+  if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Admin access required' })
+  next()
+}
