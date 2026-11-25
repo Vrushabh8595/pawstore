@@ -1,13 +1,15 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react'
-import { useCart } from '@/store/cart'
+import { useCart, detailCart } from '@/store/cart'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE } from '@/lib/format'
 
 export default function Cart() {
-  const items = useCart((s) => s.detailed())
+  const rawItems = useCart((s) => s.items)
   const setQty = useCart((s) => s.setQty)
   const remove = useCart((s) => s.remove)
-  const subtotal = useCart((s) => s.subtotal())
+  const items = useMemo(() => detailCart(rawItems), [rawItems])
+  const subtotal = useMemo(() => items.reduce((n, it) => n + it.lineTotal, 0), [items])
 
   if (items.length === 0)
     return (
