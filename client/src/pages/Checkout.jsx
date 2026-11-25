@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { Smartphone, Banknote, Copy, Check } from 'lucide-react'
-import { useCart } from '@/store/cart'
+import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
 import { useAuth } from '@/store/auth'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE, COD_FEE, orderNo, upiLink, UPI } from '@/lib/format'
 
 export default function Checkout() {
-  const items = useCart((s) => s.detailed())
-  const subtotal = useCart((s) => s.subtotal())
+  const rawItems = useCart((s) => s.items)
+  const items = useMemo(() => detailCart(rawItems), [rawItems])
+  const subtotal = useMemo(() => items.reduce((n, it) => n + it.lineTotal, 0), [items])
   const clear = useCart((s) => s.clear)
   const place = useOrders((s) => s.place)
   const user = useAuth((s) => s.user)
