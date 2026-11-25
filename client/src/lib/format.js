@@ -11,8 +11,9 @@ export const SHIPPING_FEE = 59
 export const FREE_SHIP_ABOVE = 999
 export const COD_FEE = 49
 
-// Business UPI id — replace with a real merchant UPI id before going live.
-export const UPI = { id: 'pawstore@upi', payee: 'PawStore' }
+// Business UPI id — payments go to this UPI. The checkout QR encodes the exact
+// order amount, so scanning it in any UPI app pre-fills the total.
+export const UPI = { id: '7620377278@jupiteraxis', payee: 'Vrushabh Yogesh Gulhane' }
 
 export const upiLink = ({ amount, note }) =>
   `upi://pay?pa=${UPI.id}&pn=${encodeURIComponent(UPI.payee)}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`
