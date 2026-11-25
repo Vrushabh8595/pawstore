@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dog } from 'lucide-react'
-import { useAuth, DEMO_CREDENTIALS } from '@/store/auth'
+import { useAuth } from '@/store/auth'
 
 export default function Login() {
   const login = useAuth((s) => s.login)
@@ -9,12 +9,21 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     if (!email || !password) return setErr('Enter email and password.')
-    const user = login({ email, password })
-    nav(user.role === 'admin' ? '/admin' : '/account')
+    setBusy(true)
+    setErr('')
+    try {
+      const user = await login({ email, password })
+      nav(user.role === 'admin' ? '/admin' : '/account')
+    } catch (e2) {
+      setErr(e2.message || 'Login failed. Check your email and password.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -31,18 +40,14 @@ export default function Login() {
           <Field label="Email" type="email" value={email} onChange={setEmail} />
           <Field label="Password" type="password" value={password} onChange={setPassword} />
           {err && <p className="text-sm text-red-600">{err}</p>}
-          <button className="btn-primary w-full">Login</button>
+          <button disabled={busy} className="btn-primary w-full disabled:opacity-60">
+            {busy ? 'Logging in…' : 'Login'}
+          </button>
         </form>
 
         <p className="text-center text-sm text-ink-500 mt-4">
           New here? <Link to="/register" className="text-brand-600 font-semibold">Create an account</Link>
         </p>
-
-        <div className="mt-6 text-xs bg-ink-50 rounded-lg p-3 text-ink-500">
-          <b>Demo logins</b> (dummy auth):<br />
-          User: any email + password<br />
-          Admin: <b>{DEMO_CREDENTIALS.email}</b> / <b>{DEMO_CREDENTIALS.password}</b>
-        </div>
       </div>
     </div>
   )
