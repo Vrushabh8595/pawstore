@@ -25,7 +25,9 @@ import AdminOrders from './pages/admin/Orders'
 import AdminProducts from './pages/admin/Products'
 
 function Protected({ children, role }) {
-  const user = useAuth.getState().user
+  const user = useAuth((s) => s.user)
+  const ready = useAuth((s) => s.ready)
+  if (!ready) return <div className="min-h-screen grid place-items-center text-ink-500">Loading…</div>
   if (!user) return <Navigate to="/login" replace />
   if (role && user.role !== role) return <Navigate to="/" replace />
   return children
