@@ -10,11 +10,22 @@ export default function Register() {
   const [err, setErr] = useState('')
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
-  const submit = (e) => {
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e) => {
     e.preventDefault()
     if (!form.name || !form.email || !form.password) return setErr('Please fill all required fields.')
-    register(form)
-    nav('/account')
+    if (form.password.length < 6) return setErr('Password must be at least 6 characters.')
+    setBusy(true)
+    setErr('')
+    try {
+      await register(form)
+      nav('/account')
+    } catch (e2) {
+      setErr(e2.message || 'Could not create account.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -31,7 +42,7 @@ export default function Register() {
           <Field label="Phone" value={form.phone} onChange={set('phone')} />
           <Field label="Password" type="password" value={form.password} onChange={set('password')} />
           {err && <p className="text-sm text-red-600">{err}</p>}
-          <button className="btn-primary w-full">Create account</button>
+          <button disabled={busy} className="btn-primary w-full disabled:opacity-60">{busy ? 'Creating…' : 'Create account'}</button>
         </form>
         <p className="text-center text-sm text-ink-500 mt-4">
           Already have an account? <Link to="/login" className="text-brand-600 font-semibold">Login</Link>
