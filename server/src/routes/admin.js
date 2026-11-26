@@ -4,6 +4,8 @@ import mongoose from 'mongoose'
 import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence } from '../models/index.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
+import { notifyStatus } from '../utils/notify.js'
+import { withImages } from '../utils/orderImages.js'
 
 const router = Router()
 router.use(authenticate, requireAdmin)
@@ -84,8 +86,8 @@ router.get(
         { $addFields: { outcome } },
         { $match: { outcome: { $ne: 'failed' } } },
         { $unwind: '$items' },
-        { $group: { _id: '$items.name', qty: { $sum: '$items.qty' }, revenue: { $sum: { $multiply: ['$items.qty', '$items.price'] } }, orders: { $addToSet: '$_id' } } },
-        { $project: { qty: 1, revenue: 1, orders: { $size: '$orders' } } },
+        { $group: { _id: '$items.name', qty: { $sum: '$items.qty' }, revenue: { $sum: { $multiply: ['$items.qty', '$items.price'] } }, orders: { $addToSet: '$_id' }, product: { $first: '$items.product' }, image: { $max: '$items.image' } } },
+        { $project: { qty: 1, revenue: 1, product: 1, image: 1, orders: { $size: '$orders' } } },
         { $sort: { qty: -1 } }, { $limit: 8 },
       ]),
       Order.find().sort('-createdAt').limit(8).populate('user', 'name email').lean(),
@@ -94,6 +96,8 @@ router.get(
       PageView.distinct('sid', { at: { $gte: new Date(now - 7 * DAY) } }).then((a) => a.length),
       Order.countDocuments({ createdAt: { $gte: new Date(now - 7 * DAY) } }),
     ])
+    await withImages(recentOrders)
+    await withImages([{ items: topProducts }])
     const o = Object.fromEntries(outcomes.map((x) => [x._id, x]))
     const successCount = o.success?.count || 0
     res.json({
@@ -184,12 +188,12 @@ router.get(
     const _id = new mongoose.Types.ObjectId(req.params.id)
     const [stats] = await User.aggregate([{ $match: { _id } }, ...userStatsPipeline])
     if (!stats) return res.status(404).json({ message: 'User not found' })
-    const orders = await Order.find({ user: _id }).sort('-createdAt').limit(100).lean()
+    const orders = await withImages(await Order.find({ user: _id }).sort('-createdAt').limit(100).lean())
     const phones = [...new Set([stats.phone, ...orders.map((o) => o.shippingAddress?.phone)].filter(Boolean))]
     const [requests, views, favourite] = await Promise.all([
       phones.length ? ProductRequest.find({ phone: { $in: phones } }).sort('-createdAt').limit(20).select('-photos').lean() : [],
       PageView.find({ user: _id }).sort('-at').limit(25).lean(),
-      Order.aggregate([{ $match: { user: _id } }, { $unwind: '$items' }, { $group: { _id: '$items.name', qty: { $sum: '$items.qty' } } }, { $sort: { qty: -1 } }, { $limit: 5 }]),
+      Order.aggregate([{ $match: { user: _id } }, { $unwind: '$items' }, { $group: { _id: '$items.name', qty: { $sum: '$items.qty' }, product: { $first: '$items.product' }, image: { $max: '$items.image' } } }, { $sort: { qty: -1 } }, { $limit: 5 }]).then(async (f) => { await withImages([{ items: f }]); return f }),
     ])
     res.json({
       user: stats, orders, requests, views, favourite,
@@ -200,6 +204,9 @@ router.get(
 )
 
 /* --------------------------------- Orders --------------------------------- */
+const ORDER_STATUSES = Order.schema.path('status').enumValues
+
+
 router.get(
   '/orders',
   asyncHandler(async (req, res) => {
@@ -207,7 +214,8 @@ router.get(
     const filter = {}
     if (status) filter.status = status
     if (method) filter['payment.method'] = method
-    res.json(await Order.find(filter).sort('-createdAt').limit(500).populate('user', 'name email'))
+    const orders = await Order.find(filter).sort('-createdAt').limit(500).populate('user', 'name email phone').lean()
+    res.json(await withImages(orders))
   })
 )
 
@@ -224,6 +232,7 @@ router.patch(
     order.status = approved ? 'Confirmed' : 'Payment Rejected'
     order.statusHistory.push({ status: order.status, note: approved ? 'Payment verified' : 'Payment rejected' })
     await order.save()
+    notifyStatus(order)
     res.json(order)
   })
 )
@@ -234,11 +243,14 @@ router.patch(
   asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
+    if (!ORDER_STATUSES.includes(req.body.status)) return res.status(400).json({ message: 'Unknown status' })
     order.status = req.body.status
     // Delivering a COD order means the cash was collected
     if (req.body.status === 'Delivered' && order.payment.method === 'COD') order.payment.status = 'cod_collected'
+    const changed = order.status !== req.body.status
     order.statusHistory.push({ status: req.body.status, note: req.body.note })
     await order.save()
+    if (changed) notifyStatus(order, req.body.note)
     res.json(order)
   })
 )

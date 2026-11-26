@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { Product, Order, Settings, PageView, Presence } from '../models/index.js'
 import { optionalAuth } from '../middleware/optionalAuth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
+import { notifyNewOrder } from '../utils/notify.js'
 
 // Public storefront endpoints: checkout (guest or logged in) + visitor tracking.
 const router = Router()
@@ -26,7 +27,7 @@ const orderSchema = z.object({
   }),
   paymentMethod: z.enum(['UPI_MANUAL', 'COD']),
   utr: z.string().regex(/^\d{12}$/).optional(),
-  email: z.string().email().max(120).optional(),
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
 })
 
 router.post(
@@ -35,6 +36,7 @@ router.post(
   validate(orderSchema),
   asyncHandler(async (req, res) => {
     const { items, address, paymentMethod, utr, email } = req.body
+    if (!req.user && !email) return res.status(400).json({ message: 'Enter your email so we can send your order updates.' })
     if (paymentMethod === 'UPI_MANUAL') {
       if (!utr) return res.status(400).json({ message: 'Enter the 12-digit UPI reference (UTR).' })
       if (await Order.exists({ 'payment.utr': utr })) return res.status(409).json({ message: 'This UPI reference has already been used.' })
@@ -58,7 +60,7 @@ router.post(
       )
       if (dec.modifiedCount === 0) return res.status(409).json({ message: `Sorry, ${product.name} (${variant.size}) just went out of stock.` })
       subtotal += variant.price * it.qty
-      lines.push({ product: product._id, name: product.name, variantSku: variant.sku, size: variant.size, price: variant.price, qty: it.qty })
+      lines.push({ product: product._id, name: product.name, slug: product.slug, image: product.images?.[0], variantSku: variant.sku, size: variant.size, price: variant.price, qty: it.qty })
     }
     const shippingFee = subtotal >= (settings.freeShipAbove ?? 999) ? 0 : (settings.shippingFee ?? 59)
     const codFee = paymentMethod === 'COD' ? (settings.codFee ?? 49) : 0
@@ -74,6 +76,7 @@ router.post(
       status: 'Pending Verification',
       statusHistory: [{ status: 'Pending Verification' }],
     })
+    notifyNewOrder(order) // in-app alert + emails, in the background
     res.status(201).json({ order })
   })
 )

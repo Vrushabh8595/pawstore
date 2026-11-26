@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { Product, Order, Settings } from '../models/index.js'
 import { authenticate } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
+import { withImages } from '../utils/orderImages.js'
 
 const router = Router()
 router.use(authenticate)
@@ -88,7 +89,7 @@ router.post(
   })
 )
 
-router.get('/my', asyncHandler(async (req, res) => res.json(await Order.find({ user: req.user._id }).sort('-createdAt'))))
+router.get('/my', asyncHandler(async (req, res) => res.json(await withImages(await Order.find({ user: req.user._id }).sort('-createdAt').lean()))))
 // Link guest orders to the signed-in account. The customer proves ownership
 // with the order number + the delivery phone number from their own receipt.
 router.post(
@@ -112,9 +113,9 @@ router.post(
 router.get(
   '/no/:orderNo',
   asyncHandler(async (req, res) => {
-    const order = await Order.findOne({ orderNo: req.params.orderNo, user: req.user._id })
+    const order = await Order.findOne({ orderNo: req.params.orderNo, user: req.user._id }).lean()
     if (!order) return res.status(404).json({ message: 'Order not found' })
-    res.json(order)
+    res.json((await withImages([order]))[0])
   })
 )
 
