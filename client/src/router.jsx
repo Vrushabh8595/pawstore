@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Policy from './pages/Policy'
 import Request from './pages/Request'
+import AuthComplete, { SsoCallback } from './pages/AuthComplete'
 import NotFound from './pages/NotFound'
 
 import AccountLayout from './pages/account/AccountLayout'
@@ -66,6 +67,8 @@ export const router = createBrowserRouter([
       { path: '/order/:orderNo', element: <OrderSuccess /> },
       { path: '/login', element: <Login /> },
       { path: '/register', element: <Register /> },
+      { path: '/sso-callback', element: <SsoCallback /> },
+      { path: '/auth/complete', element: <AuthComplete /> },
       ...['about-us', 'contact-us', 'shipping-policy', 'refund-policy', 'privacy-policy', 'terms-and-conditions']
         .map((slug) => ({ path: `/${slug}`, element: <Policy slug={slug} /> })),
       { path: '/policy/:slug', element: <LegacyPolicy /> },
