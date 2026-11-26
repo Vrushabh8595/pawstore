@@ -5,13 +5,30 @@ import { useMyOrders } from '@/lib/myOrders'
 import StatusBadge from '@/components/StatusBadge'
 
 export default function MyOrders() {
-  const { orders, isLoading } = useMyOrders()
+  const { orders, isLoading, isError, refetch } = useMyOrders()
 
   return (
     <div className="min-w-0">
       <h1 className="text-2xl sm:text-3xl mb-4 sm:mb-5">My Orders</h1>
       {isLoading ? (
-        <div className="space-y-3">{[0, 1].map((i) => <div key={i} className="card h-24 animate-pulse bg-white" />)}</div>
+        <div className="space-y-3" aria-busy="true" aria-label="Loading your orders">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="card p-4 flex items-center gap-4">
+              <span className="w-11 h-11 rounded-xl bg-ink-100 animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2">
+                <span className="block h-3.5 w-2/5 rounded bg-ink-100 animate-pulse" />
+                <span className="block h-3 w-4/5 rounded bg-ink-100 animate-pulse" />
+                <span className="block h-3 w-1/4 rounded bg-ink-100 animate-pulse" />
+              </div>
+            </div>
+          ))}
+          <p className="text-center text-xs text-ink-500 pt-1">Fetching your orders…</p>
+        </div>
+      ) : isError && orders.length === 0 ? (
+        <div className="card p-8 text-center text-ink-500 text-sm">
+          Couldn’t load your orders right now.
+          <button onClick={() => refetch()} className="block mx-auto mt-3 text-brand-600 font-semibold">Try again</button>
+        </div>
       ) : orders.length === 0 ? (
         <div className="card p-10 text-center text-ink-500">
           <Package size={40} className="mx-auto mb-3 text-brand-400" />
