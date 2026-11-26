@@ -4,7 +4,7 @@ const { Schema, model } = mongoose
 
 /* ---------------------------------- User ---------------------------------- */
 const addressSchema = new Schema(
-  { name: String, phone: String, line1: String, city: String, state: String, pincode: String, isDefault: Boolean },
+  { name: String, phone: String, line1: String, landmark: String, city: String, state: String, pincode: String, isDefault: Boolean },
   { _id: true }
 )
 const userSchema = new Schema(
@@ -12,6 +12,10 @@ const userSchema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     phone: String,
+    // Small profile photo, stored as a validated data:image URL (jpeg/png/webp only)
+    avatar: String,
+    // 'google' when the account was created with "Continue with Google"
+    provider: { type: String, enum: ['password', 'google'], default: 'password' },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     addresses: [addressSchema],
