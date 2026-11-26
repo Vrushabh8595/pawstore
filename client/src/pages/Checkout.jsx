@@ -23,8 +23,13 @@ export default function Checkout() {
   const user = useAuth((s) => s.user)
   const nav = useNavigate()
 
-  const [addr, setAddr] = useState({
-    name: user?.name || '', phone: '', line1: '', city: '', state: '', pincode: '',
+  // Logged-in customers start with their saved profile address
+  const [addr, setAddr] = useState(() => {
+    const a = user?.address || {}
+    return {
+      name: user?.name || '', phone: user?.phone || '',
+      line1: [a.line1, a.landmark].filter(Boolean).join(', '), city: a.city || '', state: a.state || '', pincode: a.pincode || '',
+    }
   })
   const fe = useFieldErrors()
   const [blocked, setBlocked] = useState(false)
@@ -171,7 +176,15 @@ export default function Checkout() {
               {user ? (
                 <p className="sm:col-span-2 flex items-center gap-2 text-xs text-ink-500 bg-sand-50 rounded-lg px-3 py-2 min-w-0"><Mail size={14} className="shrink-0 text-brand-600" /><span className="truncate">Order updates go to <b className="text-ink-700">{user.email}</b></span></p>
               ) : (
-                <div className="sm:col-span-2"><Field name="email" required error={E.email} label="Email" hint="for order updates" value={email} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" onChange={(v) => { setEmail(v); fe.clear('email') }} /></div>
+                <div className="sm:col-span-2">
+                  <Field name="email" required error={E.email} label="Email" hint="for order updates" value={email} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" onChange={(v) => { setEmail(v); fe.clear('email') }} />
+                  {!E.email && (
+                    <p className="mt-1.5 flex items-start gap-2 text-xs leading-relaxed text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <Mail size={14} className="shrink-0 mt-0.5 text-amber-600" />
+                      <span><b>Please double-check your email.</b> Your order confirmation and every delivery update will be sent to this address, so make sure it’s correct and keep an eye on your inbox (and spam folder).</span>
+                    </p>
+                  )}
+                </div>
               )}
               <Field name="name" required error={E.name} label="Full name" value={addr.name} onChange={set('name')} autoComplete="name" />
               <Field name="phone" required error={E.phone} label="Phone" hint="10 digit" value={addr.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
