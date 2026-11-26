@@ -172,13 +172,35 @@ const presenceSchema = new Schema(
   { versionKey: false }
 )
 
+/* --------------------------------- Reviews --------------------------------- */
+// Customer reviews: shown on the product page only after an admin approves them.
+const reviewSchema = new Schema(
+  {
+    product: { type: Schema.Types.ObjectId, ref: 'Product' },
+    productSlug: { type: String, required: true, index: true },
+    productName: String,
+    productImage: String,
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    name: String,
+    rating: { type: Number, min: 1, max: 5, required: true },
+    title: String,
+    comment: { type: String, required: true },
+    verifiedPurchase: { type: Boolean, default: false },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
+    moderatedAt: Date,
+  },
+  { timestamps: true }
+)
+reviewSchema.index({ user: 1, productSlug: 1 }, { unique: true }) // one review per customer per product
+
 /* ------------------------------ Notifications ------------------------------ */
 // In-app alerts: new orders for the admin panel, status updates for customers.
 const notificationSchema = new Schema(
   {
     audience: { type: String, enum: ['admin', 'user'], required: true, index: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // for audience 'user'
-    type: { type: String, enum: ['new_order', 'status', 'account'], required: true },
+    type: { type: String, enum: ['new_order', 'status', 'account', 'review'], required: true },
+    link: String, // where clicking the notification goes (when not an order)
     title: String,
     body: String,
     orderNo: String,
@@ -217,3 +239,4 @@ export const ProductRequest = model('ProductRequest', productRequestSchema)
 export const PageView = model('PageView', pageViewSchema)
 export const Presence = model('Presence', presenceSchema)
 export const Notification = model('Notification', notificationSchema)
+export const Review = model('Review', reviewSchema)
