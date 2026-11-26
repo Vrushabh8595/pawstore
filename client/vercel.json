@@ -3,17 +3,143 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/shop", "has": [{ "type": "query", "key": "cat", "value": "(?<cat>[a-z0-9-]+)" }], "destination": "/category/:cat", "permanent": true },
-    { "source": "/shop", "has": [{ "type": "query", "key": "deal" }], "destination": "/offers", "permanent": true },
-    { "source": "/shop", "has": [{ "type": "query", "key": "q", "value": "(?<q>.*)" }], "destination": "/search?q=:q", "permanent": true },
-    { "source": "/shop", "destination": "/products", "permanent": true },
-    { "source": "/request", "destination": "/request-medicine", "permanent": true },
-    { "source": "/policy/shipping", "destination": "/shipping-policy", "permanent": true },
-    { "source": "/policy/refund", "destination": "/refund-policy", "permanent": true },
-    { "source": "/policy/privacy", "destination": "/privacy-policy", "permanent": true },
-    { "source": "/policy/terms", "destination": "/terms-and-conditions", "permanent": true },
-    { "source": "/policy/about", "destination": "/about-us", "permanent": true },
-    { "source": "/policy/contact", "destination": "/contact-us", "permanent": true }
+    {
+      "source": "/shop",
+      "has": [
+        {
+          "type": "query",
+          "key": "cat",
+          "value": "(?<cat>[a-z0-9-]+)"
+        }
+      ],
+      "destination": "/category/:cat",
+      "permanent": true
+    },
+    {
+      "source": "/shop",
+      "has": [
+        {
+          "type": "query",
+          "key": "deal"
+        }
+      ],
+      "destination": "/offers",
+      "permanent": true
+    },
+    {
+      "source": "/shop",
+      "has": [
+        {
+          "type": "query",
+          "key": "q",
+          "value": "(?<q>.*)"
+        }
+      ],
+      "destination": "/search?q=:q",
+      "permanent": true
+    },
+    {
+      "source": "/shop",
+      "destination": "/products",
+      "permanent": true
+    },
+    {
+      "source": "/request",
+      "destination": "/request-medicine",
+      "permanent": true
+    },
+    {
+      "source": "/policy/shipping",
+      "destination": "/shipping-policy",
+      "permanent": true
+    },
+    {
+      "source": "/policy/refund",
+      "destination": "/refund-policy",
+      "permanent": true
+    },
+    {
+      "source": "/policy/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/policy/terms",
+      "destination": "/terms-and-conditions",
+      "permanent": true
+    },
+    {
+      "source": "/policy/about",
+      "destination": "/about-us",
+      "permanent": true
+    },
+    {
+      "source": "/policy/contact",
+      "destination": "/contact-us",
+      "permanent": true
+    }
   ],
-  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/" }]
+  "rewrites": [
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.animalveda.com https://challenges.cloudflare.com; connect-src 'self' https://pawstore-awtw.onrender.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.animalveda.com https://api.postalpincode.in https://nominatim.openstreetmap.org https://api.bigdatacloud.net; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com; worker-src 'self' blob:; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), camera=(), microphone=(), payment=(), usb=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        }
+      ]
+    },
+    {
+      "source": "/admin(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
