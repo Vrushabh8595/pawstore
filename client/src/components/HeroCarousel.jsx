@@ -10,11 +10,11 @@ const SLIDES = [
     img: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1000&q=70',
   },
   {
-    eyebrow: 'For your fur baby', title: ['Love your', 'baby?', 'So do we.'], sub: 'Give your fur baby the best for their health — vet medicines, nutrition & daily care.',
+    eyebrow: 'For your fur baby', title: ['Love your', 'baby?', 'So do we.'], sub: 'Give your fur baby the best for their health: vet medicines, nutrition & daily care.',
     cta: 'Shop baby’s health', to: '/category/health', price: 'Vet-approved care', sticker: ['Made with', 'LOVE', 'for babies'],
-    theme: { bg: 'bg-[#fff0df]', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-brand-600', arch: 'bg-pine-800', ring: 'border-brand-300', chip: 'bg-white text-pine-800 ring-brand-200', sticker: 'bg-pine-800 text-white', blob: 'bg-brand-100' },
-    img: 'https://images.unsplash.com/photo-1506259291727-cc30f10b0ab2?auto=format&fit=crop&crop=faces,center&w=1000&q=72',
-    imgAlt: 'White Siberian husky with blue eyes',
+    theme: { bg: 'bg-gradient-to-br from-[#dff0fb] via-[#eef6fc] to-[#fff1e2]', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-brand-600', arch: 'bg-pine-800', ring: 'border-brand-300', chip: 'bg-white text-pine-800 ring-brand-200', sticker: 'bg-pine-800 text-white', blob: 'bg-brand-100' },
+    img: 'https://images.unsplash.com/photo-1617895153857-82fe79adfcd4?auto=format&fit=crop&crop=faces,center&w=1000&q=75',
+    imgAlt: 'Siberian husky puppy with bright blue eyes',
   },
   {
     eyebrow: 'Treats & rewards', title: ['Good pups', 'deserve', 'more.'], sub: 'Tasty, healthy and tail-wag approved treats.',
@@ -23,10 +23,11 @@ const SLIDES = [
     img: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1000&q=70',
   },
   {
-    eyebrow: 'Vet medicines & care', title: ['Care that', 'heals', 'faster.'], sub: 'Vet-recommended medicines & supplements — or request any medicine with a photo.',
+    eyebrow: 'Cats, dogs & every animal', title: ['Care for', 'every', 'paw.'], sub: 'Vet medicines, food and supplements for cats, dogs, cattle and birds. Or request any medicine with a photo.',
     cta: 'Shop health', to: '/category/health', price: 'Or request any medicine →', sticker: ['Send a', 'PHOTO', 'we source it'],
-    theme: { bg: 'bg-sand-100', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-pine-600', arch: 'bg-pine-200', ring: 'border-pine-400/40', chip: 'bg-white text-ink-900 ring-ink-200', sticker: 'bg-pine-600 text-white', blob: 'bg-brand-100' },
-    img: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=1000&q=70',
+    theme: { bg: 'bg-gradient-to-br from-[#e4f4ec] via-[#f1f8f2] to-[#fff3e3]', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-pine-600', arch: 'bg-[#cfe9dc]', ring: 'border-pine-400/40', chip: 'bg-white text-ink-900 ring-ink-200', sticker: 'bg-pine-600 text-white', blob: 'bg-brand-100' },
+    img: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&crop=faces,center&w=1000&q=72',
+    imgAlt: 'Tabby cat looking up',
   },
 ]
 

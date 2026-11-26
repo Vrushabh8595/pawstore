@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { playSound, haptic } from '@/lib/feedback'
 
@@ -7,6 +7,13 @@ import { playSound, haptic } from '@/lib/feedback'
 export function Field({ label, hint, required, optional, error, value, onChange, prefix, inputRef, name, as = 'input', className = '', ...rest }) {
   const id = useId()
   const Tag = as
+  // Shake the box when an error appears. (Never re-key/remount the input here —
+  // that steals focus mid-typing.)
+  const boxRef = useRef(null)
+  useEffect(() => {
+    if (!error || !boxRef.current?.animate || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    boxRef.current.animate([{ transform: 'none' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }], { duration: 380, easing: 'ease' })
+  }, [error])
   return (
     <div className={`block min-w-0 ${className}`} data-field={name}>
       <label htmlFor={id} className="font-bold text-sm text-ink-900">
@@ -15,9 +22,9 @@ export function Field({ label, hint, required, optional, error, value, onChange,
         {hint && <span className="font-medium text-ink-500"> · {hint}</span>}
         {optional && <span className="font-medium text-ink-500"> · optional</span>}
       </label>
-      <span key={error ? `e-${error}` : 'ok'}
+      <span ref={boxRef}
         className={`mt-1 flex items-center w-full bg-white border rounded-xl transition ${error
-          ? 'border-red-400 ring-2 ring-red-100 animate-shake'
+          ? 'border-red-400 ring-2 ring-red-100'
           : 'border-ink-200 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100'}`}>
         {prefix && <span className="pl-3 pr-1 text-ink-500 font-semibold text-sm shrink-0">{prefix}</span>}
         <Tag id={id} ref={inputRef} name={name} value={value} onChange={(e) => onChange(e.target.value)}

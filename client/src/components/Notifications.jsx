@@ -218,7 +218,7 @@ export function AdminAlertSetup() {
       <span className="w-10 h-10 rounded-xl bg-brand-500 grid place-items-center shrink-0"><Bell size={19} /></span>
       <p className="flex-1 min-w-[200px] text-sm">
         <b>Turn on new-order alerts.</b>{' '}
-        <span className="text-white/70">Plays a ka-ching sound{perm !== 'unsupported' ? ' and shows a desktop notification' : ''} the moment an order comes in — even when this tab is in the background.</span>
+        <span className="text-white/70">Plays a ka-ching sound{perm !== 'unsupported' ? ' and shows a desktop notification' : ''} the moment an order comes in, even when this tab is in the background.</span>
       </p>
       <button type="button" onClick={enable} className="btn-primary !py-2 !px-4 text-sm">Turn on alerts</button>
     </div>

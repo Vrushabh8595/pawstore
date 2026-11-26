@@ -23,7 +23,7 @@ export default function Footer() {
           <span className="grid place-items-center w-12 h-12 rounded-2xl bg-white/20 shrink-0"><Camera size={22} /></span>
           <div className="flex-1">
             <p className="font-display text-xl sm:text-2xl font-semibold leading-tight">Can’t find a medicine for your animal?</p>
-            <p className="text-white/85 text-sm mt-0.5">Send us a photo of the label or prescription — we’ll source it and call you back.</p>
+            <p className="text-white/85 text-sm mt-0.5">Send us a photo of the label or prescription. We’ll source it and call you back.</p>
           </div>
           <span className="inline-flex items-center gap-2 bg-white text-brand-700 font-extrabold text-sm px-5 py-2.5 rounded-full w-fit group-hover:gap-3 transition-all">
             Request now <ArrowRight size={16} />
@@ -47,7 +47,7 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Logo light className="h-10" />
             <p className="text-sm text-white/60 max-w-sm mt-4 leading-relaxed">
-              Vet medicines, nutrition and everyday care for pets, livestock and every animal you love — delivered across India.
+              Vet medicines, nutrition and everyday care for pets, livestock and every animal you love, delivered across India.
             </p>
             <div className="flex flex-wrap gap-2 mt-5">
               {ANIMALS.map(([e, a]) => (
@@ -92,7 +92,7 @@ export default function Footer() {
             <div className="inline-flex items-center gap-2 bg-green-500/15 text-green-300 ring-1 ring-green-400/30 rounded-full px-3 py-1 text-xs font-bold mb-4">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Open all 7 days · weekends too
             </div>
-            <p className="text-xs text-white/55 -mt-2 mb-4 leading-relaxed max-w-xs">Missed us on call or no reply yet? We usually get back to you within 2–3 days.</p>
+            <p className="text-xs text-white/55 -mt-2 mb-4 leading-relaxed max-w-xs">Missed us on call or no reply yet? We usually get back to you within 2 to 3 days.</p>
             <ul className="space-y-3 text-sm">
               {PHONES.map((p) => (
                 <li key={p}>

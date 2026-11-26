@@ -6,6 +6,7 @@ import { useSeo } from '@/lib/useSeo'
 import { useTracking } from '@/lib/track'
 import { useAuth } from '@/store/auth'
 import { NotificationAlerts } from './Notifications'
+import BlockedNotice from './BlockedNotice'
 
 export default function Layout() {
   const { pathname } = useLocation()
@@ -17,6 +18,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col overflow-x-clip">
       <Header />
+      {user?.blocked && <BlockedNotice compact />}
       <main className="flex-1 bg-sand-50">
         <Outlet />
       </main>

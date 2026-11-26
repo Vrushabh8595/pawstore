@@ -26,6 +26,6 @@ export function PaymentBadge({ payment }) {
     rejected: ['Rejected', 'bg-red-100 text-red-700'],
     cod_collected: ['COD paid', 'bg-green-100 text-green-700'],
   }
-  const [label, cls] = map[payment.status] || ['—', 'bg-ink-100 text-ink-700']
+  const [label, cls] = map[payment.status] || ['None', 'bg-ink-100 text-ink-700']
   return <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-full ${cls}`}>{label}</span>
 }
