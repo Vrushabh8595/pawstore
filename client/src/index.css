@@ -102,6 +102,10 @@ h1 em, h2 em, .hero-accent { font-style: italic; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes zoom-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+.animate-zoom-in { animation: zoom-in .16s ease-out both; }
+@keyframes shake { 0%, 100% { transform: none; } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+.animate-shake { animation: shake .38s ease both; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 24px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
 @keyframes kenburns { from { transform: scale(1.12); } to { transform: scale(1); } }
 @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -117,7 +121,7 @@ h1 em, h2 em, .hero-accent { font-style: italic; }
 .animate-toast-in { animation: toast-in .4s cubic-bezier(.22,1,.36,1) both; }
 @keyframes wiggle { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-14deg); } 20%, 40% { transform: rotate(14deg); } }
 .animate-wiggle { animation: wiggle 2.4s ease-in-out infinite; transform-origin: 50% 4px; }
-@media (prefers-reduced-motion: reduce) { .animate-wiggle, .animate-toast-in { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .animate-wiggle, .animate-toast-in, .animate-shake { animation: none; } }
 .animate-toast { animation: toast-in .35s cubic-bezier(.22,1,.36,1) both; }
 .animate-float { animation: float 4s ease-in-out infinite; }
 .animate-spin-slow { animation: spin-slow 14s linear infinite; }

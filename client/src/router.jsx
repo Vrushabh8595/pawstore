@@ -20,6 +20,7 @@ import AccountLayout from './pages/account/AccountLayout'
 import MyOrders from './pages/account/MyOrders'
 import OrderDetail from './pages/account/OrderDetail'
 import Profile from './pages/account/Profile'
+import AccountNotifications from './pages/account/Notifications'
 
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminOverview from './pages/admin/Overview'
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
           { index: true, element: <MyOrders /> },
           { path: 'orders/:orderNo', element: <OrderDetail /> },
           { path: 'profile', element: <Profile /> },
+          { path: 'notifications', element: <AccountNotifications /> },
         ],
       },
       { path: '*', element: <NotFound /> },
