@@ -12,39 +12,49 @@ export default function ProductCard({ product }) {
   const off = discountPct(v.price, v.mrp)
 
   return (
-    <div className="card group overflow-hidden flex flex-col">
-      <div className="relative">
-        <Link to={`/product/${product.slug}`}>
+    <div className="group card overflow-hidden flex flex-col transition duration-200 hover:shadow-[0_16px_40px_-20px_rgba(26,26,23,.3)] hover:-translate-y-0.5">
+      <div className="relative bg-sand-100">
+        <Link to={`/product/${product.slug}`} className="block">
           <img src={product.images[0]} alt={product.name} loading="lazy"
-            className="aspect-square w-full object-cover group-hover:scale-105 transition duration-300" />
+            className="aspect-square w-full object-cover group-hover:scale-[1.04] transition duration-500" />
         </Link>
-        {off > 0 && <span className="absolute top-3 left-3 bg-brand-600 text-white text-xs font-bold px-2 py-1 rounded-md">{off}% OFF</span>}
+        {off > 0 && (
+          <span className="absolute top-3 left-3 bg-brand-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-sm">
+            {off}% OFF
+          </span>
+        )}
         <button onClick={() => toggle(product.id)} aria-label="Wishlist"
-          className="absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-white/90 hover:bg-white shadow-sm">
+          className="absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-white/95 hover:bg-white shadow-sm transition">
           <Heart size={17} className={wished ? 'fill-brand-500 text-brand-500' : 'text-ink-700'} />
         </button>
       </div>
+
       <div className="p-4 flex flex-col flex-1">
-        <div className="flex items-center gap-1 text-xs text-ink-500 mb-1">
-          <Star size={13} className="fill-brand-400 text-brand-400" />
-          <span className="font-semibold text-ink-700">{product.rating}</span>
-          <span>· {product.reviews}</span>
-          <span className="ml-auto uppercase tracking-wide">{product.brand}</span>
+        <div className="flex items-center gap-1.5 text-xs mb-1.5">
+          <span className="inline-flex items-center gap-1 bg-pine-50 text-pine-700 font-bold px-1.5 py-0.5 rounded-md">
+            <Star size={11} className="fill-pine-500 text-pine-500" />{product.rating}
+          </span>
+          <span className="text-ink-500">({product.reviews})</span>
+          <span className="ml-auto uppercase tracking-wide text-ink-500 font-semibold text-[10px]">{product.brand}</span>
         </div>
+
         <Link to={`/product/${product.slug}`} className="font-bold text-ink-900 leading-snug hover:text-brand-600 line-clamp-2">
           {product.name}
         </Link>
         <p className="text-sm text-ink-500 mt-1 line-clamp-2 flex-1">{product.short}</p>
-        <div className="flex items-end justify-between mt-3">
+
+        <div className="flex items-end justify-between mt-3.5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-ink-900">{inr(v.price)}</span>
+              <span className="font-extrabold text-ink-900 text-lg">{inr(v.price)}</span>
               {v.mrp > v.price && <span className="text-sm text-ink-500 line-through">{inr(v.mrp)}</span>}
             </div>
             <span className="text-xs text-ink-500">{v.size}</span>
           </div>
-          <button onClick={() => add(product.id, v.sku, 1)} className="btn-primary !px-3 !py-2 text-sm" aria-label="Add to cart">
-            <Plus size={16} /> Add
+          <button onClick={() => add(product.id, v.sku, 1)}
+            className="w-10 h-10 grid place-items-center rounded-full bg-brand-500 text-white hover:bg-brand-600 transition shadow-[0_6px_16px_-8px_rgba(248,131,11,.8)]"
+            aria-label="Add to cart">
+            <Plus size={19} />
           </button>
         </div>
       </div>
