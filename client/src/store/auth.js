@@ -90,6 +90,13 @@ export const useAuth = create((set, get) => {
       return signedIn(res.user, res.token)
     },
 
+    // After a profile change: keep the store + cached copy in sync
+    updateUser(user) {
+      if (!user) return
+      cache.set(user)
+      set({ user })
+    },
+
     async logout() {
       seq++
       try { await api.post('/auth/logout') } catch { /* ignore */ }
