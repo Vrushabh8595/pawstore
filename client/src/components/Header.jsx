@@ -39,19 +39,31 @@ export default function Header() {
     const t = setInterval(() => setPromo((p) => (p + 1) % PROMO.length), 3500)
     return () => clearInterval(t)
   }, [])
-  // On phones, tuck the search + category rows away while scrolling down
-  const [tucked, setTucked] = useState(false)
+  // Phones: hide the whole header while scrolling down, bring it back on any
+  // scroll up. It slides with a transform, so the page layout never changes
+  // height mid-scroll (changing height made iOS scrolling jump back and forth).
+  const [hidden, setHidden] = useState(false)
   useEffect(() => {
-    let last = window.scrollY
-    const onScroll = () => {
-      const y = window.scrollY
-      if (Math.abs(y - last) < 8) return
-      setTucked(y > 140 && y > last)
+    let last = Math.max(0, window.scrollY)
+    let travel = 0 // distance moved in the current direction
+    let ticking = false
+    const update = () => {
+      ticking = false
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      const y = Math.min(Math.max(window.scrollY, 0), Math.max(max, 0)) // ignore iOS rubber-band overscroll
+      const d = y - last
       last = y
+      if (d === 0) return
+      travel = Math.sign(d) === Math.sign(travel) ? travel + d : d
+      if (y < 120) setHidden(false)
+      else if (travel > 24) setHidden(true)
+      else if (travel < -12) setHidden(false)
     }
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update) } }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+  useEffect(() => { setHidden(false) }, [pathname])
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -65,7 +77,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40">
+      <header className={`sticky top-0 z-40 transition-transform duration-300 ease-out will-change-transform ${hidden && !open ? 'max-lg:-translate-y-full' : ''}`}>
         {/* Utility bar — rotating promo on mobile */}
         <div className="bg-pine-800 text-white/90 text-xs">
           <div className="container-x flex items-center justify-between h-8 sm:h-9 gap-3">
@@ -80,7 +92,7 @@ export default function Header() {
         </div>
 
         {/* Main bar */}
-        <div className="bg-white/95 backdrop-blur border-b border-ink-100">
+        <div className="bg-white lg:bg-white/95 lg:backdrop-blur border-b border-ink-100">
           <div className="container-x flex items-center gap-2 sm:gap-4 h-14 sm:h-[68px]">
             <button onClick={() => setOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-ink-50 active:scale-90 transition" aria-label="Open menu">
               <Menu size={22} />
@@ -117,9 +129,10 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Mobile: search row + category pills (collapse on scroll-down) */}
-          <div className={`lg:hidden grid transition-[grid-template-rows,opacity] duration-300 ${tucked || pathname === '/checkout' ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
-          <div className="overflow-hidden">
+          {/* Mobile: search row + category pills */}
+          {pathname !== '/checkout' && (
+          <div className="lg:hidden">
+          <div>
           <div className="md:hidden container-x pb-2.5 space-y-2.5">
             <form onSubmit={submit} className="flex items-center bg-sand-100 rounded-xl px-3 ring-1 ring-ink-100 focus-within:ring-brand-300 focus-within:bg-white transition">
               <Search size={18} className="text-ink-500 shrink-0" />
@@ -147,6 +160,7 @@ export default function Header() {
           </div>
           </div>
           </div>
+          )}
 
           {/* Desktop category strip */}
           <div className="hidden lg:block border-t border-ink-100">

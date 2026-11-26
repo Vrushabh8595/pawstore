@@ -20,7 +20,7 @@ export default function BottomNav() {
   const activeIdx = items.findIndex((i) => i.active)
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-ink-100 shadow-[0_-6px_24px_-10px_rgba(17,37,58,.25)]"
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink-100 shadow-[0_-6px_24px_-10px_rgba(17,37,58,.25)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label="Primary">
       <div className="relative grid grid-cols-5 h-16">
         {/* Sliding active indicator (hidden under the centre button) */}
