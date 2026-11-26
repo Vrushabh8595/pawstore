@@ -68,6 +68,8 @@ const SOUNDS = {
   // gentle downward "whoop"
   remove: (ac) => { tone(ac, { freq: 600, to: 260, dur: 0.18, type: 'triangle', vol: 0.14 }) },
   dec: (ac) => tone(ac, { freq: 700, to: 480, dur: 0.08, type: 'triangle', vol: 0.1 }),
+  // two short low buzzes = "can't do that"
+  limit: (ac) => { tone(ac, { freq: 220, dur: 0.09, type: 'square', vol: 0.06 }); tone(ac, { freq: 196, start: 0.12, dur: 0.12, type: 'square', vol: 0.06 }) },
   success: (ac) => [523, 659, 784, 1047].forEach((f, i) => tone(ac, { freq: f, start: i * 0.07, dur: 0.18, vol: 0.12 })),
 }
 export function playSound(name) {
@@ -111,7 +113,8 @@ function floatLabel(el, text, color) {
   s.className = 'plus-one'
   s.textContent = text
   if (color) s.style.color = color
-  s.style.left = `${r.left + r.width / 2 - 10}px`
+  s.style.left = `${Math.max(8, Math.min(window.innerWidth - 130, r.left + r.width / 2 - 10))}px`
+  s.style.whiteSpace = 'nowrap'
   s.style.top = `${r.top - 6}px`
   document.body.appendChild(s)
   s.animate(
@@ -121,7 +124,7 @@ function floatLabel(el, text, color) {
 }
 
 /* ------------------------------- public API ------------------------------- */
-// kind: 'add' (first add) | 'inc' | 'dec' | 'remove'
+// kind: 'add' (first add) | 'inc' | 'dec' | 'remove' | 'limit'
 export function cartFeedback(kind, { button, image, imageSrc } = {}) {
   if (kind === 'add') {
     haptic([14, 40, 22])
@@ -137,6 +140,13 @@ export function cartFeedback(kind, { button, image, imageSrc } = {}) {
     haptic(8)
     playSound('dec')
     floatLabel(button, '−1', '#6b6a63')
+  } else if (kind === 'limit') {
+    haptic([40, 40, 40])
+    playSound('limit')
+    floatLabel(button, 'Max 7 per order', '#dc2626')
+    if (button && !reduceMotion()) button.animate(
+      [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }],
+      { duration: 320 })
   } else if (kind === 'remove') {
     haptic([24, 30, 24])
     playSound('remove')
