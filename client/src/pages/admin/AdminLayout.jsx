@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, BarChart3, Menu, X } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, BarChart3, Menu, X, Star } from 'lucide-react'
 import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
 import Logo from '@/components/Logo'
@@ -14,6 +14,7 @@ const NAV = [
   ['/admin/users', 'Users', Users],
   ['/admin/traffic', 'Traffic', BarChart3],
   ['/admin/products', 'Products', Package],
+  ['/admin/reviews', 'Reviews', Star],
   ['/admin/requests', 'Requests', Inbox],
 ]
 
@@ -25,6 +26,7 @@ export default function AdminLayout() {
   const [open, setOpen] = useState(false)
   useEffect(() => { setOpen(false) }, [pathname])
   const live = useQuery({ queryKey: ['admin-live'], queryFn: () => api.get('/admin/live'), refetchInterval: 10_000 })
+  const pendingReviews = useQuery({ queryKey: ['admin-reviews', 'pending'], queryFn: () => api.get('/admin/reviews?status=pending'), refetchInterval: 60_000 }).data?.counts?.pending || 0
 
   const item = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition ${isActive ? 'bg-brand-500 text-white shadow-[0_8px_20px_-10px_rgba(248,131,11,.9)]' : 'text-white/70 hover:bg-white/10 hover:text-white'}`
@@ -43,7 +45,10 @@ export default function AdminLayout() {
 
       <nav className="mt-5 space-y-1 flex-1">
         {NAV.map(([to, label, Icon, end]) => (
-          <NavLink key={to} to={to} end={end} className={item}><Icon size={18} /> {label}</NavLink>
+          <NavLink key={to} to={to} end={end} className={item}>
+            <Icon size={18} /> {label}
+            {to === '/admin/reviews' && pendingReviews > 0 && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-pine-900 text-[11px] font-extrabold grid place-items-center">{pendingReviews}</span>}
+          </NavLink>
         ))}
       </nav>
       <div className="border-t border-white/10 pt-3 space-y-1">
