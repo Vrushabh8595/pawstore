@@ -1,4 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/shop", "has": [{ "type": "query", "key": "cat", "value": "(?<cat>[a-z0-9-]+)" }], "destination": "/category/:cat", "permanent": true },
+    { "source": "/shop", "has": [{ "type": "query", "key": "deal" }], "destination": "/offers", "permanent": true },
+    { "source": "/shop", "has": [{ "type": "query", "key": "q", "value": "(?<q>.*)" }], "destination": "/search?q=:q", "permanent": true },
+    { "source": "/shop", "destination": "/products", "permanent": true },
+    { "source": "/request", "destination": "/request-medicine", "permanent": true },
+    { "source": "/policy/shipping", "destination": "/shipping-policy", "permanent": true },
+    { "source": "/policy/refund", "destination": "/refund-policy", "permanent": true },
+    { "source": "/policy/privacy", "destination": "/privacy-policy", "permanent": true },
+    { "source": "/policy/terms", "destination": "/terms-and-conditions", "permanent": true },
+    { "source": "/policy/about", "destination": "/about-us", "permanent": true },
+    { "source": "/policy/contact", "destination": "/contact-us", "permanent": true }
+  ],
   "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }]
 }
