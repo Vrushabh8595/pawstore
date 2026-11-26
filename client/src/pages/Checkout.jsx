@@ -7,6 +7,7 @@ import { useOrders } from '@/store/orders'
 import { playAnimal, haptic } from '@/lib/feedback'
 import { usePincode } from '@/lib/usePincode'
 import { api } from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/store/auth'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE, COD_FEE, orderNo, upiLink, UPI } from '@/lib/format'
 
@@ -28,6 +29,7 @@ export default function Checkout() {
   const [err, setErr] = useState('')
   const [no] = useState(() => orderNo())
   const [placing, setPlacing] = useState(false)
+  const qc = useQueryClient()
   const pin = usePincode(addr.pincode, (d) => setAddr((a) => ({ ...a, city: d.city, state: d.state }))) // stable across re-renders so QR note == order no
 
   if (items.length === 0) return <Navigate to="/cart" replace />
@@ -63,6 +65,7 @@ export default function Checkout() {
         address: addr, paymentMethod: method, ...(method === 'UPI_MANUAL' ? { utr } : {}),
       })
       orderNoFinal = res?.order?.orderNo || no
+      qc.invalidateQueries({ queryKey: ['my-orders'] })
     } catch (e2) {
       const down = e2 instanceof TypeError || /Route not found|Request failed \(5/.test(e2.message)
       if (!down) { setPlacing(false); return fail(e2.message === 'Validation failed' ? 'Please check your details and try again.' : e2.message) }

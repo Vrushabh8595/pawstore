@@ -1,12 +1,13 @@
 import Logo from '@/components/Logo'
 import GoogleButton, { OrDivider } from '@/components/GoogleButton'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/store/auth'
+import { useAuth, warmUpApi } from '@/store/auth'
 
 export default function Register() {
   const register = useAuth((s) => s.register)
   const nav = useNavigate()
+  useEffect(() => { warmUpApi() }, [])
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' })
   const [err, setErr] = useState('')
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })

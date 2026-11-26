@@ -1,12 +1,13 @@
 import Logo from '@/components/Logo'
 import GoogleButton, { OrDivider } from '@/components/GoogleButton'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/store/auth'
+import { useAuth, warmUpApi } from '@/store/auth'
 
 export default function Login() {
   const login = useAuth((s) => s.login)
   const nav = useNavigate()
+  useEffect(() => { warmUpApi() }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
