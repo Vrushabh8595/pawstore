@@ -7,7 +7,7 @@ import StatusBadge from '@/components/StatusBadge'
 
 export default function MyOrders() {
   const email = useAuth((s) => s.user?.email)
-  const orders = useOrders((s) => s.orders).filter((o) => o.email === email || o.email === 'demo@pawstore.in')
+  const orders = useOrders((s) => s.orders).filter((o) => o.email === email || o.email === 'demo@animalveda.com')
 
   return (
     <div>
