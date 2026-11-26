@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
-import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown } from 'lucide-react'
+import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail } from 'lucide-react'
+import { locateAddress } from '@/lib/geolocate'
 import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
-import { playAnimal, haptic } from '@/lib/feedback'
+import { playSound, haptic } from '@/lib/feedback'
 import { usePincode } from '@/lib/usePincode'
 import { api } from '@/lib/api'
 import { useQueryClient } from '@tanstack/react-query'
@@ -23,6 +24,9 @@ export default function Checkout() {
   const [addr, setAddr] = useState({
     name: user?.name || '', phone: '', line1: '', city: '', state: '', pincode: '',
   })
+  const [email, setEmail] = useState(() => { try { return localStorage.getItem('animalveda-guest-email') || '' } catch { return '' } })
+  const [geo, setGeo] = useState({ status: 'idle', msg: '' }) // idle | busy | done | error
+  const addressRef = useRef(null)
   const [method, setMethod] = useState('UPI_MANUAL')
   const [utr, setUtr] = useState('')
   const [copied, setCopied] = useState(false)
@@ -30,15 +34,28 @@ export default function Checkout() {
   const [no] = useState(() => orderNo())
   const [placing, setPlacing] = useState(false)
   const qc = useQueryClient()
+  const placed = useRef(false) // set once the order is placed, so emptying the cart doesn't bounce to /cart
   const pin = usePincode(addr.pincode, (d) => setAddr((a) => ({ ...a, city: d.city, state: d.state }))) // stable across re-renders so QR note == order no
 
-  if (items.length === 0) return <Navigate to="/cart" replace />
+  if (items.length === 0) return placed.current ? null : <Navigate to="/cart" replace />
 
   const shipping = subtotal >= FREE_SHIP_ABOVE ? 0 : SHIPPING_FEE
   const codFee = method === 'COD' ? COD_FEE : 0
   const total = subtotal + shipping + codFee
 
   const link = upiLink({ amount: total, note: no })
+
+  const fillFromLocation = async () => {
+    setGeo({ status: 'busy', msg: '' })
+    try {
+      const g = await locateAddress()
+      setAddr((a) => ({ ...a, line1: g.line1 || a.line1, city: g.city || a.city, state: g.state || a.state, pincode: g.pincode || a.pincode }))
+      setGeo({ status: 'done', msg: `Filled from your location${g.accuracy ? ` (±${g.accuracy > 999 ? (g.accuracy / 1000).toFixed(1) + ' km' : g.accuracy + ' m'})` : ''}. Add your house / flat number so the delivery reaches your door.` })
+      requestAnimationFrame(() => { const el = addressRef.current; if (el) { el.focus({ preventScroll: true }); el.setSelectionRange?.(0, 0); el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } })
+    } catch (e2) {
+      setGeo({ status: 'error', msg: e2.message || 'Couldn’t get your location. Please type your address.' })
+    }
+  }
 
   const copyUpi = () => { navigator.clipboard?.writeText(UPI.id); setCopied(true); setTimeout(() => setCopied(false), 1500) }
 
@@ -50,6 +67,7 @@ export default function Checkout() {
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
+    if (!user && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail('Enter a valid email — we send your order updates there.')
     if (!addr.name || !addr.phone || !addr.line1 || !addr.city || !addr.pincode) return fail('Please fill in all delivery details.')
     if (!/^\d{10}$/.test(addr.phone)) return fail('Enter a valid 10-digit phone number.')
     if (!/^\d{6}$/.test(addr.pincode)) return fail('Enter a valid 6-digit pincode.')
@@ -63,7 +81,9 @@ export default function Checkout() {
       const res = await api.post('/store/orders', {
         items: items.map((it) => ({ slug: it.product.slug, sku: it.sku, qty: it.qty })),
         address: addr, paymentMethod: method, ...(method === 'UPI_MANUAL' ? { utr } : {}),
+        ...(user ? {} : { email: email.trim().toLowerCase() }),
       })
+      if (!user) { try { localStorage.setItem('animalveda-guest-email', email.trim().toLowerCase()) } catch { /* ignore */ } }
       orderNoFinal = res?.order?.orderNo || no
       qc.invalidateQueries({ queryKey: ['my-orders'] })
     } catch (e2) {
@@ -74,7 +94,7 @@ export default function Checkout() {
 
     const order = {
       orderNo: orderNoFinal,
-      email: user?.email || 'guest@animalveda.com',
+      email: user?.email || email.trim().toLowerCase() || 'guest@animalveda.com',
       customer: addr.name,
       createdAt: Date.now(),
       items: items.map((it) => ({ name: it.product.name, sku: it.sku, size: it.variant.size, price: it.variant.price, qty: it.qty })),
@@ -87,10 +107,11 @@ export default function Checkout() {
       statusHistory: [{ status: 'Pending Verification', at: Date.now() }],
     }
     place(order)
-    // Happy bark (or a meow if the order is for a cat) 🐶🐱
+    // Happy "ta-da!" jingle 🎉 (the success page shows a dog — or a cat for cat orders)
     const forCat = items.some((it) => /\bcat\b|kitten|feline/i.test(`${it.product.name} ${it.product.short}`))
-    playAnimal(forCat ? 'cat' : 'dog')
+    playSound('celebrate')
     haptic([30, 50, 30, 50, 70])
+    placed.current = true
     clear()
     nav(`/order/${orderNoFinal}`, { state: { animal: forCat ? 'cat' : 'dog' } })
   }
@@ -121,15 +142,31 @@ export default function Checkout() {
           {/* Address */}
           <section className="card p-4 sm:p-6">
             <h2 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2"><Step n="1" icon={MapPin} /> Delivery address</h2>
+            <button type="button" onClick={fillFromLocation} disabled={geo.status === 'busy'}
+              className="w-full mb-4 flex items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-brand-300 bg-brand-50/60 hover:bg-brand-50 px-4 py-3 text-left transition active:scale-[.99] disabled:opacity-80">
+              <span className="w-10 h-10 rounded-xl bg-brand-500 text-white grid place-items-center shrink-0">
+                {geo.status === 'busy' ? <Loader2 size={19} className="animate-spin" /> : <LocateFixed size={19} />}
+              </span>
+              <span className="min-w-0">
+                <span className="block font-bold text-ink-900">{geo.status === 'busy' ? 'Finding your location…' : geo.status === 'done' ? 'Update from my current location' : 'Use my current location'}</span>
+                <span className="block text-xs text-ink-500">Fills in your area, city, state and pincode automatically</span>
+              </span>
+            </button>
+            {geo.msg && <p className={`-mt-2 mb-4 text-xs font-semibold rounded-lg px-3 py-2 ${geo.status === 'error' ? 'text-red-600 bg-red-50' : 'text-green-700 bg-green-50'}`} role={geo.status === 'error' ? 'alert' : 'status'}>{geo.msg}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {user ? (
+                <p className="sm:col-span-2 flex items-center gap-2 text-xs text-ink-500 bg-sand-50 rounded-lg px-3 py-2 min-w-0"><Mail size={14} className="shrink-0 text-brand-600" /><span className="truncate">Order updates go to <b className="text-ink-700">{user.email}</b></span></p>
+              ) : (
+                <div className="sm:col-span-2"><Field label="Email" hint="for order updates" value={email} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" onChange={setEmail} /></div>
+              )}
               <Field label="Full name" value={addr.name} onChange={set('name')} autoComplete="name" />
               <Field label="Phone" hint="10 digit" value={addr.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
                 prefix="+91" onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
-              <div className="sm:col-span-2"><Field label="Address" hint="House no, street, area" value={addr.line1} onChange={set('line1')} autoComplete="street-address" /></div>
+              <div className="sm:col-span-2"><Field label="Address" hint="House no, street, area" value={addr.line1} onChange={set('line1')} autoComplete="street-address" inputRef={addressRef} /></div>
               <div>
                 <Field label="Pincode" value={addr.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
                   onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} />
-                <PinStatus pin={pin} />
+                {!(pin.status === 'error' && addr.city && addr.state) && <PinStatus pin={pin} />}
               </div>
               <Field label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.city} onChange={set('city')} autoComplete="address-level2" />
               <div className="sm:col-span-2"><Field label="State" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.state} onChange={set('state')} autoComplete="address-level1" /></div>
@@ -241,13 +278,13 @@ function Step({ n, icon: Icon }) {
   return <span className="w-7 h-7 rounded-full bg-brand-500 text-white grid place-items-center text-xs" aria-label={`Step ${n}`}><Icon size={14} /></span>
 }
 
-function Field({ label, hint, value, onChange, prefix, ...rest }) {
+function Field({ label, hint, value, onChange, prefix, inputRef, ...rest }) {
   return (
     <label className="block min-w-0">
       <span className="font-bold text-sm">{label}{hint && <span className="font-medium text-ink-500"> · {hint}</span>}</span>
       <span className="mt-1 flex items-center w-full bg-white border border-ink-200 rounded-xl focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition">
         {prefix && <span className="pl-3 pr-1 text-ink-500 font-semibold text-sm shrink-0">{prefix}</span>}
-        <input value={value} onChange={(e) => onChange(e.target.value)} {...rest}
+        <input ref={inputRef} value={value} onChange={(e) => onChange(e.target.value)} {...rest}
           className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none rounded-xl" />
       </span>
     </label>
