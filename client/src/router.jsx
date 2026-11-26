@@ -27,6 +27,7 @@ import AdminOverview from './pages/admin/Overview'
 import AdminOrders from './pages/admin/Orders'
 import AdminProducts from './pages/admin/Products'
 import AdminRequests from './pages/admin/Requests'
+import AdminReviews from './pages/admin/Reviews'
 import AdminUsers from './pages/admin/Users'
 import AdminUserDetail from './pages/admin/UserDetail'
 import AdminTraffic from './pages/admin/Traffic'
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
       { path: 'orders', element: <AdminOrders /> },
       { path: 'products', element: <AdminProducts /> },
       { path: 'requests', element: <AdminRequests /> },
+      { path: 'reviews', element: <AdminReviews /> },
       { path: 'users', element: <AdminUsers /> },
       { path: 'users/:id', element: <AdminUserDetail /> },
       { path: 'traffic', element: <AdminTraffic /> },
