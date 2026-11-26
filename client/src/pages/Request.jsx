@@ -1,12 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Camera, ImagePlus, X, Send, MessageCircle, CheckCircle2, Search, Truck, Loader2, ShieldCheck } from 'lucide-react'
+import { Camera, ImagePlus, X, Send, CheckCircle2, Search, Truck, Loader2, ShieldCheck, Phone } from 'lucide-react'
 import { api } from '@/lib/api'
 import { playSound, haptic } from '@/lib/feedback'
 import { LogoMark } from '@/components/Logo'
 import { useAuth } from '@/store/auth'
 
-const WHATSAPP = '917620377278'
+const PHONE = '7620377278'
 const NEEDS = ['Medicine', 'Food', 'Custom medicine', 'Supplement', 'Other']
 const ANIMALS = [
   ['Dog', '🐕'], ['Cat', '🐈'], ['Cattle', '🐄'], ['Goat', '🐐'],
@@ -43,7 +43,7 @@ function saveLocal(req) {
 export default function Request() {
   const user = useAuth((s) => s.user)
   const [f, setF] = useState({
-    need: 'Medicine', animal: 'Dog', product: '', brand: '', strength: '', quantity: '', details: '',
+    need: 'Medicine', animal: 'Dog', animalOther: '', product: '', brand: '', strength: '', quantity: '', details: '',
     urgency: 'Normal', name: user?.name || '', phone: user?.phone || '', city: '', pincode: '', contactVia: 'WhatsApp',
   })
   const [photos, setPhotos] = useState([])
@@ -53,6 +53,11 @@ export default function Request() {
   const fileRef = useRef(null)
   const camRef = useRef(null)
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
+  const otherRef = useRef(null)
+  const isOther = f.animal === 'Other'
+  const titleCase = (v) => v.replace(/\s+/g, ' ').replace(/\b\p{L}/gu, (c) => c.toUpperCase())
+  const animalName = isOther ? (f.animalOther.trim() ? titleCase(f.animalOther.trim()) : 'animal') : f.animal
+  useEffect(() => { if (isOther) otherRef.current?.focus({ preventScroll: false }) }, [isOther])
 
   const addFiles = async (files) => {
     setErr('')
@@ -65,41 +70,32 @@ export default function Request() {
     } catch (e) { setErr(e.message) }
   }
 
-  const waText = (id) => encodeURIComponent(
-    `Hi AnimalVeda, I'd like to request a product${id ? ` (Ref ${id})` : ''}:\n` +
-    `• Need: ${f.need} for ${f.animal}\n• Product: ${f.product}${f.brand ? ` (${f.brand})` : ''}\n` +
-    (f.strength ? `• Strength/pack: ${f.strength}\n` : '') + (f.quantity ? `• Quantity: ${f.quantity}\n` : '') +
-    (f.details ? `• Details: ${f.details}\n` : '') + `• Urgency: ${f.urgency}\n• Name: ${f.name}, ${f.phone}${f.city ? `, ${f.city}` : ''} ${f.pincode}\n` +
-    (photos.length ? `(I'll attach ${photos.length} photo${photos.length > 1 ? 's' : ''} here.)` : '')
-  )
-
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
+    if (isOther && !f.animalOther.trim()) { otherRef.current?.focus(); return setErr('Tell us which animal this is for.') }
     if (!f.product.trim() && photos.length === 0) return setErr('Tell us the product name or add a photo of it.')
     if (!f.name.trim()) return setErr('Please add your name.')
     if (!/^\d{10}$/.test(f.phone)) return setErr('Enter a valid 10-digit phone number so we can reach you.')
     if (f.pincode && !/^\d{6}$/.test(f.pincode)) return setErr('Pincode should be 6 digits.')
     setBusy(true)
-    const payload = { ...f, photos }
+    const payload = { ...f, animalOther: isOther ? titleCase(f.animalOther.trim()) : '', photos }
     let ref = null
-    let online = true
     try {
       const res = await api.post('/requests', payload)
       ref = res?.request?.ref
     } catch (e) {
-      // Validation errors (4xx with a message) go back to the form; network / server
-      // problems fall back to saving locally + WhatsApp so the request isn't lost.
-      const serverDown = e instanceof TypeError || /Route not found|Request failed \(5|Too many/.test(e.message) || e instanceof SyntaxError
-      if (!serverDown) { setBusy(false); return setErr(e.message === 'Validation failed' ? 'Please check the highlighted details and try again.' : e.message) }
-      online = false
-      ref = 'AV' + Date.now().toString().slice(-6)
+      setBusy(false)
+      const down = e instanceof TypeError || e instanceof SyntaxError || /Route not found|Request failed \(5/.test(e.message)
+      return setErr(down
+        ? `We couldn’t send your request just now. Please try again in a minute, or call us on ${PHONE}.`
+        : e.message === 'Validation failed' ? 'Please check your details and try again.' : e.message)
     }
-    saveLocal({ ...payload, ref, online, createdAt: Date.now() })
+    saveLocal({ ...payload, ref, createdAt: Date.now() })
     setBusy(false)
     playSound('success')
     haptic([30, 50, 30, 50, 70])
-    setDone({ ref, online })
+    setDone({ ref })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -113,17 +109,11 @@ export default function Request() {
         <h1 className="font-display text-3xl font-semibold mt-6">Request received!</h1>
         <p className="text-ink-700 mt-2">Reference <b className="font-mono bg-sand-100 px-2 py-0.5 rounded">{done.ref}</b></p>
         <p className="text-ink-500 mt-3 text-sm">Our team will check availability and {f.contactVia === 'Call' ? 'call' : 'WhatsApp'} you on <b>{f.phone}</b> with price & delivery time{f.urgency === 'Urgent' ? ' — we’ll prioritise this one' : ''}.</p>
-        {!done.online && (
-          <p className="mt-4 text-sm bg-brand-50 text-brand-800 rounded-xl p-3">
-            We couldn’t reach our server just now, so please also send it on WhatsApp — it only takes a tap.
-          </p>
-        )}
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-          <a href={`https://wa.me/${WHATSAPP}?text=${waText(done.ref)}`} target="_blank" rel="noreferrer"
-            className="btn-primary !bg-[#25D366] hover:!bg-[#1ebe5a] !shadow-none"><MessageCircle size={18} /> {done.online ? 'Chat on WhatsApp' : 'Send on WhatsApp'}</a>
-          <Link to="/shop" className="btn-ghost">Continue shopping</Link>
+          <Link to="/products" className="btn-primary">Continue shopping</Link>
+          <a href={`tel:${PHONE}`} className="btn-ghost"><Phone size={17} /> Call us</a>
         </div>
-        <button onClick={() => { setDone(null); setPhotos([]); setF((s) => ({ ...s, product: '', brand: '', strength: '', quantity: '', details: '' })) }}
+        <button onClick={() => { setDone(null); setPhotos([]); setF((s) => ({ ...s, animalOther: '', product: '', brand: '', strength: '', quantity: '', details: '' })) }}
           className="mt-5 text-sm font-bold text-brand-600">Request another product</button>
       </div>
     )
@@ -213,7 +203,14 @@ export default function Request() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="sm:col-span-2"><Field label="Product / medicine name" hint="as on the label" value={f.product} onChange={set('product')} placeholder="e.g. Meloxicam oral suspension" /></div>
+              {isOther && (
+                <div className="sm:col-span-2 animate-pop">
+                  <Field inputRef={otherRef} label="Animal name" hint="which animal is it for?" value={f.animalOther}
+                    onChange={set('animalOther')} onBlur={() => set('animalOther')(titleCase(f.animalOther.trim()))}
+                    placeholder="e.g. Rabbit, Pig, Camel, Turtle" autoCapitalize="words" maxLength={60} />
+                </div>
+              )}
+              <div className="sm:col-span-2"> <Field label={`${f.need === 'Food' ? 'Food' : f.need === 'Supplement' ? 'Supplement' : 'Medicine / product'} name for your ${animalName}`} hint="as on the label" value={f.product} onChange={set('product')} placeholder="e.g. Meloxicam oral suspension" /></div>
               <Field label="Brand / company" optional value={f.brand} onChange={set('brand')} />
               <Field label="Strength or pack size" optional value={f.strength} onChange={set('strength')} placeholder="e.g. 1.5 mg/ml, 100 ml" />
               <Field label="Quantity" optional value={f.quantity} onChange={set('quantity')} placeholder="e.g. 2 bottles" />
@@ -256,15 +253,13 @@ export default function Request() {
         <aside className="card p-4 sm:p-6 lg:sticky lg:top-32 min-w-0">
           <h2 className="font-extrabold text-lg">Your request</h2>
           <dl className="mt-3 text-sm space-y-1.5">
-            {[['Need', `${f.need} for ${f.animal}`], ['Product', f.product || '—'], ['Photos', `${photos.length} attached`], ['Urgency', f.urgency]].map(([k, v]) => (
+            {[['Need', `${f.need} for ${animalName}`], ['Product', f.product || '—'], ['Photos', `${photos.length} attached`], ['Urgency', f.urgency]].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3"><dt className="text-ink-500">{k}</dt><dd className="font-semibold text-right truncate">{v}</dd></div>
             ))}
           </dl>
           <button type="submit" disabled={busy} className="btn-primary w-full mt-5 disabled:opacity-70">
             {busy ? <Loader2 size={18} className="animate-spin" /> : <Send size={17} />} {busy ? 'Sending…' : 'Send request'}
           </button>
-          <a href={`https://wa.me/${WHATSAPP}?text=${waText()}`} target="_blank" rel="noreferrer"
-            className="btn-ghost w-full mt-2.5 !border-[#25D366]/40 hover:!text-[#128C4A]"><MessageCircle size={17} className="text-[#25D366]" /> Or send on WhatsApp</a>
           <p className="text-xs text-ink-500 mt-3">No payment now. We’ll confirm price & availability first. Prescription medicines need a valid vet prescription.</p>
         </aside>
       </form>
@@ -282,13 +277,13 @@ function Pick({ on, onClick, children, block }) {
   )
 }
 
-function Field({ label, hint, optional, value, onChange, prefix, ...rest }) {
+function Field({ label, hint, optional, value, onChange, prefix, inputRef, ...rest }) {
   return (
     <label className="block min-w-0">
       <span className="font-bold text-sm">{label}{hint && <span className="font-medium text-ink-500"> · {hint}</span>}{optional && <span className="font-medium text-ink-500"> · optional</span>}</span>
       <span className="mt-1 flex items-center w-full bg-white border border-ink-200 rounded-xl focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition">
         {prefix && <span className="pl-3 pr-1 text-ink-500 font-semibold text-sm shrink-0">{prefix}</span>}
-        <input value={value} onChange={(e) => onChange(e.target.value)} {...rest}
+        <input ref={inputRef} value={value} onChange={(e) => onChange(e.target.value)} {...rest}
           className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none rounded-xl" />
       </span>
     </label>

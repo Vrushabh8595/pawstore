@@ -14,7 +14,7 @@ export default function Wishlist() {
         <Heart size={48} className="mx-auto text-ink-500 mb-4" />
         <h1 className="text-2xl font-extrabold">Your wishlist is empty</h1>
         <p className="text-ink-500 mt-2">Tap the heart on any product to save it here.</p>
-        <Link to="/shop" className="btn-primary mt-6">Browse products</Link>
+        <Link to="/products" className="btn-primary mt-6">Browse products</Link>
       </div>
     )
 

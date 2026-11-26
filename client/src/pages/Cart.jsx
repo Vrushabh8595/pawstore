@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react'
-import { useCart, detailCart } from '@/store/cart'
+import { useCart, detailCart, MAX_PER_PRODUCT, productQty } from '@/store/cart'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE } from '@/lib/format'
 import { cartFeedback } from '@/lib/feedback'
 
@@ -18,7 +18,7 @@ export default function Cart() {
         <ShoppingBag size={48} className="mx-auto text-ink-500 mb-4" />
         <h1 className="text-2xl font-extrabold">Your cart is empty</h1>
         <p className="text-ink-500 mt-2">Add some tasty food for your pup.</p>
-        <Link to="/shop" className="btn-primary mt-6">Browse products</Link>
+        <Link to="/products" className="btn-primary mt-6">Browse products</Link>
       </div>
     )
 
@@ -45,10 +45,13 @@ export default function Cart() {
                   <div className="flex items-center border border-[#e5e5e0] rounded-lg">
                     <button onClick={(e) => { if (it.qty <= 1) { cartFeedback('remove', { button: e.currentTarget }); remove(it.id, it.sku) } else { cartFeedback('dec', { button: e.currentTarget }); setQty(it.id, it.sku, it.qty - 1) } }} aria-label="Decrease" className="p-2 active:scale-75 transition"><Minus size={14} /></button>
                     <span key={it.qty} className="animate-pop w-8 text-center text-sm font-bold">{it.qty}</span>
-                    <button onClick={(e) => { cartFeedback('inc', { button: e.currentTarget }); setQty(it.id, it.sku, it.qty + 1) }} aria-label="Increase" className="p-2 active:scale-75 transition"><Plus size={14} /></button>
+                    <button onClick={(e) => { if (productQty(rawItems, it.id) >= MAX_PER_PRODUCT) return cartFeedback('limit', { button: e.currentTarget }); cartFeedback('inc', { button: e.currentTarget }); setQty(it.id, it.sku, it.qty + 1) }} aria-label="Increase" className="p-2 active:scale-75 transition"><Plus size={14} /></button>
                   </div>
                   <span className="font-extrabold">{inr(it.lineTotal)}</span>
                 </div>
+                {productQty(rawItems, it.id) >= MAX_PER_PRODUCT && (
+                  <p className="text-[11px] font-semibold text-brand-700 mt-2">Max {MAX_PER_PRODUCT} per order reached — place this order to buy more.</p>
+                )}
               </div>
             </div>
           ))}
@@ -62,7 +65,7 @@ export default function Cart() {
           <div className="border-t border-[#ecece7] my-3" />
           <Row label="Total" value={inr(total)} big />
           <Link to="/checkout" className="btn-primary w-full mt-5">Checkout <ArrowRight size={18} /></Link>
-          <Link to="/shop" className="block text-center text-sm text-brand-600 font-semibold mt-3">Continue shopping</Link>
+          <Link to="/products" className="block text-center text-sm text-brand-600 font-semibold mt-3">Continue shopping</Link>
         </aside>
       </div>
     </div>

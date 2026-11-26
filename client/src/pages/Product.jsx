@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Heart, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight } from 'lucide-react'
-import { getProduct, products } from '@/data/products'
+import { getProduct, products, categories } from '@/data/products'
 import { inr, discountPct } from '@/lib/format'
-import { useCart } from '@/store/cart'
+import { useCart, MAX_PER_PRODUCT, productQty } from '@/store/cart'
+import { cartFeedback } from '@/lib/feedback'
 import { useWishlist } from '@/store/wishlist'
 import ProductRail from '@/components/ProductRail'
 import { useAddToCart } from '@/lib/useAddToCart'
@@ -15,6 +16,7 @@ export default function Product() {
   const add = useCart((s) => s.add)
   const addToCart = useAddToCart()
   const imgRef = useRef(null)
+  const inCart = useCart((s) => (product ? productQty(s.items, product.id) : 0))
   const toggle = useWishlist((s) => s.toggle)
   const wished = useWishlist((s) => product && s.ids.includes(product.id))
   const [variant, setVariant] = useState(product?.variants[0])
@@ -22,18 +24,23 @@ export default function Product() {
   const [img, setImg] = useState(0)
   const [tab, setTab] = useState('desc')
 
-  if (!product) return <div className="container-x py-20 text-center text-ink-500">Product not found. <Link to="/shop" className="text-brand-600 font-semibold">Back to shop</Link></div>
+  if (!product) return <div className="container-x py-20 text-center text-ink-500">Product not found. <Link to="/products" className="text-brand-600 font-semibold">Back to shop</Link></div>
 
   const off = discountPct(variant.price, variant.mrp)
   const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4)
 
-  const buyNow = () => { add(product.id, variant.sku, qty); nav('/checkout') }
+  const room = MAX_PER_PRODUCT - inCart
+  const buyNow = () => { if (room > 0) add(product.id, variant.sku, Math.min(qty, room)); nav('/checkout') }
+  const addClick = (e) => {
+    const n = addToCart(product, variant, Math.min(qty, Math.max(room, 1)), imgRef.current, e.currentTarget)
+    if (n) setQty(1)
+  }
 
   return (
     <div className="container-x py-5 sm:py-8">
-      <nav className="flex items-center gap-1 text-sm text-ink-500 mb-6">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-ink-500 mb-6 min-w-0">
         <Link to="/" className="hover:text-brand-600">Home</Link><ChevronRight size={14} />
-        <Link to="/shop" className="hover:text-brand-600">Shop</Link><ChevronRight size={14} />
+        <Link to={`/category/${product.category}`} className="hover:text-brand-600 shrink-0">{categories.find((c) => c.slug === product.category)?.name || 'Shop'}</Link><ChevronRight size={14} className="shrink-0" />
         <span className="text-ink-900 font-medium truncate">{product.name}</span>
       </nav>
 
@@ -89,16 +96,23 @@ export default function Product() {
           {/* Qty + actions */}
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <div className="flex items-center border border-[#e5e5e0] rounded-xl">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="p-3"><Minus size={16} /></button>
-              <span className="w-10 text-center font-bold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="p-3"><Plus size={16} /></button>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="p-3 active:scale-75 transition" aria-label="Decrease quantity"><Minus size={16} /></button>
+              <span key={qty} className="animate-pop w-10 text-center font-bold">{qty}</span>
+              <button onClick={(e) => (qty >= Math.max(room, 1) ? cartFeedback('limit', { button: e.currentTarget }) : setQty((q) => q + 1))}
+                className={`p-3 active:scale-75 transition ${qty >= Math.max(room, 1) ? 'opacity-40' : ''}`} aria-label="Increase quantity"><Plus size={16} /></button>
             </div>
-            <button onClick={(e) => addToCart(product, variant, qty, imgRef.current, e.currentTarget)} className="ripple btn-ghost flex-1 min-w-[120px] active:scale-95">Add to cart</button>
+            <button onClick={addClick} className="ripple btn-ghost flex-1 min-w-[120px] active:scale-95">Add to cart</button>
             <button onClick={buyNow} className="btn-primary flex-1 min-w-[120px] active:scale-95">Buy now</button>
             <button onClick={() => toggle(product.id)} className="btn-ghost !px-3" aria-label="Wishlist">
               <Heart size={18} className={wished ? 'fill-brand-500 text-brand-500' : ''} />
             </button>
           </div>
+
+          <p className={`text-xs mt-2.5 font-semibold ${room <= 0 ? 'text-red-600' : 'text-ink-500'}`}>
+            {room <= 0
+              ? `You already have ${MAX_PER_PRODUCT} of this in your cart — the most allowed per order. Place this order first to buy more.`
+              : inCart > 0 ? `${inCart} in cart · you can add ${room} more (max ${MAX_PER_PRODUCT} per order)` : `Max ${MAX_PER_PRODUCT} per order`}
+          </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 mt-6 text-sm text-ink-500">
             <span className="flex items-center gap-2"><Truck size={18} className="text-brand-600" /> Free over ₹999</span>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X, ChevronRight, LayoutGrid, Grid3x3 } from 'lucide-react'
 import { products, categories, filterOptions } from '@/data/products'
+import { CATEGORY_META } from '@/lib/seo'
 import ProductCard from '@/components/ProductCard'
 
 const sorts = {
@@ -26,11 +27,13 @@ const CAT_BANNER = {
 }
 
 export default function Shop() {
-  const [params, setParams] = useSearchParams()
-  const q = (params.get('q') || '').toLowerCase()
-  const cat = params.get('cat') || ''
+  const [params] = useSearchParams()
+  const { cat = '' } = useParams()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const q = pathname === '/search' ? (params.get('q') || '').toLowerCase() : ''
   const [sort, setSort] = useState(() => (sorts[params.get('sort')] ? params.get('sort') : 'popular'))
-  const deal = params.get('deal')
+  const deal = pathname === '/offers' ? 'sale' : null
   const [quickState, setQuick] = useState(null) // 'bestseller' | 'sale' | null
   const quick = quickState ?? (deal === 'sale' ? 'sale' : null)
   const [cols, setCols] = useState(() => { try { return localStorage.getItem('pawstore-cols') || '2' } catch { return '2' } })
@@ -41,7 +44,7 @@ export default function Shop() {
 
   const toggle = (group, val) =>
     setF((s) => ({ ...s, [group]: s[group].includes(val) ? s[group].filter((x) => x !== val) : [...s[group], val] }))
-  const clearAll = () => { setF({ lifeStage: [], breedSize: [], foodType: [], diet: [] }); setQuick(null); if (deal) { params.delete('deal'); setParams(params) } }
+  const clearAll = () => { setF({ lifeStage: [], breedSize: [], foodType: [], diet: [] }); setQuick(null); if (deal) navigate('/products') }
 
   const list = useMemo(() => {
     let out = products.filter((p) => {
@@ -59,13 +62,12 @@ export default function Shop() {
   }, [cat, q, f, sort, quick])
 
   const catName = categories.find((c) => c.slug === cat)?.name
-  const title = catName || (q ? `Results for “${q}”` : 'All Products')
+  const title = CATEGORY_META[cat]?.h1 || catName || (q ? `Results for “${q}”` : deal ? 'Offers & Deals' : 'All Products')
   const [tagline, grad] = CAT_BANNER[cat] || ['Everything your dog will love', 'from-brand-100 to-pine-50']
   const activeFilterCount = Object.values(f).flat().length + (quick && quick !== 'none' ? 1 : 0)
 
   const setCat = (slug) => {
-    if (slug) params.set('cat', slug); else params.delete('cat')
-    setParams(params)
+    navigate(slug ? `/category/${slug}` : '/products')
     setMobileFilters(false)
   }
 
@@ -187,6 +189,13 @@ export default function Shop() {
           )}
         </div>
       </div>
+
+      {CATEGORY_META[cat] && (
+        <section className="mt-12 max-w-3xl">
+          <h2 className="text-xl sm:text-2xl">Buy {catName} online at AnimalVeda</h2>
+          <p className="text-sm text-ink-700 mt-2 leading-relaxed">{CATEGORY_META[cat].desc}</p>
+        </section>
+      )}
 
       {/* Mobile filter drawer */}
       {mobileFilters && (

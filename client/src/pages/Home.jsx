@@ -13,17 +13,17 @@ const CAT_EMOJI = {
 const CAT_TINT = ['bg-brand-50', 'bg-pine-50', 'bg-sand-100', 'bg-brand-50', 'bg-pine-50', 'bg-sand-100', 'bg-brand-50']
 
 const NEED_TILES = [
-  { to: '/shop?cat=dry-food', title: 'Everyday Meals', copy: 'Complete dry nutrition', emoji: '🥣', from: 'bg-gradient-to-br from-brand-100 to-brand-50' },
-  { to: '/shop?cat=wet-food', title: 'Wet & Gravy', copy: 'Tempting, tender meals', emoji: '🍲', from: 'bg-gradient-to-br from-pine-100 to-pine-50' },
-  { to: '/shop?cat=treats', title: 'Treats & Rewards', copy: 'For the very good boys', emoji: '🍪', from: 'bg-gradient-to-br from-sand-200 to-sand-100' },
-  { to: '/shop?cat=bedding', title: 'Comfort & Beds', copy: 'Cosy naps, happy pups', emoji: '🛏️', from: 'bg-gradient-to-br from-brand-100 to-sand-100' },
+  { to: '/category/dry-food', title: 'Everyday Meals', copy: 'Complete dry nutrition', emoji: '🥣', from: 'bg-gradient-to-br from-brand-100 to-brand-50' },
+  { to: '/category/wet-food', title: 'Wet & Gravy', copy: 'Tempting, tender meals', emoji: '🍲', from: 'bg-gradient-to-br from-pine-100 to-pine-50' },
+  { to: '/category/treats', title: 'Treats & Rewards', copy: 'For the very good boys', emoji: '🍪', from: 'bg-gradient-to-br from-sand-200 to-sand-100' },
+  { to: '/category/bedding', title: 'Comfort & Beds', copy: 'Cosy naps, happy pups', emoji: '🛏️', from: 'bg-gradient-to-br from-brand-100 to-sand-100' },
 ]
 
 const PROMOS = [
-  { to: '/shop?cat=dry-food', label: 'Dry Food', from: 'From ₹299', emoji: '🦴' },
-  { to: '/shop?cat=treats', label: 'Treats', from: 'From ₹99', emoji: '🍪' },
-  { to: '/shop?cat=health', label: 'Health & Recovery', from: 'From ₹199', emoji: '💊' },
-  { to: '/shop?cat=apparel', label: 'Winter Apparel', from: 'From ₹449', emoji: '🧥' },
+  { to: '/category/dry-food', label: 'Dry Food', from: 'From ₹299', emoji: '🦴' },
+  { to: '/category/treats', label: 'Treats', from: 'From ₹99', emoji: '🍪' },
+  { to: '/category/health', label: 'Health & Recovery', from: 'From ₹199', emoji: '💊' },
+  { to: '/category/apparel', label: 'Winter Apparel', from: 'From ₹449', emoji: '🧥' },
 ]
 
 export default function Home() {
@@ -42,7 +42,7 @@ export default function Home() {
         <div className="relative mt-5 sm:mt-6 bg-white rounded-[1.75rem] ring-1 ring-ink-100 shadow-[0_18px_40px_-28px_rgba(26,26,23,.4)] px-4 sm:px-6 pt-5 pb-5">
           <div className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar sm:grid sm:grid-cols-7">
             {categories.map((c, i) => (
-              <Link key={c.slug} to={`/shop?cat=${c.slug}`} className="group flex flex-col items-center gap-2 shrink-0 w-[76px] sm:w-auto">
+              <Link key={c.slug} to={`/category/${c.slug}`} className="group flex flex-col items-center gap-2 shrink-0 w-[76px] sm:w-auto">
                 <span className={`w-[68px] h-[68px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center text-3xl ${CAT_TINT[i % CAT_TINT.length]} ring-1 ring-ink-100 group-hover:ring-brand-300 group-hover:-translate-y-1 transition shadow-sm`}>
                   {CAT_EMOJI[c.slug] || '🐾'}
                 </span>
@@ -55,7 +55,7 @@ export default function Home() {
 
       {/* ---------- Request a product ---------- */}
       <section className="container-x pt-6 sm:pt-8">
-        <Link to="/request" className="group relative flex items-center gap-4 sm:gap-6 overflow-hidden rounded-[1.6rem] bg-pine-800 text-white p-4 sm:p-7 active:scale-[.99] transition">
+        <Link to="/request-medicine" className="group relative flex items-center gap-4 sm:gap-6 overflow-hidden rounded-[1.6rem] bg-pine-800 text-white p-4 sm:p-7 active:scale-[.99] transition">
           <span aria-hidden="true" className="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-pine-600/60" />
           <span aria-hidden="true" className="absolute right-24 -bottom-16 w-32 h-32 rounded-full bg-brand-500/25" />
           <LogoMark size={64} className="relative shrink-0 animate-float sm:w-20 sm:h-20" />
@@ -96,7 +96,7 @@ export default function Home() {
             <p className="eyebrow mb-1">Loved by pups</p>
             <h2 className="text-xl sm:text-3xl font-semibold">Bestsellers</h2>
           </div>
-          <Link to="/shop" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
+          <Link to="/products" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
         </div>
         <ProductRail products={bestsellers} scroll />
       </section>
@@ -110,7 +110,7 @@ export default function Home() {
                 <p className="eyebrow mb-0.5">Pocket-friendly</p>
                 <h2 className="text-xl sm:text-3xl font-semibold">Everything under ₹300</h2>
               </div>
-              <Link to="/shop?sort=price-asc" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">See all <ArrowRight size={16} /></Link>
+              <Link to="/products?sort=price-asc" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">See all <ArrowRight size={16} /></Link>
             </div>
             <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
               {under300.map((p) => <ProductCard key={p.id} product={p} size="compact" />)}
@@ -169,7 +169,7 @@ export default function Home() {
             <p className="eyebrow mb-1">Just in</p>
             <h2 className="text-xl sm:text-3xl font-semibold">Fresh picks</h2>
           </div>
-          <Link to="/shop" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
+          <Link to="/products" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
         </div>
         <ProductRail products={fresh} scroll />
       </section>
@@ -183,7 +183,7 @@ export default function Home() {
             <p className="text-white/85 mt-2">Use code <b className="bg-white/20 px-2 py-0.5 rounded">WAGGY10</b> at checkout. New pet parents only.</p>
           </div>
           <div className="lg:text-right">
-            <Link to="/shop" className="inline-flex items-center gap-2 bg-white text-brand-600 font-bold px-6 py-3 rounded-full hover:bg-sand-50 transition">
+            <Link to="/products" className="inline-flex items-center gap-2 bg-white text-brand-600 font-bold px-6 py-3 rounded-full hover:bg-sand-50 transition">
               Start shopping <ArrowRight size={18} />
             </Link>
           </div>
