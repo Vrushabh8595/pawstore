@@ -33,7 +33,11 @@ import AdminTraffic from './pages/admin/Traffic'
 function Protected({ children, role }) {
   const user = useAuth((s) => s.user)
   const ready = useAuth((s) => s.ready)
-  if (!ready) return <div className="min-h-screen grid place-items-center text-ink-500">Loading…</div>
+  if (!ready) return (
+    <div className="min-h-[60vh] grid place-items-center text-ink-500 text-sm">
+      <span className="flex flex-col items-center gap-3"><span className="w-9 h-9 rounded-full border-4 border-brand-100 border-t-brand-500 animate-spin" />Loading your account…</span>
+    </div>
+  )
   if (!user) return <Navigate to="/login" replace />
   if (role && user.role !== role) return <Navigate to="/" replace />
   return children
