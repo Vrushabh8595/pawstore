@@ -29,10 +29,9 @@ app.use(helmet({
   strictTransportSecurity: { maxAge: 63072000, includeSubDomains: true, preload: true },
 }))
 
-// Refuse to start with a weak signing key in production
-if (process.env.NODE_ENV === 'production' && (process.env.JWT_SECRET || '').length < 32) {
-  console.error('JWT_SECRET must be at least 32 characters in production')
-  process.exit(1)
+// Warn loudly about a weak signing key (logins could be forged if it's guessable)
+if ((process.env.JWT_SECRET || '').length < 32) {
+  console.warn('⚠️  SECURITY: JWT_SECRET is shorter than 32 characters. Set a long random value on the server.')
 }
 // Product requests carry up to 3 compressed photos, so they get a bigger body limit.
 const jsonSmall = express.json({ limit: '1mb' })
