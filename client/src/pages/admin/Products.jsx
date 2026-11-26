@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useFieldErrors } from '@/components/FormField'
+import { ItemImg } from './ui'
 import { inr } from '@/lib/format'
 
 const LOW_STOCK = 3
@@ -91,7 +93,7 @@ export default function AdminProducts() {
                   <tr key={p._id} className="border-t border-[#f0f0ec]">
                     <Td>
                       <div className="flex items-center gap-3">
-                        <img src={p.images?.[0]} alt="" className="w-10 h-10 rounded-lg object-cover bg-ink-50" />
+                        <ItemImg src={p.images?.[0]} alt={p.name} className="w-10 h-10" />
                         <span className="font-semibold">{p.name}</span>
                       </div>
                     </Td>
@@ -135,10 +137,11 @@ export default function AdminProducts() {
 function ProductForm({ initial, categories, saving, error, onCancel, onSave, onCategoryAdded }) {
   const [f, setF] = useState(initial)
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }))
-  const setVariant = (i, k, v) => setF((s) => ({ ...s, variants: s.variants.map((x, j) => (j === i ? { ...x, [k]: v } : x)) }))
+  const setVariant = (i, k, v) => { setF((s) => ({ ...s, variants: s.variants.map((x, j) => (j === i ? { ...x, [k]: v } : x)) })); fe.clear(`v${i}`) }
   const addVariant = () => setF((s) => ({ ...s, variants: [...s.variants, blankVariant()] }))
   const delVariant = (i) => setF((s) => ({ ...s, variants: s.variants.filter((_, j) => j !== i) }))
 
+  const fe = useFieldErrors()
   const addCategory = useMutation({
     mutationFn: (cat) => api.post('/admin/categories', cat),
     onSuccess: (cat) => { onCategoryAdded(); set('category', cat.slug) },
@@ -151,6 +154,15 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
 
   const submit = (e) => {
     e.preventDefault()
+    const rules = {
+      name: !f.name?.trim() ? 'Enter the product name.' : null,
+      category: !f.category ? 'Choose a category.' : null,
+      variants: !(f.variants || []).length ? 'Add at least one size / variant.' : null,
+    }
+    ;(f.variants || []).forEach((v, i) => {
+      rules[`v${i}`] = !String(v.sku || '').trim() ? `Variant ${i + 1}: enter a SKU.` : !String(v.size || '').trim() ? `Variant ${i + 1}: enter the size / weight.` : !(Number(v.price) > 0) ? `Variant ${i + 1}: enter a price above 0.` : v.mrp && Number(v.mrp) < Number(v.price) ? `Variant ${i + 1}: MRP can’t be lower than the price.` : null
+    })
+    if (!fe.validate(rules)) return
     const payload = {
       ...f,
       slug: f.slug || slugify(f.name),
@@ -175,17 +187,18 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
           <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-ink-100"><X size={20} /></button>
         </div>
 
-        <form onSubmit={submit} className="p-6 space-y-4">
+        <form onSubmit={submit} noValidate className="p-6 space-y-4">
+          <p className="text-xs text-ink-500 -mb-1"><span className="text-red-500">*</span> required</p>
           <Row>
-            <Input label="Name" value={f.name} onChange={(v) => { set('name', v); if (!f._id) set('slug', slugify(v)) }} required />
+            <Input name="name" error={fe.errors.name} label="Name" value={f.name} onChange={(v) => { set('name', v); fe.clear('name'); if (!f._id) set('slug', slugify(v)) }} required />
             <Input label="Slug (URL)" value={f.slug} onChange={(v) => set('slug', v)} />
           </Row>
           <Row>
             <Input label="Brand" value={f.brand} onChange={(v) => set('brand', v)} />
             <div>
-              <Label>Category</Label>
+              <Label>Category<span className="text-red-500 ml-0.5">*</span></Label>
               <div className="flex gap-2">
-                <select value={f.category} onChange={(e) => set('category', e.target.value)} className={inputCls} required>
+                <select data-field="category" value={f.category} onChange={(e) => { set('category', e.target.value); fe.clear('category') }} className={`${inputCls} ${fe.errors.category ? '!border-red-400 ring-2 ring-red-100' : ''}`} required aria-invalid={fe.errors.category ? true : undefined}>
                   <option value="">Select…</option>
                   {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
@@ -217,9 +230,9 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
             <div className="space-y-2 mt-1">
               {f.variants.map((v, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-end bg-ink-50 rounded-lg p-2">
-                  <Mini className="col-span-3" label="SKU" value={v.sku} onChange={(x) => setVariant(i, 'sku', x)} />
-                  <Mini className="col-span-3" label="Size / Weight" value={v.size} onChange={(x) => setVariant(i, 'size', x)} />
-                  <Mini className="col-span-2" label="Price" type="number" value={v.price} onChange={(x) => setVariant(i, 'price', x)} />
+                  <Mini className="col-span-3" label="SKU *" value={v.sku} onChange={(x) => setVariant(i, 'sku', x)} />
+                  <Mini className="col-span-3" label="Size / Weight *" value={v.size} onChange={(x) => setVariant(i, 'size', x)} />
+                  <Mini className="col-span-2" label="Price *" type="number" value={v.price} onChange={(x) => setVariant(i, 'price', x)} />
                   <Mini className="col-span-2" label="MRP" type="number" value={v.mrp} onChange={(x) => setVariant(i, 'mrp', x)} />
                   <Mini className="col-span-1" label="Stock" type="number" value={v.stock} onChange={(x) => setVariant(i, 'stock', x)} />
                   <button type="button" onClick={() => delVariant(i)} className="col-span-1 p-2 text-red-500 hover:bg-red-50 rounded-lg justify-self-center"><Trash2 size={15} /></button>
@@ -228,7 +241,10 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {Object.entries(fe.errors).filter(([k, m]) => m && (k === 'category' || k === 'variants' || /^v\d/.test(k))).map(([k, m]) => (
+            <p key={k} data-field={k} role="alert" className="text-sm font-semibold text-red-600 bg-red-50 rounded-lg px-3 py-2">{m}</p>
+          ))}
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2 pt-2">
             <button disabled={saving} className="btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save product'}</button>
             <button type="button" onClick={onCancel} className="btn-ghost border border-[#e5e5e0] rounded-lg px-4">Cancel</button>
@@ -245,11 +261,12 @@ const Td = ({ children, className = '' }) => <td className={'px-4 py-3 whitespac
 const Row = ({ children }) => <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">{children}</div>
 const Label = ({ children }) => <span className="font-bold text-sm">{children}</span>
 
-function Input({ label, value, onChange, required, type = 'text' }) {
+function Input({ label, value, onChange, required, type = 'text', name, error }) {
   return (
-    <label className="block">
-      <Label>{label}</Label>
-      <input type={type} value={value ?? ''} required={required} onChange={(e) => onChange(e.target.value)} className={inputCls} />
+    <label className="block" data-field={name}>
+      <Label>{label}{required && <span className="text-red-500 ml-0.5">*</span>}</Label>
+      <input type={type} value={value ?? ''} required={required} aria-invalid={error ? true : undefined} onChange={(e) => onChange(e.target.value)} className={`${inputCls} ${error ? '!border-red-400 ring-2 ring-red-100' : ''}`} />
+      {error && <span role="alert" className="block mt-1 text-xs font-semibold text-red-600">{error}</span>}
     </label>
   )
 }

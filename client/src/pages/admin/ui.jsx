@@ -1,5 +1,6 @@
 // Small UI kit for the admin panel: stat cards, SVG charts, helpers.
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { inr } from '@/lib/format'
 
 export const fmtNum = (n) => new Intl.NumberFormat('en-IN').format(n || 0)
@@ -154,12 +155,34 @@ export function ErrorBox({ error }) {
   )
 }
 
-// Product photo for an order line (falls back to a paw tile)
-export function ItemImg({ src, alt = '', className = 'w-12 h-12' }) {
+// Product photo for an order line (falls back to a paw tile).
+// Hovering it (mouse / trackpad) pops up a large zoomed preview.
+export function ItemImg({ src, alt = '', className = 'w-12 h-12', zoom = true }) {
   const [bad, setBad] = useState(false)
+  const [pos, setPos] = useState(null)
+  const ref = useRef(null)
+  const canZoom = zoom && src && !bad
+  const show = () => {
+    if (!canZoom || !window.matchMedia?.('(hover: hover)').matches) return
+    const r = ref.current.getBoundingClientRect()
+    const size = Math.min(280, window.innerWidth - 24, window.innerHeight - 24)
+    const right = r.right + 12 + size <= window.innerWidth
+    const left = right ? r.right + 12 : Math.max(12, r.left - 12 - size)
+    const top = Math.min(Math.max(12, r.top + r.height / 2 - size / 2), window.innerHeight - size - 12)
+    setPos({ left, top, size })
+  }
   return (
-    <span className={`${className} shrink-0 rounded-xl bg-white ring-1 ring-ink-100 overflow-hidden grid place-items-center`}>
-      {src && !bad ? <img src={src} alt={alt} loading="lazy" className="w-full h-full object-contain p-0.5" onError={() => setBad(true)} /> : <span className="text-lg" aria-hidden="true">🐾</span>}
+    <span ref={ref} onMouseEnter={show} onMouseLeave={() => setPos(null)}
+      className={`${className} shrink-0 rounded-xl bg-white ring-1 ring-ink-100 overflow-hidden grid place-items-center ${canZoom ? 'cursor-zoom-in' : ''}`}>
+      {src && !bad ? <img src={src} alt={alt} loading="lazy" className={`w-full h-full object-contain p-0.5 transition-transform duration-200 ${canZoom ? 'hover:scale-110' : ''}`} onError={() => setBad(true)} /> : <span className="text-lg" aria-hidden="true">🐾</span>}
+      {pos && createPortal(
+        <span role="presentation" className="fixed z-[100] pointer-events-none rounded-2xl bg-white p-2 shadow-[0_24px_60px_-12px_rgba(26,52,80,.55)] ring-1 ring-ink-100 animate-zoom-in"
+          style={{ left: pos.left, top: pos.top, width: pos.size, height: pos.size }}>
+          <img src={src} alt="" className="w-full h-full object-contain rounded-xl" />
+          {alt && <span className="absolute inset-x-2 bottom-2 rounded-lg bg-pine-900/85 text-white text-[11px] font-semibold px-2 py-1 line-clamp-2">{alt}</span>}
+        </span>,
+        document.body
+      )}
     </span>
   )
 }
