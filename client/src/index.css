@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Warm orange — PawStore primary */
+  /* Warm orange — AnimalVeda primary / actions */
   --color-brand-50: #fff7ec;
   --color-brand-100: #ffe9c8;
   --color-brand-200: #ffd38c;
@@ -14,16 +14,17 @@
   --color-brand-800: #94380c;
   --color-brand-900: #78300d;
 
-  /* Deep pine — secondary / dark sections */
-  --color-pine-50: #eef5f0;
-  --color-pine-100: #d6e7dc;
-  --color-pine-200: #aecfbb;
-  --color-pine-400: #4f9173;
-  --color-pine-500: #2f7357;
-  --color-pine-600: #205a43;
-  --color-pine-700: #184636;
-  --color-pine-800: #12362a;
-  --color-pine-900: #0d281f;
+  /* Deep navy (from the AnimalVeda mark) — secondary / dark sections.
+     Token name kept as "pine" so existing classes keep working. */
+  --color-pine-50: #eef3f9;
+  --color-pine-100: #d9e4f0;
+  --color-pine-200: #b3c7de;
+  --color-pine-400: #5c7fa8;
+  --color-pine-500: #3d6593;
+  --color-pine-600: #2b4f78;
+  --color-pine-700: #213f61;
+  --color-pine-800: #1a3450;
+  --color-pine-900: #11253a;
 
   /* Warm neutrals */
   --color-sand-50: #fbf8f2;
@@ -85,3 +86,70 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ================= Motion ================= */
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes bump { 0%,100% { transform: scale(1) rotate(0); } 25% { transform: scale(1.25) rotate(-10deg); } 50% { transform: scale(.92) rotate(6deg); } 75% { transform: scale(1.08) rotate(-3deg); } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 24px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes kenburns { from { transform: scale(1.12); } to { transform: scale(1); } }
+@keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes float { 0%,100% { transform: translateY(0) rotate(var(--r, -8deg)); } 50% { transform: translateY(-8px) rotate(var(--r, -8deg)); } }
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+@keyframes ripple { from { transform: scale(0); opacity: .45; } to { transform: scale(2.6); opacity: 0; } }
+
+.animate-pop { animation: pop .38s cubic-bezier(.34,1.56,.64,1); }
+.animate-bump { animation: bump .6s ease; }
+.animate-fade-in { animation: fade-in .25s ease both; }
+.animate-drawer { animation: slide-in-left .32s cubic-bezier(.22,1,.36,1) both; }
+.animate-toast { animation: toast-in .35s cubic-bezier(.22,1,.36,1) both; }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 14s linear infinite; }
+
+/* Hero slide content: staggered reveal on the active slide */
+.hero-slide .reveal { opacity: 0; }
+.hero-slide.is-active .reveal { animation: fade-up .7s cubic-bezier(.22,1,.36,1) both; }
+.hero-slide.is-active .reveal-1 { animation-delay: .08s; }
+.hero-slide.is-active .reveal-2 { animation-delay: .18s; }
+.hero-slide.is-active .reveal-3 { animation-delay: .28s; }
+.hero-slide.is-active .reveal-4 { animation-delay: .38s; }
+.hero-slide.is-active .hero-img { animation: kenburns 6s ease-out both; }
+.hero-progress { transform-origin: left; animation: progress var(--dur, 5.5s) linear both; }
+.hero-paused .hero-progress { animation-play-state: paused; }
+
+/* Product rails: 2.5 cards visible on phones, snap scrolling */
+.rail { display: flex; gap: .75rem; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 1.1rem;
+  margin-inline: -1.1rem; padding: .25rem 1.1rem 1rem; overscroll-behavior-x: contain; }
+.rail::-webkit-scrollbar { display: none; }
+.rail { scrollbar-width: none; }
+.rail > * { flex: 0 0 calc((100% - 1.1rem - 1.5rem) / 2.5); scroll-snap-align: start; min-width: 0; }
+@media (min-width: 640px) { .rail > * { flex-basis: calc((100% - 1.1rem - 2.25rem) / 3.4); } }
+@media (min-width: 1024px) {
+  .rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; overflow: visible; margin: 0; padding: 0; }
+  .rail.rail-scroll { display: flex; overflow-x: auto; padding: .25rem 0 1rem; }
+  .rail.rail-scroll > * { flex-basis: calc((100% - 3.75rem) / 4); }
+}
+
+/* Tap ripple for buttons */
+.ripple { position: relative; overflow: hidden; }
+.ripple::after { content: ''; position: absolute; inset: 0; margin: auto; width: 100%; aspect-ratio: 1; border-radius: 999px;
+  background: currentColor; transform: scale(0); opacity: 0; pointer-events: none; }
+.ripple:active::after { animation: ripple .5s ease-out; }
+
+/* Flying product thumbnail (add-to-cart) */
+.fly-dot { position: fixed; z-index: 100; pointer-events: none; border-radius: 999px; object-fit: cover;
+  box-shadow: 0 10px 30px -8px rgba(248,131,11,.7); border: 3px solid #fff; background: #fff; }
+
+input, select, textarea { font-size: 16px; } /* stops iOS zoom on focus */
+@media (min-width: 640px) { input, select, textarea { font-size: .9rem; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Cart feedback particles */
+.burst-bit { position: fixed; z-index: 101; pointer-events: none; font-size: 16px; line-height: 1; will-change: transform, opacity; }
+.plus-one { position: fixed; z-index: 101; pointer-events: none; font-weight: 800; font-size: 14px; color: var(--color-brand-600);
+  text-shadow: 0 1px 0 #fff; will-change: transform, opacity; }

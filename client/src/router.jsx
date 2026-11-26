@@ -12,6 +12,7 @@ import OrderSuccess from './pages/OrderSuccess'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Policy from './pages/Policy'
+import Request from './pages/Request'
 import NotFound from './pages/NotFound'
 
 import AccountLayout from './pages/account/AccountLayout'
@@ -23,6 +24,7 @@ import AdminLayout from './pages/admin/AdminLayout'
 import AdminOverview from './pages/admin/Overview'
 import AdminOrders from './pages/admin/Orders'
 import AdminProducts from './pages/admin/Products'
+import AdminRequests from './pages/admin/Requests'
 
 function Protected({ children, role }) {
   const user = useAuth((s) => s.user)
@@ -47,6 +49,7 @@ export const router = createBrowserRouter([
       { path: '/login', element: <Login /> },
       { path: '/register', element: <Register /> },
       { path: '/policy/:slug', element: <Policy /> },
+      { path: '/request', element: <Request /> },
       {
         path: '/account',
         element: <Protected><AccountLayout /></Protected>,
@@ -66,6 +69,7 @@ export const router = createBrowserRouter([
       { index: true, element: <AdminOverview /> },
       { path: 'orders', element: <AdminOrders /> },
       { path: 'products', element: <AdminProducts /> },
+      { path: 'requests', element: <AdminRequests /> },
     ],
   },
 ])
