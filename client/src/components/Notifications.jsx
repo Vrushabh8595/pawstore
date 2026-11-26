@@ -22,7 +22,7 @@ const useToasts = create((set) => ({
   drop: (id) => set((s) => ({ list: s.list.filter((x) => x._id !== id) })),
 }))
 
-const linkFor = (n, admin) => (!n.orderNo ? (admin ? '/admin' : '/account/notifications') : admin ? `/admin/orders?open=${encodeURIComponent(n.orderNo)}` : `/account/orders/${encodeURIComponent(n.orderNo)}`)
+const linkFor = (n, admin) => (n.link ? n.link : !n.orderNo ? (admin ? '/admin' : '/account/notifications') : admin ? `/admin/orders?open=${encodeURIComponent(n.orderNo)}` : `/account/orders/${encodeURIComponent(n.orderNo)}`)
 const seenKey = (uid) => `animalveda-notif-seen-${uid}`
 export const ago = (d) => {
   const s = Math.max(1, Math.round((Date.now() - new Date(d)) / 1000))
@@ -73,7 +73,7 @@ export function NotificationAlerts({ admin = false }) {
     fresh.splice(0, Math.max(0, fresh.length - 4)) // never flood the screen
 
     fresh.forEach((n) => push({ ...n, admin }))
-    playSound(admin ? 'newOrder' : 'notify')
+    playSound(admin && fresh.some((n) => n.type === 'new_order') ? 'newOrder' : 'notify')
     haptic(admin ? [120, 80, 120, 80, 200] : [60, 40, 90])
     // Desktop notification when the tab is in the background (admin laptop, or any browser that allows it)
     if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
@@ -85,7 +85,7 @@ export function NotificationAlerts({ admin = false }) {
       })
     }
     // Refresh the screens that show these orders
-    if (admin) { qc.invalidateQueries({ queryKey: ['admin-orders'] }); qc.invalidateQueries({ queryKey: ['admin-dashboard'] }) }
+    if (admin) { qc.invalidateQueries({ queryKey: ['admin-orders'] }); qc.invalidateQueries({ queryKey: ['admin-dashboard'] }); qc.invalidateQueries({ queryKey: ['admin-reviews'] }) }
     else {
       qc.invalidateQueries({ queryKey: ['my-orders'] })
       fresh.forEach((n) => n.orderNo && qc.invalidateQueries({ queryKey: ['my-order', n.orderNo] }))
@@ -122,10 +122,10 @@ function Toast({ t }) {
     <div role="status" className="pointer-events-auto animate-toast-in card bg-white p-3 pr-2 flex gap-3 items-start shadow-[0_18px_40px_-16px_rgba(26,52,80,.45)] ring-1 ring-brand-100">
       <Thumb src={t.image} admin={t.admin} />
       <button type="button" onClick={open} className="flex-1 min-w-0 text-left">
-        <p className={`text-[11px] font-extrabold uppercase tracking-wider ${t.type === 'account' && t.status === 'Blocked' ? 'text-red-600' : 'text-brand-600'}`}>{t.admin ? '🛒 New order' : t.type === 'account' ? '🔒 Account update' : '🐾 Order update'}</p>
+        <p className={`text-[11px] font-extrabold uppercase tracking-wider ${t.type === 'account' && t.status === 'Blocked' ? 'text-red-600' : 'text-brand-600'}`}>{t.type === 'review' ? (t.admin ? '⭐ New review' : '⭐ Review update') : t.admin ? '🛒 New order' : t.type === 'account' ? '🔒 Account update' : '🐾 Order update'}</p>
         <p className="font-bold text-sm text-ink-900 leading-snug">{t.title}</p>
         <p className="text-xs text-ink-500 mt-0.5 line-clamp-2">{t.body}</p>
-        <span className="inline-block mt-1.5 text-xs font-bold text-brand-600">{t.admin ? 'Open order →' : t.type === 'account' ? 'View details →' : 'View order →'}</span>
+        <span className="inline-block mt-1.5 text-xs font-bold text-brand-600">{t.type === 'review' ? (t.admin ? 'Review it →' : 'See it →') : t.admin ? 'Open order →' : t.type === 'account' ? 'View details →' : 'View order →'}</span>
       </button>
       <button type="button" onClick={() => drop(t._id)} aria-label="Dismiss" className="p-1 text-ink-500 hover:text-ink-900"><X size={16} /></button>
     </div>
@@ -189,7 +189,7 @@ export function NotificationBell({ admin = false, className = '' }) {
                   </span>
                   <span className="block text-xs text-ink-500 line-clamp-2 mt-0.5">{n.body}</span>
                   <span className="flex items-center gap-2 mt-1 text-[11px] text-ink-500">
-                    {n.status && !admin && n.type !== 'account' && <StatusBadge status={n.status} />}
+                    {n.status && !admin && n.type === 'status' && <StatusBadge status={n.status} />}
                     {admin && n.amount ? <b className="text-ink-900">{inr(n.amount)}</b> : null}
                     {ago(n.createdAt)}
                   </span>

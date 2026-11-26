@@ -6,6 +6,7 @@ import { useCart, MAX_PER_PRODUCT, productQty } from '@/store/cart'
 import { useWishlist } from '@/store/wishlist'
 import { useAddToCart } from '@/lib/useAddToCart'
 import { cartFeedback } from '@/lib/feedback'
+import { useProductRating } from '@/lib/reviews'
 
 /**
  * size: 'default' (grid / desktop) | 'compact' (3-up mobile grid & tight rails)
@@ -20,6 +21,7 @@ export default function ProductCard({ product, size = 'default' }) {
   const toggle = useWishlist((s) => s.toggle)
   const wished = useWishlist((s) => s.ids.includes(product.id))
   const [heartKey, setHeartKey] = useState(0)
+  const rating = useProductRating(product.slug)
   const imgRef = useRef(null)
   const off = discountPct(v.price, v.mrp)
   const compact = size === 'compact'
@@ -54,10 +56,14 @@ export default function ProductCard({ product, size = 'default' }) {
 
       <div className={`flex flex-col flex-1 ${compact ? 'p-2' : 'p-2.5 sm:p-4'}`}>
         <div className={`flex items-center gap-1.5 mb-1 sm:mb-1.5 ${compact ? 'text-[10px]' : 'text-[11px] sm:text-xs'}`}>
-          <span className="inline-flex items-center gap-0.5 bg-pine-50 text-pine-700 font-bold px-1.5 py-0.5 rounded-md">
-            <Star size={compact ? 9 : 11} className="fill-pine-500 text-pine-500" />{product.rating}
-          </span>
-          {!compact && <span className="text-ink-500">({product.reviews})</span>}
+          {rating ? (
+            <>
+              <span className="inline-flex items-center gap-0.5 bg-pine-50 text-pine-700 font-bold px-1.5 py-0.5 rounded-md">
+                <Star size={compact ? 9 : 11} className="fill-amber-400 text-amber-400" />{rating.avg.toFixed(1)}
+              </span>
+              {!compact && <span className="text-ink-500">({rating.count})</span>}
+            </>
+          ) : null}
           {!compact && <span className="hidden sm:inline ml-auto uppercase tracking-wide text-ink-500 font-semibold text-[10px] truncate">{product.brand}</span>}
         </div>
 

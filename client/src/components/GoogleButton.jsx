@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { afterLoginPath } from '@/lib/nextPath'
 import { useNavigate } from 'react-router-dom'
 import { useClerk, useAuth as useClerkAuth } from '@clerk/react'
 import { useAuth } from '@/store/auth'
@@ -32,7 +33,7 @@ export default function GoogleButton({ label = 'Continue with Google' }) {
         try {
           const token = await clerk.session.getToken({ skipCache: true })
           const user = await loginWithClerk(token)
-          nav(user.role === 'admin' ? '/admin' : '/account', { replace: true })
+          nav(afterLoginPath(user), { replace: true })
           return
         } catch (e) {
           if (e?.status !== 401) throw e // admin account, server waking up, etc.
