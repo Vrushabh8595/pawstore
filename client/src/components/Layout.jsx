@@ -2,9 +2,11 @@ import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
 import BottomNav from './BottomNav'
+import { useSeo } from '@/lib/useSeo'
 
 export default function Layout() {
   const { pathname } = useLocation()
+  useSeo()
   // Checkout has its own sticky "place order" bar on phones
   const hideBottomNav = pathname === '/checkout'
   return (

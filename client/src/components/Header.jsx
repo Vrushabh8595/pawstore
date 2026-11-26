@@ -10,13 +10,13 @@ import { soundOn, setSoundOn, playSound } from '@/lib/feedback'
 const PHONES = ['7620377278', '8982826363']
 
 const catNav = [
-  { to: '/shop', label: 'All Products', slug: '', emoji: '🐾' },
-  { to: '/shop?cat=dry-food', label: 'Dry Food', slug: 'dry-food', emoji: '🦴' },
-  { to: '/shop?cat=wet-food', label: 'Wet Food', slug: 'wet-food', emoji: '🍲' },
-  { to: '/shop?cat=treats', label: 'Treats', slug: 'treats', emoji: '🍪' },
-  { to: '/shop?cat=health', label: 'Health', slug: 'health', emoji: '💊' },
-  { to: '/shop?cat=apparel', label: 'Apparel', slug: 'apparel', emoji: '🧥' },
-  { to: '/shop?cat=bedding', label: 'Beds', slug: 'bedding', emoji: '🛏️' },
+  { to: '/products', label: 'All Products', slug: '', emoji: '🐾' },
+  { to: '/category/dry-food', label: 'Dry Food', slug: 'dry-food', emoji: '🦴' },
+  { to: '/category/wet-food', label: 'Wet Food', slug: 'wet-food', emoji: '🍲' },
+  { to: '/category/treats', label: 'Treats', slug: 'treats', emoji: '🍪' },
+  { to: '/category/health', label: 'Health', slug: 'health', emoji: '💊' },
+  { to: '/category/apparel', label: 'Apparel', slug: 'apparel', emoji: '🧥' },
+  { to: '/category/bedding', label: 'Beds', slug: 'bedding', emoji: '🛏️' },
 ]
 
 const PROMO = ['🐾 Free delivery on orders over ₹999', '📸 Can’t find a medicine? Send us a photo', '🎁 Use WAGGY10 for 10% off your first order', '💵 COD & UPI available across India']
@@ -31,7 +31,7 @@ export default function Header() {
   const nav = useNavigate()
   const { pathname } = useLocation()
   const [params] = useSearchParams()
-  const activeCat = pathname === '/shop' ? params.get('cat') || '' : null
+  const activeCat = pathname.startsWith('/category/') ? pathname.split('/')[2] : pathname === '/products' ? '' : null
   const accountTo = user ? (user.role === 'admin' ? '/admin' : '/account') : '/login'
 
   useEffect(() => { setOpen(false) }, [pathname, params])
@@ -59,7 +59,7 @@ export default function Header() {
 
   const submit = (e) => {
     e.preventDefault()
-    nav(`/shop?q=${encodeURIComponent(q)}`)
+    nav(`/search?q=${encodeURIComponent(q)}`)
     setOpen(false)
   }
 
@@ -100,18 +100,19 @@ export default function Header() {
             </form>
 
             <div className="flex items-center ml-auto">
-              {/* Account lives in the bottom bar on phones */}
+              {/* Cart lives in the bottom bar on phones; account stays up here */}
               <Link to="/wishlist" className="relative p-2 sm:p-2.5 rounded-xl hover:bg-sand-100" aria-label="Wishlist">
                 <Heart size={21} />
                 {wish > 0 && <Badge>{wish}</Badge>}
               </Link>
-              <Link to="/cart" data-cart-target className="relative p-2 sm:p-2.5 -mr-2 lg:mr-0 rounded-xl hover:bg-sand-100" aria-label={`Cart, ${count} items`}>
+              <Link to="/cart" data-cart-target className="hidden lg:block relative p-2 sm:p-2.5 rounded-xl hover:bg-sand-100" aria-label={`Cart, ${count} items`}>
                 <ShoppingCart size={22} />
                 {count > 0 && <Badge key={count}>{count}</Badge>}
               </Link>
-              <Link to={accountTo} className="hidden lg:flex items-center gap-2 p-2.5 rounded-xl hover:bg-sand-100" aria-label="Account">
-                <User size={21} />
-                <span className="text-sm font-semibold max-w-[90px] truncate">{user ? user.name.split(' ')[0] : 'Login'}</span>
+              <Link to={accountTo} className="relative flex items-center gap-2 p-2 sm:p-2.5 -mr-2 lg:mr-0 rounded-xl hover:bg-sand-100" aria-label={user ? 'My account' : 'Login'}>
+                <User size={22} />
+                {user && <span className="lg:hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white" aria-hidden="true" />}
+                <span className="hidden lg:block text-sm font-semibold max-w-[90px] truncate">{user ? user.name.split(' ')[0] : 'Login'}</span>
               </Link>
             </div>
           </div>
@@ -128,8 +129,8 @@ export default function Header() {
           </div>
           <div className="lg:hidden">
             <div className="container-x flex gap-2 overflow-x-auto no-scrollbar pb-2.5">
-              <Link to="/request"
-                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition active:scale-95 ${pathname === '/request' ? 'bg-pine-800 border-pine-800 text-white' : 'bg-pine-50 border-pine-200 text-pine-800'}`}>
+              <Link to="/request-medicine"
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition active:scale-95 ${pathname === '/request-medicine' ? 'bg-pine-800 border-pine-800 text-white' : 'bg-pine-50 border-pine-200 text-pine-800'}`}>
                 <Camera size={13} /> Request
               </Link>
               {catNav.map((l) => {
@@ -164,7 +165,7 @@ export default function Header() {
                   </Link>
                 )
               })}
-              <Link to="/request" className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-bold bg-pine-800 text-white hover:bg-pine-700 transition">
+              <Link to="/request-medicine" className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-bold bg-pine-800 text-white hover:bg-pine-700 transition">
                 <Camera size={15} /> Request a medicine
               </Link>
             </div>
@@ -188,7 +189,7 @@ export default function Header() {
                 : <Link to="/login" className="mt-3 inline-flex items-center gap-1.5 bg-brand-500 text-white font-bold text-sm px-4 py-2 rounded-full"><LogIn size={15} /> Login / Sign up</Link>}
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
-              <Link to="/request" className="flex items-center gap-3 m-1 mb-3 p-3 rounded-2xl bg-brand-50 ring-1 ring-brand-200">
+              <Link to="/request-medicine" className="flex items-center gap-3 m-1 mb-3 p-3 rounded-2xl bg-brand-50 ring-1 ring-brand-200">
                 <span className="w-10 h-10 rounded-xl bg-brand-500 text-white grid place-items-center shrink-0"><Camera size={19} /></span>
                 <span className="min-w-0"><span className="block font-bold text-sm text-ink-900">Request a medicine / product</span>
                   <span className="block text-xs text-ink-500">Not on the site? Send a photo, we’ll source it.</span></span>

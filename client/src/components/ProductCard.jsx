@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Star, Plus, Minus, ShoppingCart } from 'lucide-react'
 import { inr, discountPct } from '@/lib/format'
-import { useCart } from '@/store/cart'
+import { useCart, MAX_PER_PRODUCT, productQty } from '@/store/cart'
 import { useWishlist } from '@/store/wishlist'
 import { useAddToCart } from '@/lib/useAddToCart'
 import { cartFeedback } from '@/lib/feedback'
@@ -16,6 +16,7 @@ export default function ProductCard({ product, size = 'default' }) {
   const setQty = useCart((s) => s.setQty)
   const remove = useCart((s) => s.remove)
   const qty = useCart((s) => s.items.find((it) => it.id === product.id && it.sku === v.sku)?.qty || 0)
+  const total = useCart((s) => productQty(s.items, product.id))
   const toggle = useWishlist((s) => s.toggle)
   const wished = useWishlist((s) => s.ids.includes(product.id))
   const [heartKey, setHeartKey] = useState(0)
@@ -28,7 +29,10 @@ export default function ProductCard({ product, size = 'default' }) {
     if (qty <= 1) { cartFeedback('remove', { button: btn }); remove(product.id, v.sku) }
     else { cartFeedback('dec', { button: btn }); setQty(product.id, v.sku, qty - 1) }
   }
-  const inc = (e) => { setQty(product.id, v.sku, qty + 1); cartFeedback('inc', { button: e.currentTarget }) }
+  const inc = (e) => {
+    if (total >= MAX_PER_PRODUCT) return cartFeedback('limit', { button: e.currentTarget })
+    setQty(product.id, v.sku, qty + 1); cartFeedback('inc', { button: e.currentTarget })
+  }
 
   return (
     <div className="group card overflow-hidden flex flex-col h-full transition duration-200 hover:shadow-[0_16px_40px_-20px_rgba(26,26,23,.3)] lg:hover:-translate-y-0.5 !rounded-2xl sm:!rounded-[1.25rem]">
@@ -82,7 +86,7 @@ export default function ProductCard({ product, size = 'default' }) {
               <div key="stepper" className="animate-pop w-full h-full flex items-center justify-between rounded-full bg-brand-500 text-white shadow-[0_6px_16px_-8px_rgba(248,131,11,.9)]">
                 <button onClick={dec} aria-label="Decrease" className="h-full px-2.5 sm:px-3 grid place-items-center active:scale-75 transition"><Minus size={compact ? 13 : 15} strokeWidth={3} /></button>
                 <span key={qty} className={`animate-pop font-extrabold ${compact ? 'text-xs' : 'text-sm'}`}>{qty}</span>
-                <button onClick={inc} aria-label="Increase" className="h-full px-2.5 sm:px-3 grid place-items-center active:scale-75 transition"><Plus size={compact ? 13 : 15} strokeWidth={3} /></button>
+                <button onClick={inc} aria-label="Increase" aria-disabled={total >= MAX_PER_PRODUCT} className={`${total >= MAX_PER_PRODUCT ? 'opacity-50' : ''} h-full px-2.5 sm:px-3 grid place-items-center active:scale-75 transition`}><Plus size={compact ? 13 : 15} strokeWidth={3} /></button>
               </div>
             )}
           </div>

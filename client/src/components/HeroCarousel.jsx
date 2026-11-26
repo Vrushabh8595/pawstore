@@ -5,19 +5,19 @@ import { ArrowRight, ChevronLeft, ChevronRight, PawPrint } from 'lucide-react'
 const SLIDES = [
   {
     eyebrow: 'Everyday nutrition', title: ['Food they’ll', 'wag', 'for.'], sub: 'Vet-approved meals made with real meat, first.',
-    cta: 'Shop dry food', to: '/shop?cat=dry-food', price: 'From ₹236', sticker: ['Up to', '20%', 'OFF'],
+    cta: 'Shop dry food', to: '/category/dry-food', price: 'From ₹236', sticker: ['Up to', '20%', 'OFF'],
     theme: { bg: 'bg-pine-800', text: 'text-white', sub: 'text-white/75', hi: 'text-brand-400', arch: 'bg-brand-400', ring: 'border-white/25', chip: 'bg-white/10 text-white ring-white/20', sticker: 'bg-brand-400 text-ink-900', blob: 'bg-pine-600' },
     img: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1000&q=70',
   },
   {
     eyebrow: 'Treats & rewards', title: ['Good pups', 'deserve', 'more.'], sub: 'Tasty, healthy and tail-wag approved treats.',
-    cta: 'Shop treats', to: '/shop?cat=treats', price: 'From ₹99', sticker: ['Use', 'WAGGY10', 'for 10% off'],
+    cta: 'Shop treats', to: '/category/treats', price: 'From ₹99', sticker: ['Use', 'WAGGY10', 'for 10% off'],
     theme: { bg: 'bg-brand-500', text: 'text-white', sub: 'text-white/85', hi: 'text-ink-900', arch: 'bg-brand-200', ring: 'border-white/35', chip: 'bg-white/15 text-white ring-white/25', sticker: 'bg-ink-900 text-white', blob: 'bg-brand-400' },
     img: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1000&q=70',
   },
   {
     eyebrow: 'Vet medicines & care', title: ['Care that', 'heals', 'faster.'], sub: 'Vet-recommended medicines & supplements — or request any medicine with a photo.',
-    cta: 'Shop health', to: '/shop?cat=health', price: 'Or request any medicine →', sticker: ['Send a', 'PHOTO', 'we source it'],
+    cta: 'Shop health', to: '/category/health', price: 'Or request any medicine →', sticker: ['Send a', 'PHOTO', 'we source it'],
     theme: { bg: 'bg-sand-100', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-pine-600', arch: 'bg-pine-200', ring: 'border-pine-400/40', chip: 'bg-white text-ink-900 ring-ink-200', sticker: 'bg-pine-600 text-white', blob: 'bg-brand-100' },
     img: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=1000&q=70',
   },
@@ -27,47 +27,78 @@ const DURATION = 5.5 // seconds per slide
 
 export default function HeroCarousel() {
   const [slide, setSlide] = useState(0)
-  const [paused, setPaused] = useState(false)
+  const [cycle, setCycle] = useState(0)   // bumps to restart the autoplay timer
+  const [hover, setHover] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [drag, setDrag] = useState(0)
-  const start = useRef(null)
-  const n = SLIDES.length
-  const go = (i) => setSlide(((i % n) + n) % n)
-
-  const onAuto = () => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    go(slide + 1)
-  }
-
-  // Touch / mouse swipe
-  const down = (e) => { start.current = { x: e.clientX, y: e.clientY }; setPaused(true) }
-  const move = (e) => {
-    if (!start.current) return
-    const dx = e.clientX - start.current.x
-    if (Math.abs(dx) > Math.abs(e.clientY - start.current.y)) setDrag(dx)
-  }
+  const g = useRef({ id: null, x: 0, y: 0, t: 0, axis: null, dx: 0 })
+  const lastManual = useRef(0)
   const moved = useRef(false)
-  const up = () => {
-    if (!start.current) return
-    moved.current = Math.abs(drag) > 10
-    if (drag < -50) go(slide + 1)
-    else if (drag > 50) go(slide - 1)
-    start.current = null
-    setDrag(0)
-    setPaused(false)
+  const n = SLIDES.length
+
+  // Any manual change restarts the timer so autoplay never fires mid-gesture
+  const go = (i, manual = true) => {
+    setSlide(((i % n) + n) % n)
+    if (manual) { lastManual.current = Date.now(); setCycle((c) => c + 1) }
   }
+  const onAuto = () => {
+    if (dragging || Date.now() - lastManual.current < 800) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    go(slide + 1, false)
+  }
+
+  // Swipe: lock to an axis after 8px so vertical page scrolling is never hijacked
+  const down = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    g.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), axis: null, dx: 0 }
+    moved.current = false
+  }
+  const move = (e) => {
+    const s = g.current
+    if (s.id !== e.pointerId) return
+    const dx = e.clientX - s.x
+    const dy = e.clientY - s.y
+    if (!s.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      s.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      if (s.axis === 'x') { setDragging(true); e.currentTarget.setPointerCapture?.(e.pointerId) }
+    }
+    if (s.axis !== 'x') return
+    s.dx = dx
+    moved.current = true
+    setDrag(dx)
+  }
+  const up = (e) => {
+    const s = g.current
+    if (s.id !== e.pointerId) return
+    if (s.axis === 'x') {
+      const w = e.currentTarget.clientWidth || 1
+      const v = s.dx / Math.max(1, performance.now() - s.t) // px per ms
+      if (s.dx < -w * 0.18 || v < -0.45) go(slide + 1)
+      else if (s.dx > w * 0.18 || v > 0.45) go(slide - 1)
+      else { lastManual.current = Date.now(); setCycle((c) => c + 1) } // snap back, restart timer
+    }
+    g.current = { id: null, x: 0, y: 0, t: 0, axis: null, dx: 0 }
+    setDrag(0)
+    setDragging(false)
+  }
+
+  const paused = hover || dragging
 
   return (
     <section className={`relative overflow-hidden pt-3 sm:pt-5 ${paused ? 'hero-paused' : ''}`}
       aria-roledescription="carousel" aria-label="Featured offers"
-      onMouseEnter={() => setPaused(true)} onMouseLeave={() => { setPaused(false); up() }}>
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(true)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(false)}>
       <div className="container-x">
         <div
           className="flex gap-3 sm:gap-5 touch-pan-y select-none [--w:88%] sm:[--w:100%] [--g:.75rem] sm:[--g:1.25rem]"
           style={{
             transform: `translateX(calc(${-slide} * (var(--w) + var(--g)) + ${drag}px))`,
-            transition: drag ? 'none' : 'transform .65s cubic-bezier(.22,1,.36,1)',
+            transition: dragging ? 'none' : 'transform .55s cubic-bezier(.22,1,.36,1)',
           }}
           onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+          onDragStart={(e) => e.preventDefault()}
           onClickCapture={(e) => { if (moved.current) { e.preventDefault(); e.stopPropagation(); moved.current = false } }}>
           {SLIDES.map((s, i) => {
             const t = s.theme
@@ -132,7 +163,7 @@ export default function HeroCarousel() {
                 className="relative h-1.5 flex-1 rounded-full bg-ink-200 overflow-hidden">
                 {i < slide && <span className="absolute inset-0 bg-brand-500" />}
                 {i === slide && (
-                  <span key={slide} className="hero-progress absolute inset-0 bg-brand-500"
+                  <span key={`${slide}-${cycle}`} className="hero-progress absolute inset-0 bg-brand-500"
                     style={{ '--dur': `${DURATION}s` }} onAnimationEnd={onAuto} />
                 )}
               </button>

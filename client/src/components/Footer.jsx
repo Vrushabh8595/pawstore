@@ -6,9 +6,9 @@ const PHONES = ['7620377278', '8982826363']
 
 export default function Footer() {
   const cols = [
-    { h: 'Shop', links: [['All Products', '/shop'], ['Dry Food', '/shop?cat=dry-food'], ['Wet Food', '/shop?cat=wet-food'], ['Treats', '/shop?cat=treats'], ['Apparel', '/shop?cat=apparel'], ['Beds & Bedding', '/shop?cat=bedding']] },
-    { h: 'Help', links: [['Track Order', '/account'], ['Shipping Policy', '/policy/shipping'], ['Refund Policy', '/policy/refund'], ['Contact Us', '/policy/contact']] },
-    { h: 'Company', links: [['About Us', '/policy/about'], ['Privacy Policy', '/policy/privacy'], ['Terms', '/policy/terms']] },
+    { h: 'Shop', links: [['All Products', '/products'], ['Dry Food', '/category/dry-food'], ['Wet Food', '/category/wet-food'], ['Treats', '/category/treats'], ['Apparel', '/category/apparel'], ['Beds & Bedding', '/category/bedding']] },
+    { h: 'Help', links: [['Track Order', '/account'], ['Shipping Policy', '/shipping-policy'], ['Refund Policy', '/refund-policy'], ['Contact Us', '/contact-us']] },
+    { h: 'Company', links: [['About Us', '/about-us'], ['Privacy Policy', '/privacy-policy'], ['Terms', '/terms-and-conditions']] },
   ]
   return (
     <footer className="mt-24 bg-pine-900 text-white/75">
