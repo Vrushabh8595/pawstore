@@ -89,6 +89,15 @@ router.post(
 )
 
 router.get('/my', asyncHandler(async (req, res) => res.json(await Order.find({ user: req.user._id }).sort('-createdAt'))))
+// A customer's own order by its order number (used by the account pages)
+router.get(
+  '/no/:orderNo',
+  asyncHandler(async (req, res) => {
+    const order = await Order.findOne({ orderNo: req.params.orderNo, user: req.user._id })
+    if (!order) return res.status(404).json({ message: 'Order not found' })
+    res.json(order)
+  })
+)
 
 router.get(
   '/:id',
