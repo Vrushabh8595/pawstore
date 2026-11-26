@@ -15,6 +15,10 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     addresses: [addressSchema],
+    // Admin can block a customer from placing orders
+    blocked: { type: Boolean, default: false, index: true },
+    blockedReason: String,
+    blockedAt: Date,
   },
   { timestamps: true }
 )
