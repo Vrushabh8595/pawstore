@@ -26,6 +26,9 @@ import AdminOverview from './pages/admin/Overview'
 import AdminOrders from './pages/admin/Orders'
 import AdminProducts from './pages/admin/Products'
 import AdminRequests from './pages/admin/Requests'
+import AdminUsers from './pages/admin/Users'
+import AdminUserDetail from './pages/admin/UserDetail'
+import AdminTraffic from './pages/admin/Traffic'
 
 function Protected({ children, role }) {
   const user = useAuth((s) => s.user)
@@ -94,6 +97,9 @@ export const router = createBrowserRouter([
       { path: 'orders', element: <AdminOrders /> },
       { path: 'products', element: <AdminProducts /> },
       { path: 'requests', element: <AdminRequests /> },
+      { path: 'users', element: <AdminUsers /> },
+      { path: 'users/:id', element: <AdminUserDetail /> },
+      { path: 'traffic', element: <AdminTraffic /> },
     ],
   },
 ])
