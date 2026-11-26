@@ -81,7 +81,6 @@ export function seoFor(pathname) {
           {
             '@context': 'https://schema.org', '@type': 'Product', name: p.name, image: p.images, description: p.description || p.short,
             sku: v.sku, brand: { '@type': 'Brand', name: p.brand },
-            aggregateRating: p.reviews ? { '@type': 'AggregateRating', ratingValue: p.rating, reviewCount: p.reviews } : undefined,
             offers: p.variants.map((x) => ({
               '@type': 'Offer', sku: x.sku, price: x.price, priceCurrency: 'INR', url: abs(path),
               availability: x.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock', itemCondition: 'https://schema.org/NewCondition',
