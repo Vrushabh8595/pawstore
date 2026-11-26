@@ -87,7 +87,7 @@ const orderSchema = new Schema(
     guestEmail: String, // checkout without login
     customerName: String,
     items: [
-      { product: { type: Schema.Types.ObjectId, ref: 'Product' }, name: String, variantSku: String, size: String, price: Number, qty: Number },
+      { product: { type: Schema.Types.ObjectId, ref: 'Product' }, name: String, slug: String, image: String, variantSku: String, size: String, price: Number, qty: Number },
     ],
     shippingAddress: addressSchema,
     subtotal: Number,
@@ -168,6 +168,25 @@ const presenceSchema = new Schema(
   { versionKey: false }
 )
 
+/* ------------------------------ Notifications ------------------------------ */
+// In-app alerts: new orders for the admin panel, status updates for customers.
+const notificationSchema = new Schema(
+  {
+    audience: { type: String, enum: ['admin', 'user'], required: true, index: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // for audience 'user'
+    type: { type: String, enum: ['new_order', 'status'], required: true },
+    title: String,
+    body: String,
+    orderNo: String,
+    status: String,
+    image: String, // first product image
+    amount: Number,
+    read: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now, expires: 60 * 60 * 24 * 90 },
+  },
+  { versionKey: false }
+)
+
 /* -------------------------------- Settings -------------------------------- */
 const settingsSchema = new Schema(
   {
@@ -193,3 +212,4 @@ export const Settings = model('Settings', settingsSchema)
 export const ProductRequest = model('ProductRequest', productRequestSchema)
 export const PageView = model('PageView', pageViewSchema)
 export const Presence = model('Presence', presenceSchema)
+export const Notification = model('Notification', notificationSchema)
