@@ -43,7 +43,7 @@ export default function Requests() {
               <div className="min-w-0">
                 <p className="text-xs text-ink-500 font-mono">{r.ref} · {new Date(r.createdAt).toLocaleString('en-IN')}</p>
                 <p className="font-extrabold text-lg leading-tight mt-0.5">{r.product || 'Photo request'}</p>
-                <p className="text-sm text-ink-700">{r.need} for {r.animal}{r.brand ? ` · ${r.brand}` : ''}{r.strength ? ` · ${r.strength}` : ''}{r.quantity ? ` · qty ${r.quantity}` : ''}</p>
+                <p className="text-sm text-ink-700">{r.need} for {r.animal === 'Other' ? (r.animalOther || 'Other animal') : r.animal}{r.brand ? ` · ${r.brand}` : ''}{r.strength ? ` · ${r.strength}` : ''}{r.quantity ? ` · qty ${r.quantity}` : ''}</p>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${TONE[r.status]}`}>{r.status}</span>
