@@ -167,10 +167,11 @@ export function ItemImg({ src, alt = '', className = 'w-12 h-12', zoom = true })
   const show = (e) => {
     if (!canZoom || e.pointerType === 'touch') return
     const r = ref.current.getBoundingClientRect()
-    const size = Math.min(380, window.innerWidth - 24, window.innerHeight - 24)
+    const size = Math.min(380, window.innerWidth - 24, window.innerHeight - 24 - (alt ? 56 : 0))
     const right = r.right + 14 + size <= window.innerWidth
     const left = right ? r.right + 14 : Math.max(12, r.left - 14 - size)
-    const top = Math.min(Math.max(12, r.top + r.height / 2 - size / 2), window.innerHeight - size - 12)
+    const h = size + (alt ? 56 : 0)
+    const top = Math.min(Math.max(12, r.top + r.height / 2 - h / 2), window.innerHeight - h - 12)
     setPos({ left, top, size })
   }
   const openFull = (e) => {
@@ -182,10 +183,10 @@ export function ItemImg({ src, alt = '', className = 'w-12 h-12', zoom = true })
       className={`${className} shrink-0 rounded-xl bg-white ring-1 ring-ink-100 overflow-hidden grid place-items-center ${canZoom ? 'cursor-zoom-in' : ''}`}>
       {src && !bad ? <img src={src} alt={alt} loading="lazy" className={`w-full h-full object-contain p-0.5 transition-transform duration-200 ${canZoom ? 'hover:scale-125' : ''}`} onError={() => setBad(true)} /> : <span className="text-lg" aria-hidden="true">🐾</span>}
       {pos && createPortal(
-        <span role="presentation" className="fixed z-[100] pointer-events-none rounded-2xl bg-white p-3 shadow-[0_24px_60px_-12px_rgba(26,52,80,.55)] ring-1 ring-ink-100 animate-zoom-in"
-          style={{ left: pos.left, top: pos.top, width: pos.size, height: pos.size }}>
-          <img src={src} alt="" className="w-full h-full object-contain rounded-xl" />
-          {alt && <span className="absolute inset-x-3 bottom-3 rounded-lg bg-pine-900/85 text-white text-xs font-semibold px-2.5 py-1.5 line-clamp-2">{alt}</span>}
+        <span role="presentation" className="fixed z-[100] pointer-events-none flex flex-col rounded-2xl bg-white p-3 shadow-[0_24px_60px_-12px_rgba(26,52,80,.55)] ring-1 ring-ink-100 animate-zoom-in"
+          style={{ left: pos.left, top: pos.top, width: pos.size, height: pos.size + (alt ? 56 : 0) }}>
+          <img src={src} alt="" className="w-full min-h-0 flex-1 object-contain rounded-xl" />
+          {alt && <span className="mt-2 shrink-0 rounded-lg bg-pine-900 text-white text-xs font-semibold px-2.5 py-1.5 line-clamp-2 leading-snug">{alt}</span>}
         </span>,
         document.body
       )}
