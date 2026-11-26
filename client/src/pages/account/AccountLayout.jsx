@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Package, User, LogOut, Bell } from 'lucide-react'
 import { useNotificationFeed } from '@/components/Notifications'
 import { useAuth } from '@/store/auth'
+import Avatar from '@/components/Avatar'
 
 export default function AccountLayout() {
   const user = useAuth((s) => s.user)
@@ -16,9 +17,7 @@ export default function AccountLayout() {
     <div className="container-x py-5 sm:py-8 grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-5 lg:gap-8">
       <aside className="h-fit min-w-0">
         <div className="card p-4 sm:p-5 mb-3 sm:mb-4 flex items-center gap-3">
-          <span className="grid place-items-center w-11 h-11 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white font-extrabold shrink-0">
-            {(user?.name || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()}
-          </span>
+          <Avatar user={user} size={44} />
           <span className="min-w-0">
             <span className="block font-extrabold truncate">{user?.name}</span>
             <span className="block text-sm text-ink-500 truncate">{user?.email}</span>
