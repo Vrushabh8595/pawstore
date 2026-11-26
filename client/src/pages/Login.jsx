@@ -3,6 +3,8 @@ import GoogleButton, { OrDivider } from '@/components/GoogleButton'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth, warmUpApi } from '@/store/auth'
+import { Field, useFieldErrors, errorFeedback, isEmail } from '@/components/FormField'
+import { AlertCircle } from 'lucide-react'
 
 export default function Login() {
   const login = useAuth((s) => s.login)
@@ -12,18 +14,24 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const fe = useFieldErrors()
 
   const signedIn = useAuth((s) => s.user)
   const submit = async (e) => {
     e.preventDefault()
-    if (!email || !password) return setErr('Enter email and password.')
-    setBusy(true)
     setErr('')
+    if (!fe.validate({
+      email: !email.trim() ? 'Enter your email.' : !isEmail(email) ? 'This email doesn’t look right (e.g. name@gmail.com).' : null,
+      password: !password ? 'Enter your password.' : null,
+    })) return
+    setBusy(true)
     try {
       const user = await login({ email, password })
       nav(user.role === 'admin' ? '/admin' : '/account')
     } catch (e2) {
-      setErr(e2.message || 'Login failed. Check your email and password.')
+      const m = e2.message || ''
+      if (/invalid|incorrect|wrong|credentials/i.test(m)) fe.setError('password', 'Email or password is incorrect. Try again or use Google.')
+      else { setErr(m || 'Login failed. Please try again.'); errorFeedback() }
     } finally {
       setBusy(false)
     }
@@ -40,10 +48,10 @@ export default function Login() {
 
         <div className="mt-6"><GoogleButton label="Continue with Google" /></div>
         <OrDivider />
-        <form onSubmit={submit} className="space-y-3">
-          <Field label="Email" type="email" value={email} onChange={setEmail} />
-          <Field label="Password" type="password" value={password} onChange={setPassword} />
-          {err && <p className="text-sm text-red-600">{err}</p>}
+        <form onSubmit={submit} noValidate className="space-y-3">
+          <Field name="email" required error={fe.errors.email} label="Email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(v) => { setEmail(v); fe.clear('email') }} />
+          <Field name="password" required error={fe.errors.password} label="Password" type="password" autoComplete="current-password" value={password} onChange={(v) => { setPassword(v); fe.clear('password') }} />
+          {err && <p role="alert" className="flex items-start gap-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-xl p-3"><AlertCircle size={16} className="shrink-0 mt-px" />{err}</p>}
           <button disabled={busy} className="btn-primary w-full disabled:opacity-60">
             {busy ? 'Logging in…' : 'Login'}
           </button>
@@ -54,15 +62,5 @@ export default function Login() {
         </p>
       </div>
     </div>
-  )
-}
-
-function Field({ label, type = 'text', value, onChange }) {
-  return (
-    <label className="block">
-      <span className="font-bold text-sm">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full mt-1 border border-[#e5e5e0] rounded-lg px-3 py-2.5 outline-none focus:border-brand-400" />
-    </label>
   )
 }

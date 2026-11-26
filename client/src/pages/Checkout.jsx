@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
-import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail } from 'lucide-react'
+import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail, ShoppingCart, PartyPopper } from 'lucide-react'
 import { locateAddress } from '@/lib/geolocate'
+import { Field, useFieldErrors, errorFeedback, isEmail } from '@/components/FormField'
 import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
 import { playSound, haptic } from '@/lib/feedback'
@@ -24,6 +25,7 @@ export default function Checkout() {
   const [addr, setAddr] = useState({
     name: user?.name || '', phone: '', line1: '', city: '', state: '', pincode: '',
   })
+  const fe = useFieldErrors()
   const [email, setEmail] = useState(() => { try { return localStorage.getItem('animalveda-guest-email') || '' } catch { return '' } })
   const [geo, setGeo] = useState({ status: 'idle', msg: '' }) // idle | busy | done | error
   const addressRef = useRef(null)
@@ -40,6 +42,8 @@ export default function Checkout() {
   if (items.length === 0) return placed.current ? null : <Navigate to="/cart" replace />
 
   const shipping = subtotal >= FREE_SHIP_ABOVE ? 0 : SHIPPING_FEE
+  const mrpTotal = items.reduce((n, it) => n + Math.max(it.variant.mrp || 0, it.variant.price) * it.qty, 0)
+  const saving = mrpTotal - subtotal + (shipping === 0 ? SHIPPING_FEE : 0) // MRP discount + free delivery
   const codFee = method === 'COD' ? COD_FEE : 0
   const total = subtotal + shipping + codFee
 
@@ -61,17 +65,24 @@ export default function Checkout() {
 
   const fail = (msg) => {
     setErr(msg)
+    errorFeedback()
     requestAnimationFrame(() => [...document.querySelectorAll('[role=alert]')].find((el) => el.offsetParent)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
   }
 
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
-    if (!user && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail('Enter a valid email — we send your order updates there.')
-    if (!addr.name || !addr.phone || !addr.line1 || !addr.city || !addr.pincode) return fail('Please fill in all delivery details.')
-    if (!/^\d{10}$/.test(addr.phone)) return fail('Enter a valid 10-digit phone number.')
-    if (!/^\d{6}$/.test(addr.pincode)) return fail('Enter a valid 6-digit pincode.')
-    if (method === 'UPI_MANUAL' && !/^\d{12}$/.test(utr)) return fail('Enter the 12-digit UPI reference / UTR number after paying.')
+    const ok = fe.validate({
+      email: user ? null : !email.trim() ? 'Enter your email — we send order updates there.' : !isEmail(email) ? 'This email doesn’t look right (e.g. name@gmail.com).' : null,
+      name: addr.name.trim().length < 2 ? 'Enter the name of the person receiving the order.' : null,
+      phone: !addr.phone ? 'Enter a phone number for the delivery partner.' : !/^[6-9]\d{9}$/.test(addr.phone) ? 'Enter a valid 10-digit mobile number.' : null,
+      line1: addr.line1.trim().length < 5 ? 'Enter your house / flat no., street and area.' : null,
+      pincode: !addr.pincode ? 'Enter your 6-digit pincode.' : !/^\d{6}$/.test(addr.pincode) || pin.status === 'notfound' ? 'This pincode doesn’t look right — please check it.' : null,
+      city: !addr.city.trim() ? 'Enter your city.' : null,
+      state: !addr.state.trim() ? 'Enter your state.' : null,
+      utr: method === 'UPI_MANUAL' && !/^\d{12}$/.test(utr) ? (utr ? 'UTR should be exactly 12 digits.' : 'After paying, enter the 12-digit UPI reference (UTR).') : null,
+    })
+    if (!ok) return
 
     // Send the order to the server (prices are re-checked there). If the
     // server can't be reached we still keep the order locally so nothing is lost.
@@ -116,16 +127,13 @@ export default function Checkout() {
     nav(`/order/${orderNoFinal}`, { state: { animal: forCat ? 'cat' : 'dog' } })
   }
 
-  const set = (k) => (v) => setAddr({ ...addr, [k]: v })
+  const set = (k) => (v) => { setAddr((a) => ({ ...a, [k]: v })); fe.clear(k) }
+  const E = fe.errors
 
   return (
     <div className="container-x py-5 sm:py-8">
       {/* Steps */}
-      <ol className="flex items-center gap-2 text-[11px] sm:text-xs font-bold text-ink-500 mb-4 sm:mb-6">
-        <li className="text-pine-600">✓ Cart</li><li aria-hidden="true" className="flex-1 max-w-10 h-px bg-ink-200" />
-        <li className="text-brand-600">2 Details & pay</li><li aria-hidden="true" className="flex-1 max-w-10 h-px bg-ink-200" />
-        <li>3 Done</li>
-      </ol>
+      <CheckoutSteps />
       <h1 className="text-2xl sm:text-3xl font-extrabold mb-4 sm:mb-6">Checkout</h1>
 
       <form id="checkout-form" onSubmit={submit} noValidate className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-4 sm:gap-8 items-start">
@@ -136,12 +144,13 @@ export default function Checkout() {
               <span className="font-bold text-sm">Order summary <span className="text-ink-500 font-semibold">({items.length} items)</span></span>
               <span className="flex items-center gap-1 font-extrabold">{inr(total)} <ChevronDown size={16} className="group-open:rotate-180 transition" /></span>
             </summary>
-            <div className="px-4 pb-4"><Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} /></div>
+            <div className="px-4 pb-4"><Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} /></div>
           </details>
 
           {/* Address */}
           <section className="card p-4 sm:p-6">
-            <h2 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2"><Step n="1" icon={MapPin} /> Delivery address</h2>
+            <h2 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2"><Step n="1" icon={MapPin} /> Delivery address
+              <span className="ml-auto font-sans text-[11px] font-semibold text-ink-500"><span className="text-red-500">*</span> required</span></h2>
             <button type="button" onClick={fillFromLocation} disabled={geo.status === 'busy'}
               className="w-full mb-4 flex items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-brand-300 bg-brand-50/60 hover:bg-brand-50 px-4 py-3 text-left transition active:scale-[.99] disabled:opacity-80">
               <span className="w-10 h-10 rounded-xl bg-brand-500 text-white grid place-items-center shrink-0">
@@ -157,19 +166,19 @@ export default function Checkout() {
               {user ? (
                 <p className="sm:col-span-2 flex items-center gap-2 text-xs text-ink-500 bg-sand-50 rounded-lg px-3 py-2 min-w-0"><Mail size={14} className="shrink-0 text-brand-600" /><span className="truncate">Order updates go to <b className="text-ink-700">{user.email}</b></span></p>
               ) : (
-                <div className="sm:col-span-2"><Field label="Email" hint="for order updates" value={email} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" onChange={setEmail} /></div>
+                <div className="sm:col-span-2"><Field name="email" required error={E.email} label="Email" hint="for order updates" value={email} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" onChange={(v) => { setEmail(v); fe.clear('email') }} /></div>
               )}
-              <Field label="Full name" value={addr.name} onChange={set('name')} autoComplete="name" />
-              <Field label="Phone" hint="10 digit" value={addr.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
+              <Field name="name" required error={E.name} label="Full name" value={addr.name} onChange={set('name')} autoComplete="name" />
+              <Field name="phone" required error={E.phone} label="Phone" hint="10 digit" value={addr.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
                 prefix="+91" onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
-              <div className="sm:col-span-2"><Field label="Address" hint="House no, street, area" value={addr.line1} onChange={set('line1')} autoComplete="street-address" inputRef={addressRef} /></div>
+              <div className="sm:col-span-2"><Field name="line1" required error={E.line1} label="Address" hint="House no, street, area" value={addr.line1} onChange={set('line1')} autoComplete="street-address" inputRef={addressRef} /></div>
               <div>
-                <Field label="Pincode" value={addr.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
+                <Field name="pincode" required error={E.pincode} label="Pincode" value={addr.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
                   onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} />
-                {!(pin.status === 'error' && addr.city && addr.state) && <PinStatus pin={pin} />}
+                {!E.pincode && !(pin.status === 'error' && addr.city && addr.state) && <PinStatus pin={pin} />}
               </div>
-              <Field label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.city} onChange={set('city')} autoComplete="address-level2" />
-              <div className="sm:col-span-2"><Field label="State" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.state} onChange={set('state')} autoComplete="address-level1" /></div>
+              <Field name="city" required error={E.city} label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.city} onChange={set('city')} autoComplete="address-level2" />
+              <div className="sm:col-span-2"><Field name="state" required error={E.state} label="State" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.state} onChange={set('state')} autoComplete="address-level1" /></div>
             </div>
           </section>
 
@@ -193,8 +202,8 @@ export default function Checkout() {
                     <button type="button" onClick={copyUpi} aria-label="Copy UPI ID" className="btn-ghost !px-3 !py-2 shrink-0">{copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}</button>
                   </div>
                   <a href={link} className="btn-primary w-full sm:hidden">Pay {inr(total)} with UPI app</a>
-                  <Field label="UPI reference / UTR" hint="12 digits" value={utr} inputMode="numeric" maxLength={12} placeholder="e.g. 402311889076"
-                    onChange={(v) => setUtr(v.replace(/\D/g, '').slice(0, 12))} />
+                  <Field name="utr" required error={E.utr} label="UPI reference / UTR" hint="12 digits" value={utr} inputMode="numeric" maxLength={12} placeholder="e.g. 402311889076"
+                    onChange={(v) => { setUtr(v.replace(/\D/g, '').slice(0, 12)); fe.clear('utr') }} />
                   <p className="text-xs text-ink-500 -mt-1">Enter the reference number shown in your UPI app after paying. Admin confirms the order once received.</p>
                 </div>
               </div>
@@ -213,7 +222,7 @@ export default function Checkout() {
         {/* Desktop summary */}
         <aside className="hidden lg:block card p-5 lg:sticky lg:top-32 min-w-0">
           <h2 className="font-extrabold text-lg mb-4">Your order</h2>
-          <Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} />
+          <Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} />
           {err && <p role="alert" className="text-sm text-red-600 mt-3">{err}</p>}
           <button type="submit" disabled={placing} className="btn-primary w-full mt-4 disabled:opacity-70">
             <Lock size={16} /> {method === 'COD' ? 'Place COD order' : 'I have paid — place order'}
@@ -225,10 +234,16 @@ export default function Checkout() {
       {/* Mobile sticky place-order bar */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink-100 shadow-[0_-8px_24px_-12px_rgba(26,26,23,.25)] px-4 pt-3"
         style={{ paddingBottom: 'calc(.75rem + env(safe-area-inset-bottom))' }}>
+        {saving > 0 && (
+          <p className="max-w-xl mx-auto -mt-0.5 mb-2 flex items-center justify-center gap-1.5 rounded-full bg-green-50 text-green-700 text-[11.5px] font-bold py-1 ring-1 ring-green-100">
+            🎉 You’re saving {inr(saving)} on this order
+          </p>
+        )}
         <div className="flex items-center gap-3 max-w-xl mx-auto">
           <div className="shrink-0">
-            <p className="text-[11px] text-ink-500 font-semibold leading-none">Total</p>
-            <p key={total} className="animate-pop font-extrabold text-lg leading-tight">{inr(total)}</p>
+            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-bold leading-none">To pay</p>
+            <p key={total} className="animate-pop font-extrabold text-xl leading-tight text-ink-900">{inr(total)}</p>
+            {mrpTotal > subtotal && <p className="text-[11px] text-ink-500 line-through leading-none">{inr(mrpTotal + (shipping === 0 ? SHIPPING_FEE : shipping) + codFee)}</p>}
           </div>
           <button type="submit" form="checkout-form" disabled={placing} className="btn-primary flex-1 min-w-0 !px-3 text-sm disabled:opacity-70">
             <Lock size={15} className="shrink-0" /><span className="truncate">{method === 'COD' ? 'Place COD order' : 'I have paid — place order'}</span>
@@ -247,7 +262,7 @@ function PinStatus({ pin }) {
   return <p className="text-[11px] text-ink-500 mt-1">Couldn’t look it up — please type city & state</p>
 }
 
-function Summary({ items, subtotal, shipping, codFee, total }) {
+function Summary({ items, subtotal, shipping, codFee, total, mrpTotal, saving }) {
   return (
     <>
       <div className="space-y-3 max-h-56 overflow-y-auto no-scrollbar mb-3">
@@ -258,19 +273,63 @@ function Summary({ items, subtotal, shipping, codFee, total }) {
               <p className="font-semibold line-clamp-2 leading-snug">{it.product.name}</p>
               <p className="text-ink-500 text-xs">{it.variant.size} × {it.qty}</p>
             </div>
-            <span className="font-bold shrink-0">{inr(it.lineTotal)}</span>
+            <span className="text-right shrink-0">
+              <span className="block font-bold">{inr(it.lineTotal)}</span>
+              {it.variant.mrp > it.variant.price && <span className="block text-[11px] text-ink-500 line-through">{inr(it.variant.mrp * it.qty)}</span>}
+            </span>
           </div>
         ))}
       </div>
-      <div className="border-t border-ink-100 pt-3 space-y-1 text-sm">
+      <div className="border-t border-ink-100 pt-3 space-y-1.5 text-sm">
+        {mrpTotal > subtotal && <Row label="MRP total" value={inr(mrpTotal)} />}
+        {mrpTotal > subtotal && <Row label="Discount" value={<span className="text-green-700 font-semibold">− {inr(mrpTotal - subtotal)}</span>} />}
         <Row label="Subtotal" value={inr(subtotal)} />
-        <Row label="Shipping" value={shipping === 0 ? 'FREE' : inr(shipping)} />
+        <Row label="Delivery" value={shipping === 0 ? <span className="text-green-700 font-semibold"><span className="line-through text-ink-500 font-normal mr-1">{inr(SHIPPING_FEE)}</span>FREE</span> : inr(shipping)} />
         {codFee > 0 && <Row label="COD fee" value={inr(codFee)} />}
       </div>
-      <div className="border-t border-ink-100 mt-3 pt-3 flex justify-between text-lg font-extrabold">
-        <span>Total</span><span>{inr(total)}</span>
+      <div className="mt-3 rounded-2xl bg-pine-900 text-white p-4">
+        <div className="flex items-end justify-between gap-3">
+          <span>
+            <span className="block text-[11px] uppercase tracking-wider text-white/60 font-bold">Total to pay</span>
+            <span className="block text-[11px] text-white/60">incl. all taxes</span>
+          </span>
+          <span key={total} className="animate-pop text-2xl font-extrabold font-display">{inr(total)}</span>
+        </div>
+        {saving > 0 && (
+          <p className="mt-3 flex items-center gap-2 rounded-xl bg-green-500/15 text-green-300 text-sm font-bold px-3 py-2 ring-1 ring-green-400/30">
+            <span className="text-base">🎉</span> You’re saving {inr(saving)} on this order
+          </p>
+        )}
       </div>
     </>
+  )
+}
+
+function CheckoutSteps() {
+  const steps = [['Cart', ShoppingCart, 'done'], ['Details & pay', CreditCard, 'active'], ['Done', PartyPopper, 'todo']]
+  return (
+    <nav aria-label="Checkout progress" className="mb-4 sm:mb-6">
+      <ol className="relative flex items-start justify-between max-w-md mx-auto sm:mx-0 px-2">
+        {/* track */}
+        <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[18px] h-1 rounded-full bg-ink-100" />
+        <span aria-hidden="true" className="absolute left-[16%] w-[34%] top-[18px] h-1 rounded-full bg-gradient-to-r from-pine-600 to-brand-500" />
+        {steps.map(([label, Icon, state], i) => (
+          <li key={label} aria-current={state === 'active' ? 'step' : undefined} className="relative z-10 flex flex-col items-center gap-1.5 w-1/3">
+            {state === 'done' ? (
+              <Link to="/cart" className="w-10 h-10 rounded-full bg-pine-600 text-white grid place-items-center shadow-md shadow-pine-600/30 ring-4 ring-sand-50" aria-label="Back to cart"><Check size={18} strokeWidth={3} /></Link>
+            ) : (
+              <span className={`relative w-10 h-10 rounded-full grid place-items-center ring-4 ring-sand-50 ${state === 'active' ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/40' : 'bg-white text-ink-500 border-2 border-ink-200'}`}>
+                {state === 'active' && <span className="absolute inset-0 rounded-full bg-brand-400 animate-ping opacity-30" />}
+                <Icon size={17} className="relative" />
+              </span>
+            )}
+            <span className={`text-[11px] sm:text-xs font-bold whitespace-nowrap ${state === 'active' ? 'text-brand-600' : state === 'done' ? 'text-pine-600' : 'text-ink-500'}`}>
+              <span className="sr-only">Step {i + 1}: </span>{label}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </nav>
   )
 }
 
@@ -278,18 +337,6 @@ function Step({ n, icon: Icon }) {
   return <span className="w-7 h-7 rounded-full bg-brand-500 text-white grid place-items-center text-xs" aria-label={`Step ${n}`}><Icon size={14} /></span>
 }
 
-function Field({ label, hint, value, onChange, prefix, inputRef, ...rest }) {
-  return (
-    <label className="block min-w-0">
-      <span className="font-bold text-sm">{label}{hint && <span className="font-medium text-ink-500"> · {hint}</span>}</span>
-      <span className="mt-1 flex items-center w-full bg-white border border-ink-200 rounded-xl focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition">
-        {prefix && <span className="pl-3 pr-1 text-ink-500 font-semibold text-sm shrink-0">{prefix}</span>}
-        <input ref={inputRef} value={value} onChange={(e) => onChange(e.target.value)} {...rest}
-          className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none rounded-xl" />
-      </span>
-    </label>
-  )
-}
 function Method({ active, onClick, icon: Icon, title, sub }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={active}

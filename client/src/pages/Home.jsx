@@ -131,7 +131,7 @@ export default function Home() {
                 [Leaf, 'Real ingredients', 'Meat first, no artificial colours or fillers'],
                 [ShieldCheck, 'Vet-approved', 'Formulated with canine nutritionists'],
                 [Truck, 'Fast, free delivery', 'Across India, free over ₹999'],
-                [HeartHandshake, 'Pet-parent support', 'Mon–Sat, 10am–7pm on call'],
+                [HeartHandshake, 'Pet-parent support', 'All 7 days — weekends too'],
               ].map(([Icon, h, s]) => (
                 <div key={h} className="bg-white/5 rounded-2xl p-3.5 sm:p-5 ring-1 ring-white/10 min-w-0">
                   <span className="grid place-items-center w-11 h-11 rounded-xl bg-brand-500 text-white mb-3"><Icon size={21} /></span>

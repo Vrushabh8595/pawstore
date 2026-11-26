@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { playSound, haptic } from '@/lib/feedback'
 import { LogoMark } from '@/components/Logo'
 import { useAuth } from '@/store/auth'
+import { Field, useFieldErrors, errorFeedback } from '@/components/FormField'
 import { usePincode } from '@/lib/usePincode'
 
 const PHONE = '7620377278'
@@ -53,7 +54,8 @@ export default function Request() {
   const [done, setDone] = useState(null)
   const fileRef = useRef(null)
   const camRef = useRef(null)
-  const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
+  const fe = useFieldErrors()
+  const set = (k) => (v) => { setF((s) => ({ ...s, [k]: v })); fe.clear(k) }
   const otherRef = useRef(null)
   const pin = usePincode(f.pincode, (d) => setF((s) => ({ ...s, city: d.city })))
   const isOther = f.animal === 'Other'
@@ -68,6 +70,7 @@ export default function Request() {
     try {
       const out = await Promise.all(list.map((x) => compress(x)))
       setPhotos((p) => [...p, ...out].slice(0, MAX_PHOTOS))
+      if (out.length) fe.clear('product')
       haptic(10)
     } catch (e) { setErr(e.message) }
   }
@@ -75,11 +78,13 @@ export default function Request() {
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
-    if (isOther && !f.animalOther.trim()) { otherRef.current?.focus(); return setErr('Tell us which animal this is for.') }
-    if (!f.product.trim() && photos.length === 0) return setErr('Tell us the product name or add a photo of it.')
-    if (!f.name.trim()) return setErr('Please add your name.')
-    if (!/^\d{10}$/.test(f.phone)) return setErr('Enter a valid 10-digit phone number so we can reach you.')
-    if (f.pincode && !/^\d{6}$/.test(f.pincode)) return setErr('Pincode should be 6 digits.')
+    if (!fe.validate({
+      animalOther: isOther && !f.animalOther.trim() ? 'Tell us which animal this is for.' : null,
+      product: !f.product.trim() && photos.length === 0 ? 'Enter the product name — or add a photo of it below.' : null,
+      name: !f.name.trim() ? 'Please add your name.' : null,
+      phone: !f.phone ? 'Enter your phone number so we can reach you.' : !/^[6-9]\d{9}$/.test(f.phone) ? 'Enter a valid 10-digit mobile number.' : null,
+      pincode: f.pincode && !/^\d{6}$/.test(f.pincode) ? 'Pincode should be 6 digits.' : null,
+    })) return
     setBusy(true)
     const payload = { ...f, animalOther: isOther ? titleCase(f.animalOther.trim()) : '', photos }
     let ref = null
@@ -89,6 +94,7 @@ export default function Request() {
     } catch (e) {
       setBusy(false)
       const down = e instanceof TypeError || e instanceof SyntaxError || /Route not found|Request failed \(5/.test(e.message)
+      errorFeedback()
       return setErr(down
         ? `We couldn’t send your request just now. Please try again in a minute, or call us on ${PHONE}.`
         : e.message === 'Validation failed' ? 'Please check your details and try again.' : e.message)
@@ -207,12 +213,12 @@ export default function Request() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {isOther && (
                 <div className="sm:col-span-2 animate-pop">
-                  <Field inputRef={otherRef} label="Animal name" hint="which animal is it for?" value={f.animalOther}
+                  <Field name="animalOther" required error={fe.errors.animalOther} inputRef={otherRef} label="Animal name" hint="which animal is it for?" value={f.animalOther}
                     onChange={set('animalOther')} onBlur={() => set('animalOther')(titleCase(f.animalOther.trim()))}
                     placeholder="e.g. Rabbit, Pig, Camel, Turtle" autoCapitalize="words" maxLength={60} />
                 </div>
               )}
-              <div className="sm:col-span-2"> <Field label={`${f.need === 'Food' ? 'Food' : f.need === 'Supplement' ? 'Supplement' : 'Medicine / product'} name for your ${animalName}`} hint="as on the label" value={f.product} onChange={set('product')} placeholder="e.g. Meloxicam oral suspension" /></div>
+              <div className="sm:col-span-2"> <Field name="product" required={photos.length === 0} hint={photos.length ? 'or photo attached ✓' : 'as on the label'} error={fe.errors.product} label={`${f.need === 'Food' ? 'Food' : f.need === 'Supplement' ? 'Supplement' : 'Medicine / product'} name for your ${animalName}`} value={f.product} onChange={set('product')} placeholder="e.g. Meloxicam oral suspension" /></div>
               <Field label="Brand / company" optional value={f.brand} onChange={set('brand')} />
               <Field label="Strength or pack size" optional value={f.strength} onChange={set('strength')} placeholder="e.g. 1.5 mg/ml, 100 ml" />
               <Field label="Quantity" optional value={f.quantity} onChange={set('quantity')} placeholder="e.g. 2 bottles" />
@@ -222,12 +228,9 @@ export default function Request() {
                   {['Normal', 'Urgent'].map((u) => <Pick key={u} block on={f.urgency === u} onClick={() => set('urgency')(u)}>{u === 'Urgent' ? '⚡ Urgent' : 'Normal'}</Pick>)}
                 </div>
               </div>
-              <label className="block sm:col-span-2 min-w-0">
-                <span className="font-bold text-sm">Details <span className="font-medium text-ink-500">· optional</span></span>
-                <textarea value={f.details} onChange={(e) => set('details')(e.target.value)} rows={3}
+              <Field as="textarea" name="details" optional className="sm:col-span-2" label="Details" value={f.details} onChange={set('details')} rows={3}
                   placeholder={f.need === 'Custom medicine' ? 'Vet prescription details, dosage form (syrup / tablet / injection), flavour…' : 'Anything that helps — animal’s age/weight, vet’s advice, substitutes you’re OK with…'}
-                  className="mt-1 w-full bg-white border border-ink-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition resize-y" />
-              </label>
+              />
             </div>
           </section>
 
@@ -235,11 +238,11 @@ export default function Request() {
           <section className="card p-4 sm:p-6">
             <h2 className="font-extrabold text-base sm:text-lg mb-4">How do we reach you?</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Your name" value={f.name} onChange={set('name')} autoComplete="name" />
-              <Field label="Phone" hint="10 digit" type="tel" inputMode="numeric" autoComplete="tel-national" prefix="+91"
+              <Field name="name" required error={fe.errors.name} label="Your name" value={f.name} onChange={set('name')} autoComplete="name" />
+              <Field name="phone" required error={fe.errors.phone} label="Phone" hint="10 digit" type="tel" inputMode="numeric" autoComplete="tel-national" prefix="+91"
                 value={f.phone} onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
               <div>
-                <Field label="Pincode" optional inputMode="numeric" value={f.pincode} onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} autoComplete="postal-code" />
+                <Field name="pincode" error={fe.errors.pincode} label="Pincode" optional inputMode="numeric" value={f.pincode} onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} autoComplete="postal-code" />
                 {pin.status === 'found' && <p className="text-[11px] font-semibold text-pine-600 mt-1 animate-fade-in">📍 {pin.data.city}, {pin.data.state}</p>}
                 {pin.status === 'notfound' && <p className="text-[11px] font-semibold text-red-600 mt-1">Pincode not found — please check it</p>}
               </div>
@@ -280,18 +283,5 @@ function Pick({ on, onClick, children, block }) {
         ${on ? 'bg-pine-800 border-pine-800 text-white' : 'bg-white border-ink-200 text-ink-700'}`}>
       {children}
     </button>
-  )
-}
-
-function Field({ label, hint, optional, value, onChange, prefix, inputRef, ...rest }) {
-  return (
-    <label className="block min-w-0">
-      <span className="font-bold text-sm">{label}{hint && <span className="font-medium text-ink-500"> · {hint}</span>}{optional && <span className="font-medium text-ink-500"> · optional</span>}</span>
-      <span className="mt-1 flex items-center w-full bg-white border border-ink-200 rounded-xl focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition">
-        {prefix && <span className="pl-3 pr-1 text-ink-500 font-semibold text-sm shrink-0">{prefix}</span>}
-        <input ref={inputRef} value={value} onChange={(e) => onChange(e.target.value)} {...rest}
-          className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none rounded-xl" />
-      </span>
-    </label>
   )
 }
