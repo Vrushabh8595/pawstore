@@ -4,11 +4,11 @@ import { ArrowRight, ChevronLeft, ChevronRight, PawPrint } from 'lucide-react'
 
 const SLIDES = [
   {
-    eyebrow: 'For your fur baby', title: ['Your baby,', 'their health,', 'our care.'], sub: 'You love your baby like family — give them the best for their health.',
+    eyebrow: 'For your fur baby', title: ['Love your', 'baby?', 'So do we.'], sub: 'Give your fur baby the best for their health — vet medicines, nutrition & daily care.',
     cta: 'Shop baby’s health', to: '/category/health', price: 'Vet-approved care', sticker: ['Made with', 'LOVE', 'for babies'],
     theme: { bg: 'bg-[#fff0df]', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-brand-600', arch: 'bg-pine-800', ring: 'border-brand-300', chip: 'bg-white text-pine-800 ring-brand-200', sticker: 'bg-pine-800 text-white', blob: 'bg-brand-100' },
-    img: 'https://images.unsplash.com/photo-1542570945-494cd4a258be?auto=format&fit=crop&crop=faces&w=1000&q=72',
-    imgAlt: 'White Siberian husky',
+    img: 'https://images.unsplash.com/photo-1506259291727-cc30f10b0ab2?auto=format&fit=crop&crop=faces,center&w=1000&q=72',
+    imgAlt: 'White Siberian husky with blue eyes',
   },
   {
     eyebrow: 'Everyday nutrition', title: ['Food they’ll', 'wag', 'for.'], sub: 'Vet-approved meals made with real meat, first.',
