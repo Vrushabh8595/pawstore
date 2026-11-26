@@ -15,6 +15,7 @@ import orderRoutes from './routes/orders.js'
 import adminRoutes from './routes/admin.js'
 import requestRoutes from './routes/requests.js'
 import storeRoutes from './routes/store.js'
+import notificationRoutes from './routes/notifications.js'
 
 const app = express()
 app.set('trust proxy', 1) // behind Render's proxy — needed for correct rate-limit IPs
@@ -42,6 +43,7 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/requests', requestRoutes)
 app.use('/api/store', storeRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
