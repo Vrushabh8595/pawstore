@@ -121,6 +121,7 @@ const productRequestSchema = new Schema(
     ref: { type: String, required: true, unique: true },
     need: String,
     animal: String,
+    animalOther: String, // free text when animal = 'Other'
     product: String,
     brand: String,
     strength: String,
