@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useClerk, useAuth as useClerkAuth } from '@clerk/react'
+import { useAuth } from '@/store/auth'
 
 function GoogleG() {
   return (
@@ -15,6 +17,8 @@ function GoogleG() {
 export default function GoogleButton({ label = 'Continue with Google' }) {
   const clerk = useClerk()
   const { isLoaded } = useClerkAuth()
+  const loginWithClerk = useAuth((s) => s.loginWithClerk)
+  const nav = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -22,6 +26,21 @@ export default function GoogleButton({ label = 'Continue with Google' }) {
     setErr('')
     setBusy(true)
     try {
+      // Google is still signed in (e.g. our session expired) — reuse it instead
+      // of starting a new Google sign-in, which Clerk refuses ("already signed in").
+      if (clerk.session) {
+        try {
+          const token = await clerk.session.getToken({ skipCache: true })
+          const user = await loginWithClerk(token)
+          nav(user.role === 'admin' ? '/admin' : '/account', { replace: true })
+          return
+        } catch (e) {
+          if (e?.status !== 401) throw e // admin account, server waking up, etc.
+          // Stale Google session: clear it (reloads the login page) so the next tap starts fresh
+          await clerk.signOut({ redirectUrl: window.location.pathname })
+          return
+        }
+      }
       const origin = window.location.origin
       await clerk.client.signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
