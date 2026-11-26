@@ -36,3 +36,4 @@ export const registerLimiter = limiter(60 * 60 * 1000, 10, 'Too many accounts cr
 export const orderLimiter = limiter(15 * 60 * 1000, 15, 'Too many orders in a short time. Please wait a few minutes.')
 export const claimLimiter = limiter(15 * 60 * 1000, 20, 'Too many attempts. Please try again later.')
 export const trackLimiter = limiter(60 * 1000, 120, 'Too many requests.')
+export const reviewLimiter = limiter(60 * 60 * 1000, 20, 'Too many reviews. Please try again later.')
