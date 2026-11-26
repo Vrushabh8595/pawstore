@@ -1,5 +1,6 @@
+import Logo from './Logo'
 import { Link } from 'react-router-dom'
-import { PawPrint, Phone, Mail, MapPin, MessageCircle, Send, Globe } from 'lucide-react'
+import { Phone, Mail, MapPin, MessageCircle, Send, Globe } from 'lucide-react'
 
 const PHONES = ['7620377278', '8982826363']
 
@@ -25,11 +26,8 @@ export default function Footer() {
 
       <div className="container-x py-14 grid gap-10 md:grid-cols-[1.5fr_repeat(3,1fr)_1.3fr]">
         <div>
-          <div className="flex items-center gap-2 font-display font-bold text-2xl text-white mb-3">
-            <span className="grid place-items-center w-10 h-10 rounded-2xl bg-brand-500"><PawPrint size={21} /></span>
-            PawStore
-          </div>
-          <p className="text-sm text-white/55 max-w-xs">Premium, vet-approved food, treats and comfort for the good boys and girls of India. Happy tummies, waggy tails.</p>
+          <Logo size={42} dark className="text-2xl mb-3" />
+          <p className="text-sm text-white/55 max-w-xs">Vet medicines, nutrition and care for pets, livestock and every animal you love. Can’t find a medicine? Send us a photo — we’ll source it.</p>
           <div className="flex gap-2 mt-5">
             {[MessageCircle, Send, Globe].map((Icon, i) => (
               <a key={i} href="#" className="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-brand-500 transition" aria-label="social">
@@ -63,7 +61,7 @@ export default function Footer() {
             ))}
             <li className="flex items-center gap-2.5">
               <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Mail size={14} /></span>
-              <span>care@pawstore.in</span>
+              <span>care@animalveda.in</span>
             </li>
             <li className="flex items-start gap-2.5">
               <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><MapPin size={14} /></span>
@@ -75,7 +73,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="container-x py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/45">
-          <span>© {new Date().getFullYear()} PawStore. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} AnimalVeda. All rights reserved.</span>
           <span>Pay with UPI · COD · Cards (coming soon)</span>
         </div>
       </div>
