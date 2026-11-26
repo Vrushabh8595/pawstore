@@ -1,10 +1,10 @@
 import { Router } from 'express'
-import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { Product, Order, Settings, PageView, Presence, User } from '../models/index.js'
 import { optionalAuth } from '../middleware/optionalAuth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyNewOrder } from '../utils/notify.js'
+import { orderLimiter, trackLimiter } from '../middleware/security.js'
 
 export const BLOCKED_MSG = 'Your account has been blocked, so you can’t place orders right now. Please contact our support team to get unblocked and keep shopping with AnimalVeda.'
 
@@ -16,7 +16,6 @@ const MAX_PER_PRODUCT = 7
 const genOrderNo = () => 'AV' + Date.now().toString().slice(-7) + Math.floor(Math.random() * 90 + 10)
 
 /* -------------------------------- Checkout -------------------------------- */
-const orderLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 15, standardHeaders: true, legacyHeaders: false })
 const orderSchema = z.object({
   items: z.array(z.object({ slug: z.string().max(160), sku: z.string().max(60), qty: z.number().int().min(1).max(MAX_PER_PRODUCT) })).min(1).max(40),
   address: z.object({
@@ -87,7 +86,6 @@ router.post(
 )
 
 /* --------------------------------- Tracking -------------------------------- */
-const trackLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false })
 const trackSchema = z.object({
   sid: z.string().regex(/^[a-z0-9-]{8,64}$/i),
   type: z.enum(['view', 'ping']),

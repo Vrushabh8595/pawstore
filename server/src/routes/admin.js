@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import mongoose from 'mongoose'
-import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence } from '../models/index.js'
+import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence, Notification } from '../models/index.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyStatus } from '../utils/notify.js'
@@ -217,6 +217,11 @@ router.patch(
     user.blockedReason = req.body.blocked ? req.body.reason || '' : undefined
     user.blockedAt = req.body.blocked ? new Date() : undefined
     await user.save()
+    // Tell the customer in their notification bell (with sound)
+    await Notification.create(req.body.blocked
+      ? { audience: 'user', user: user._id, type: 'account', status: 'Blocked', title: 'Your account has been blocked', body: 'You can’t place orders right now. Please contact our support team on +91 7620377278 or care@animalveda.com to get unblocked and keep shopping with AnimalVeda.' }
+      : { audience: 'user', user: user._id, type: 'account', status: 'Active', title: 'Welcome back! Your account is active again', body: 'You can shop with AnimalVeda again. Thank you for your patience. 🐾' }
+    ).catch((e) => console.error('[notify] block:', e.message))
     res.json({ user: { _id: user._id, blocked: user.blocked, blockedReason: user.blockedReason, blockedAt: user.blockedAt } })
   })
 )

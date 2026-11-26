@@ -4,6 +4,7 @@ import { Product, Order, Settings } from '../models/index.js'
 import { authenticate } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { withImages } from '../utils/orderImages.js'
+import { claimLimiter } from '../middleware/security.js'
 
 const router = Router()
 router.use(authenticate)
@@ -94,6 +95,7 @@ router.get('/my', asyncHandler(async (req, res) => res.json(await withImages(awa
 // with the order number + the delivery phone number from their own receipt.
 router.post(
   '/claim',
+  claimLimiter,
   validate(z.object({ orders: z.array(z.object({ orderNo: z.string().max(40), phone: z.string().regex(/^\d{10}$/) })).min(1).max(30) })),
   asyncHandler(async (req, res) => {
     let linked = 0
@@ -131,7 +133,7 @@ router.get(
 // Attach a payment screenshot / UTR to an existing order.
 router.post(
   '/:id/payment-proof',
-  validate(z.object({ utr: z.string().regex(/^\d{12}$/).optional(), screenshotUrl: z.string().url().optional() })),
+  validate(z.object({ utr: z.string().regex(/^\d{12}$/).optional(), screenshotUrl: z.string().url().max(500).regex(/^https:\/\//, 'Must be an https link').optional() })),
   asyncHandler(async (req, res) => {
     const order = await Order.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
