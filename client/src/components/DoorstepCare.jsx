@@ -13,8 +13,8 @@ export default function DoorstepCare() {
     <section className="container-x py-8 sm:py-10" aria-labelledby="doorstep-title">
       <div className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-[#fff4e8] via-white to-[#eaf4ef] ring-1 ring-brand-100 grid sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div className="relative h-48 sm:h-auto">
-          <img src="https://images.unsplash.com/photo-1585563003575-a00e42c64603?auto=format&fit=crop&w=900&q=70" alt="A smiling grandmother sitting at her doorstep with her puppy" loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover object-[30%_60%]" />
+          <img src="https://images.unsplash.com/photo-1650423790008-2514c353fdab?auto=format&fit=crop&w=900&q=72" alt="A smiling young woman hugging her happy dog" loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover object-[50%_35%]" />
           <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500 text-white text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 shadow-lg">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Coming soon
           </span>

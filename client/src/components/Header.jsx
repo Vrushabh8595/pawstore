@@ -1,4 +1,5 @@
 import { Link, NavLink, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import Avatar from '@/components/Avatar'
 import { ShoppingCart, Heart, User, Search, Menu, X, Phone, ChevronRight, Package, LogIn, Camera, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useCart } from '@/store/cart'
@@ -124,7 +125,7 @@ export default function Header() {
                 {count > 0 && <Badge key={count}>{count}</Badge>}
               </Link>
               <Link to={accountTo} className="relative flex items-center gap-2 p-2 sm:p-2.5 -mr-2 lg:mr-0 rounded-xl hover:bg-sand-100" aria-label={user ? 'My account' : 'Login'}>
-                <User size={22} />
+                {user?.avatar ? <Avatar user={user} size={24} className="ring-2 ring-brand-100" /> : <User size={22} />}
                 {user && <span className="lg:hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white" aria-hidden="true" />}
                 <span className="hidden lg:block text-sm font-semibold max-w-[90px] truncate">{user ? user.name.split(' ')[0] : 'Login'}</span>
               </Link>
