@@ -29,8 +29,16 @@ export const useAuth = create((set) => ({
     return user
   },
 
+  // Exchange a Clerk (Google) session token for our own session cookie
+  async loginWithClerk(token) {
+    const { user } = await api.post('/auth/clerk', { token })
+    set({ user })
+    return user
+  },
+
   async logout() {
     try { await api.post('/auth/logout') } catch {}
+    try { await window.Clerk?.signOut?.() } catch {}
     set({ user: null })
   },
 }))

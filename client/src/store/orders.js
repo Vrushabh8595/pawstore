@@ -8,7 +8,7 @@ import { persist } from 'zustand/middleware'
 const seedOrders = [
   {
     orderNo: 'ORD1000012',
-    email: 'demo@pawstore.in',
+    email: 'demo@animalveda.com',
     customer: 'Demo Customer',
     createdAt: Date.now() - 1000 * 60 * 60 * 26,
     items: [{ name: 'Daily Chicken Adult Dry Food', sku: 'CAD-3', size: '3kg', price: 1399, qty: 1 }],
@@ -25,7 +25,7 @@ const seedOrders = [
   },
   {
     orderNo: 'ORD1000019',
-    email: 'demo@pawstore.in',
+    email: 'demo@animalveda.com',
     customer: 'Demo Customer',
     createdAt: Date.now() - 1000 * 60 * 90,
     items: [
