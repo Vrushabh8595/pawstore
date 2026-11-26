@@ -16,6 +16,7 @@ const schema = z
   .object({
     need: str(40),
     animal: str(40),
+    animalOther: str(60),
     product: str(160),
     brand: str(120),
     strength: str(120),

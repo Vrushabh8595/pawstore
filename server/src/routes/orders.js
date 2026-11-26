@@ -10,7 +10,7 @@ router.use(authenticate)
 const genOrderNo = () => 'ORD' + Date.now().toString().slice(-7) + Math.floor(Math.random() * 90 + 10)
 
 const createSchema = z.object({
-  items: z.array(z.object({ product: z.string(), variantSku: z.string(), qty: z.number().int().min(1) })).min(1),
+  items: z.array(z.object({ product: z.string(), variantSku: z.string(), qty: z.number().int().min(1).max(7) })).min(1),
   shippingAddress: z.object({
     name: z.string().min(2),
     phone: z.string().regex(/^\d{10}$/),
@@ -39,6 +39,13 @@ router.post(
       if (await Order.findOne({ 'payment.utr': utr }))
         return res.status(409).json({ message: 'This UTR has already been used' })
     }
+
+    // Max 7 units of the same product per order (any sizes combined)
+    const MAX_PER_PRODUCT = 7
+    const perProduct = {}
+    for (const it of items) perProduct[it.product] = (perProduct[it.product] || 0) + it.qty
+    if (Object.values(perProduct).some((n) => n > MAX_PER_PRODUCT))
+      return res.status(400).json({ message: `You can order at most ${MAX_PER_PRODUCT} of the same product per order. Place this order first, then order again.` })
 
     // Build line items + decrement stock atomically (conditional $inc prevents overselling).
     const lineItems = []
