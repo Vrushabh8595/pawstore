@@ -23,8 +23,17 @@ async function run() {
   }
 
   // Admin user + store settings: always ensure (idempotent upsert).
-  const email = process.env.ADMIN_EMAIL || 'admin@pawstore.in'
-  const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10)
+  // Trim env values: a stray trailing space/newline pasted into Render's
+  // dashboard would otherwise be baked into the bcrypt hash and silently
+  // break login (the stored hash would never match the clean typed password).
+  const email = (process.env.ADMIN_EMAIL || 'admin@pawstore.in').trim()
+  const rawPassword = process.env.ADMIN_PASSWORD || 'admin123'
+  console.log(
+    'ADMIN seed — email len ' + email.length +
+    ', password raw len ' + rawPassword.length +
+    ', trimmed len ' + rawPassword.trim().length
+  )
+  const passwordHash = await bcrypt.hash(rawPassword.trim(), 10)
   await User.findOneAndUpdate(
     { email },
     { name: process.env.ADMIN_NAME || 'Store Admin', email, passwordHash, role: 'admin' },
