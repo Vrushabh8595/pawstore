@@ -114,6 +114,30 @@ const orderSchema = new Schema(
   { timestamps: true }
 )
 
+/* ----------------------------- Product request ----------------------------- */
+// Customer asks us to source a medicine / food / custom item not on the site.
+const productRequestSchema = new Schema(
+  {
+    ref: { type: String, required: true, unique: true },
+    need: String,
+    animal: String,
+    product: String,
+    brand: String,
+    strength: String,
+    quantity: String,
+    details: String,
+    urgency: { type: String, enum: ['Normal', 'Urgent'], default: 'Normal' },
+    photos: [String], // compressed JPEG data URLs (≤3, ~150–300 KB each)
+    name: String,
+    phone: String,
+    city: String,
+    pincode: String,
+    contactVia: { type: String, enum: ['WhatsApp', 'Call'], default: 'WhatsApp' },
+    status: { type: String, enum: ['New', 'Contacted', 'Sourcing', 'Quoted', 'Fulfilled', 'Unavailable'], default: 'New' },
+  },
+  { timestamps: true }
+)
+
 /* -------------------------------- Settings -------------------------------- */
 const settingsSchema = new Schema(
   {
@@ -136,3 +160,4 @@ export const Cart = model('Cart', cartSchema)
 export const Wishlist = model('Wishlist', wishlistSchema)
 export const Order = model('Order', orderSchema)
 export const Settings = model('Settings', settingsSchema)
+export const ProductRequest = model('ProductRequest', productRequestSchema)
