@@ -129,7 +129,7 @@ export default function HeroCarousel() {
                   </div>
                   {/* Sticker */}
                   <div style={{ '--r': '-10deg' }}
-                    className={`reveal reveal-4 animate-float absolute -left-3 top-2 sm:-left-10 sm:top-[18%] w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-full grid place-items-center text-center leading-none shadow-xl ring-4 ring-white/30 ${t.sticker}`}>
+                    className={`reveal reveal-4 animate-float absolute -left-3 top-2 sm:left-auto sm:-right-4 sm:top-[10%] w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-full grid place-items-center text-center leading-none shadow-xl ring-4 ring-white/30 ${t.sticker}`}>
                     <div>
                       <p className="text-[8px] sm:text-[11px] font-bold uppercase tracking-wider opacity-85">{s.sticker[0]}</p>
                       <p className="font-display font-bold text-sm sm:text-2xl my-0.5">{s.sticker[1]}</p>
