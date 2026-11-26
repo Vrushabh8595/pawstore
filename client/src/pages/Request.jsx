@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { playSound, haptic } from '@/lib/feedback'
 import { LogoMark } from '@/components/Logo'
 import { useAuth } from '@/store/auth'
+import { usePincode } from '@/lib/usePincode'
 
 const PHONE = '7620377278'
 const NEEDS = ['Medicine', 'Food', 'Custom medicine', 'Supplement', 'Other']
@@ -54,6 +55,7 @@ export default function Request() {
   const camRef = useRef(null)
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
   const otherRef = useRef(null)
+  const pin = usePincode(f.pincode, (d) => setF((s) => ({ ...s, city: d.city })))
   const isOther = f.animal === 'Other'
   const titleCase = (v) => v.replace(/\s+/g, ' ').replace(/\b\p{L}/gu, (c) => c.toUpperCase())
   const animalName = isOther ? (f.animalOther.trim() ? titleCase(f.animalOther.trim()) : 'animal') : f.animal
@@ -236,8 +238,12 @@ export default function Request() {
               <Field label="Your name" value={f.name} onChange={set('name')} autoComplete="name" />
               <Field label="Phone" hint="10 digit" type="tel" inputMode="numeric" autoComplete="tel-national" prefix="+91"
                 value={f.phone} onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
-              <Field label="City" optional value={f.city} onChange={set('city')} autoComplete="address-level2" />
-              <Field label="Pincode" optional inputMode="numeric" value={f.pincode} onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} autoComplete="postal-code" />
+              <div>
+                <Field label="Pincode" optional inputMode="numeric" value={f.pincode} onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} autoComplete="postal-code" />
+                {pin.status === 'found' && <p className="text-[11px] font-semibold text-pine-600 mt-1 animate-fade-in">📍 {pin.data.city}, {pin.data.state}</p>}
+                {pin.status === 'notfound' && <p className="text-[11px] font-semibold text-red-600 mt-1">Pincode not found — please check it</p>}
+              </div>
+              <Field label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} optional={pin.status !== 'found'} value={f.city} onChange={set('city')} autoComplete="address-level2" />
               <div className="sm:col-span-2">
                 <span className="font-bold text-sm">Contact me on</span>
                 <div className="mt-1 grid grid-cols-2 gap-2 max-w-xs">

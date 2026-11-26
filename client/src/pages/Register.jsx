@@ -1,4 +1,5 @@
 import Logo from '@/components/Logo'
+import GoogleButton, { OrDivider } from '@/components/GoogleButton'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/store/auth'
@@ -32,8 +33,10 @@ export default function Register() {
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
         <div className="flex justify-center mb-6"><Logo size={60} /></div>
-        <h1 className="text-2xl font-extrabold text-center">Create your account</h1>
-        <form onSubmit={submit} className="mt-6 space-y-3">
+        <h1 className="text-2xl text-center">Create your account</h1>
+        <div className="mt-6"><GoogleButton label="Sign up with Google" /></div>
+        <OrDivider />
+        <form onSubmit={submit} className="space-y-3">
           <Field label="Full name" value={form.name} onChange={set('name')} />
           <Field label="Email" type="email" value={form.email} onChange={set('email')} />
           <Field label="Phone" value={form.phone} onChange={set('phone')} />

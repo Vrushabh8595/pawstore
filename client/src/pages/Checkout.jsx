@@ -5,6 +5,7 @@ import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDow
 import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
 import { playAnimal, haptic } from '@/lib/feedback'
+import { usePincode } from '@/lib/usePincode'
 import { useAuth } from '@/store/auth'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE, COD_FEE, orderNo, upiLink, UPI } from '@/lib/format'
 
@@ -24,7 +25,8 @@ export default function Checkout() {
   const [utr, setUtr] = useState('')
   const [copied, setCopied] = useState(false)
   const [err, setErr] = useState('')
-  const [no] = useState(() => orderNo()) // stable across re-renders so QR note == order no
+  const [no] = useState(() => orderNo())
+  const pin = usePincode(addr.pincode, (d) => setAddr((a) => ({ ...a, city: d.city, state: d.state }))) // stable across re-renders so QR note == order no
 
   if (items.length === 0) return <Navigate to="/cart" replace />
 
@@ -51,7 +53,7 @@ export default function Checkout() {
 
     const order = {
       orderNo: no,
-      email: user?.email || 'guest@animalveda.in',
+      email: user?.email || 'guest@animalveda.com',
       customer: addr.name,
       createdAt: Date.now(),
       items: items.map((it) => ({ name: it.product.name, sku: it.sku, size: it.variant.size, price: it.variant.price, qty: it.qty })),
@@ -103,10 +105,13 @@ export default function Checkout() {
               <Field label="Phone" hint="10 digit" value={addr.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
                 prefix="+91" onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
               <div className="sm:col-span-2"><Field label="Address" hint="House no, street, area" value={addr.line1} onChange={set('line1')} autoComplete="street-address" /></div>
-              <Field label="Pincode" value={addr.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
-                onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} />
-              <Field label="City" value={addr.city} onChange={set('city')} autoComplete="address-level2" />
-              <div className="sm:col-span-2"><Field label="State" value={addr.state} onChange={set('state')} autoComplete="address-level1" /></div>
+              <div>
+                <Field label="Pincode" value={addr.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
+                  onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} />
+                <PinStatus pin={pin} />
+              </div>
+              <Field label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.city} onChange={set('city')} autoComplete="address-level2" />
+              <div className="sm:col-span-2"><Field label="State" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.state} onChange={set('state')} autoComplete="address-level1" /></div>
             </div>
           </section>
 
@@ -174,6 +179,14 @@ export default function Checkout() {
       </div>
     </div>
   )
+}
+
+function PinStatus({ pin }) {
+  if (pin.status === 'idle') return <p className="text-[11px] text-ink-500 mt-1">City & state fill in automatically</p>
+  if (pin.status === 'loading') return <p className="text-[11px] text-ink-500 mt-1">Finding your area…</p>
+  if (pin.status === 'found') return <p className="text-[11px] font-semibold text-pine-600 mt-1 animate-fade-in">📍 {pin.data.city}, {pin.data.state}</p>
+  if (pin.status === 'notfound') return <p className="text-[11px] font-semibold text-red-600 mt-1">We couldn’t find this pincode — please check it</p>
+  return <p className="text-[11px] text-ink-500 mt-1">Couldn’t look it up — please type city & state</p>
 }
 
 function Summary({ items, subtotal, shipping, codFee, total }) {

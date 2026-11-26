@@ -1,4 +1,5 @@
 import Logo from '@/components/Logo'
+import GoogleButton, { OrDivider } from '@/components/GoogleButton'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/store/auth'
@@ -30,10 +31,12 @@ export default function Login() {
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
         <div className="flex justify-center mb-6"><Logo size={60} /></div>
-        <h1 className="text-2xl font-extrabold text-center">Welcome back</h1>
+        <h1 className="text-2xl text-center">Welcome back</h1>
         <p className="text-ink-500 text-center text-sm mt-1">Login to track orders and checkout faster.</p>
 
-        <form onSubmit={submit} className="mt-6 space-y-3">
+        <div className="mt-6"><GoogleButton label="Continue with Google" /></div>
+        <OrDivider />
+        <form onSubmit={submit} className="space-y-3">
           <Field label="Email" type="email" value={email} onChange={setEmail} />
           <Field label="Password" type="password" value={password} onChange={setPassword} />
           {err && <p className="text-sm text-red-600">{err}</p>}
