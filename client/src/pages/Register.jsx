@@ -1,7 +1,7 @@
 import Logo from '@/components/Logo'
 import GoogleButton, { OrDivider } from '@/components/GoogleButton'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth, warmUpApi } from '@/store/auth'
 
 export default function Register() {
@@ -14,6 +14,7 @@ export default function Register() {
 
   const [busy, setBusy] = useState(false)
 
+  const signedIn = useAuth((s) => s.user)
   const submit = async (e) => {
     e.preventDefault()
     if (!form.name || !form.email || !form.password) return setErr('Please fill all required fields.')
@@ -30,6 +31,8 @@ export default function Register() {
     }
   }
 
+  // Already signed in (e.g. Google session restored) — skip the form
+  if (signedIn && !busy) return <Navigate to={signedIn.role === 'admin' ? '/admin' : '/account'} replace />
   return (
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
