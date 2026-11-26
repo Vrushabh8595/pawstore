@@ -14,7 +14,7 @@ export default function AdminLayout() {
       <aside className="bg-ink-900 text-white p-4 flex flex-col">
         <Link to="/admin" className="flex items-center gap-2 font-extrabold text-lg px-2 py-2">
           <LogoMark size={36} />
-          Animal<span className="text-brand-400">Veda</span> <span className="text-xs font-bold text-white/50 ml-1">Admin</span>
+          <span className="text-sm font-bold text-white/70">Admin</span>
         </Link>
         <nav className="mt-6 space-y-1 flex-1">
           <NavLink to="/admin" end className={item}><LayoutDashboard size={18} /> Overview</NavLink>
