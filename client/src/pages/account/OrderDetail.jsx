@@ -73,8 +73,9 @@ export default function OrderDetail() {
           <section className="card p-5">
             <h2 className="font-bold mb-4">Items</h2>
             {order.items.map((it) => (
-              <div key={it.sku + it.name} className="flex justify-between text-sm py-1.5 border-b border-[#f0f0ec] last:border-0">
-                <span className="text-ink-700 min-w-0 pr-3">{it.name} · {it.size} × {it.qty}</span>
+              <div key={it.sku + it.name} className="flex items-center gap-3 text-sm py-2 border-b border-[#f0f0ec] last:border-0">
+                {it.image && <img src={it.image} alt="" loading="lazy" className="w-12 h-12 rounded-lg object-contain bg-white ring-1 ring-ink-100 shrink-0" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+                <span className="text-ink-700 min-w-0 flex-1 pr-3">{it.name} · {it.size} × {it.qty}</span>
                 <span className="font-semibold shrink-0">{inr(it.price * it.qty)}</span>
               </div>
             ))}

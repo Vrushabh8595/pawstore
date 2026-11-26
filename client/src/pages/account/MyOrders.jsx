@@ -39,7 +39,9 @@ export default function MyOrders() {
           {orders.map((o) => (
             <Link key={o.orderNo} to={`/account/orders/${o.orderNo}`}
               className="card p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-brand-300 transition min-w-0">
-              <span className="hidden min-[380px]:grid place-items-center w-11 h-11 rounded-xl bg-brand-50 text-brand-600 shrink-0"><Package size={20} /></span>
+              <span className="hidden min-[380px]:grid place-items-center w-12 h-12 rounded-xl bg-white ring-1 ring-ink-100 text-brand-600 shrink-0 overflow-hidden">
+                {o.items[0]?.image ? <img src={o.items[0].image} alt="" loading="lazy" className="w-full h-full object-contain p-0.5" onError={(e) => { e.currentTarget.style.display = 'none' }} /> : <Package size={20} />}
+              </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
                   <span className="font-bold text-sm sm:text-base">{o.orderNo}</span>
