@@ -15,7 +15,7 @@ export default function MyOrders() {
       {orders.length === 0 ? (
         <div className="card p-12 text-center text-ink-500">
           <Package size={40} className="mx-auto mb-3" />
-          No orders yet. <Link to="/shop" className="text-brand-600 font-semibold">Start shopping</Link>
+          No orders yet. <Link to="/products" className="text-brand-600 font-semibold">Start shopping</Link>
         </div>
       ) : (
         <div className="space-y-3">
