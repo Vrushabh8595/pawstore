@@ -1,4 +1,5 @@
 import Logo from '@/components/Logo'
+import { afterLoginPath, rememberNext } from '@/lib/nextPath'
 import GoogleButton, { OrDivider } from '@/components/GoogleButton'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
@@ -9,7 +10,7 @@ import { AlertCircle } from 'lucide-react'
 export default function Login() {
   const login = useAuth((s) => s.login)
   const nav = useNavigate()
-  useEffect(() => { warmUpApi() }, [])
+  useEffect(() => { warmUpApi(); rememberNext(window.location.search) }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
@@ -27,7 +28,7 @@ export default function Login() {
     setBusy(true)
     try {
       const user = await login({ email, password })
-      nav(user.role === 'admin' ? '/admin' : '/account')
+      nav(afterLoginPath(user))
     } catch (e2) {
       const m = e2.message || ''
       if (/invalid|incorrect|wrong|credentials/i.test(m)) fe.setError('password', 'Email or password is incorrect. Try again or use Google.')
@@ -38,7 +39,7 @@ export default function Login() {
   }
 
   // Already signed in (e.g. Google session restored) — skip the form
-  if (signedIn && !busy) return <Navigate to={signedIn.role === 'admin' ? '/admin' : '/account'} replace />
+  if (signedIn && !busy) return <Navigate to={afterLoginPath(signedIn)} replace />
   return (
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { afterLoginPath } from '@/lib/nextPath'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthenticateWithRedirectCallback, useAuth as useClerkAuth } from '@clerk/react'
 import { useAuth, warmUpApi } from '@/store/auth'
@@ -39,7 +40,7 @@ export default function AuthComplete() {
         try {
           const token = await getToken({ skipCache: attempt > 0 })
           const user = await loginWithClerk(token)
-          nav(user.role === 'admin' ? '/admin' : '/account', { replace: true })
+          nav(afterLoginPath(user), { replace: true })
           return
         } catch (e) {
           if (!isRetryable(e) || attempt === 5) { setErr(e.message || 'Could not finish signing in.'); return }

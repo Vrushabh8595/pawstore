@@ -8,6 +8,9 @@ import { cartFeedback } from '@/lib/feedback'
 import { useWishlist } from '@/store/wishlist'
 import ProductRail from '@/components/ProductRail'
 import { useAddToCart } from '@/lib/useAddToCart'
+import ProductReviews from '@/components/ProductReviews'
+import Stars from '@/components/Stars'
+import { useProductRating } from '@/lib/reviews'
 
 export default function Product() {
   const { slug } = useParams()
@@ -18,6 +21,7 @@ export default function Product() {
   const imgRef = useRef(null)
   const inCart = useCart((s) => (product ? productQty(s.items, product.id) : 0))
   const toggle = useWishlist((s) => s.toggle)
+  const rating = useProductRating(slug)
   const wished = useWishlist((s) => product && s.ids.includes(product.id))
   const [variant, setVariant] = useState(product?.variants[0])
   const [qty, setQty] = useState(1)
@@ -64,7 +68,9 @@ export default function Product() {
         <div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-xs font-bold uppercase text-brand-600 tracking-wide">{product.brand}</span>
-            <span className="flex items-center gap-1 text-ink-500"><Star size={14} className="fill-brand-400 text-brand-400" /> {product.rating} ({product.reviews})</span>
+            <a href="#reviews" className="flex items-center gap-1.5 text-ink-500 hover:text-brand-600">
+              {rating ? <><Stars value={rating.avg} size={14} /> <b className="text-ink-900">{rating.avg.toFixed(1)}</b> ({rating.count})</> : <><Star size={14} className="text-ink-300" /> Be the first to review</>}
+            </a>
           </div>
           <h1 className="text-3xl font-extrabold mt-1">{product.name}</h1>
           <p className="text-ink-500 mt-2">{product.short}</p>
@@ -148,6 +154,8 @@ export default function Product() {
           )}
         </div>
       </div>
+
+      <ProductReviews key={product.slug} slug={product.slug} productName={product.name} />
 
       {related.length > 0 && (
         <div className="mt-10 sm:mt-14">
