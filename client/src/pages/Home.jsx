@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Truck, ShieldCheck, Leaf, HeartHandshake, Sparkles } from 'lucide-react'
+import { ArrowRight, Truck, ShieldCheck, Leaf, HeartHandshake, ChevronLeft, ChevronRight } from 'lucide-react'
 import { products, categories } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
 
@@ -8,6 +9,12 @@ const CAT_EMOJI = {
   'collars-leashes': '🦮', health: '💊', apparel: '🧥', bedding: '🛏️',
 }
 const CAT_TINT = ['bg-brand-50', 'bg-pine-50', 'bg-sand-100', 'bg-brand-50', 'bg-pine-50', 'bg-sand-100', 'bg-brand-50']
+
+const HERO = [
+  { eyebrow: '✦ Winter Comfort Collection', title: 'Feels like a hug', sub: 'Cosy beds, warm sweaters & hearty winter meals.', cta: 'Shop winter', to: '/shop?cat=apparel', grad: 'from-pine-100 to-sand-100', img: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=1100&q=70' },
+  { eyebrow: '✦ Everyday Nutrition', title: 'Food they’ll wag for', sub: 'Vet-approved meals made with real meat, first.', cta: 'Shop food', to: '/shop?cat=dry-food', grad: 'from-brand-100 to-sand-100', img: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1100&q=70' },
+  { eyebrow: '✦ Treats & Rewards', title: 'Good boys deserve more', sub: 'Tasty, healthy and tail-wag approved.', cta: 'Shop treats', to: '/shop?cat=treats', grad: 'from-sand-200 to-brand-50', img: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1100&q=70' },
+]
 
 const NEED_TILES = [
   { to: '/shop?cat=dry-food', title: 'Everyday Meals', copy: 'Complete dry nutrition', emoji: '🥣', from: 'bg-gradient-to-br from-brand-100 to-brand-50' },
@@ -28,71 +35,68 @@ export default function Home() {
   const bestsellers = (picked.length ? picked : products).slice(0, 4)
   const fresh = products.slice(0, 8)
 
+  const [slide, setSlide] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setSlide((s) => (s + 1) % HERO.length), 5500)
+    return () => clearInterval(t)
+  }, [])
+  const go = (d) => setSlide((s) => (s + d + HERO.length) % HERO.length)
+
   return (
     <div>
-      {/* ---------- Hero ---------- */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-sand-100 to-sand-50">
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-brand-200/40 blur-3xl" />
-        <div className="container-x relative grid lg:grid-cols-2 gap-10 items-center py-14 lg:py-20">
-          <div>
-            <span className="chip mb-5"><Sparkles size={13} /> New · Winter comfort collection</span>
-            <h1 className="font-display text-[2.6rem] sm:text-6xl font-semibold leading-[1.05] text-ink-900">
-              Food they’ll <span className="text-brand-600 italic">wag</span> for.
-            </h1>
-            <p className="mt-5 text-ink-500 text-lg max-w-md">
-              Premium, vet-approved dry food, wet meals, treats and cosy comfort — made with real ingredients and delivered across India with COD &amp; UPI.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/shop" className="btn-primary">Shop now <ArrowRight size={18} /></Link>
-              <Link to="/shop?cat=treats" className="btn-ghost">Explore treats</Link>
+      {/* ---------- Hero banner carousel ---------- */}
+      <section className="container-x pt-5">
+        <div className="relative rounded-[2rem] overflow-hidden h-[320px] sm:h-[420px] shadow-sm">
+          {HERO.map((h, i) => (
+            <div key={i}
+              className={`absolute inset-0 bg-gradient-to-r ${h.grad} transition-opacity duration-700 ${i === slide ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <img src={h.img} alt="" aria-hidden="true"
+                className="absolute right-0 top-0 h-full w-[62%] object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-sand-100)] via-[var(--color-sand-100)]/85 to-transparent" />
+              <div className="relative h-full flex flex-col justify-center max-w-md px-7 sm:px-12">
+                <span className="text-xs font-extrabold tracking-wide text-pine-700 mb-2">{h.eyebrow}</span>
+                <h1 className="font-display text-4xl sm:text-6xl font-semibold leading-[1.02] text-ink-900">{h.title}</h1>
+                <p className="mt-3 text-ink-700 sm:text-lg max-w-xs">{h.sub}</p>
+                <Link to={h.to} className="btn-primary mt-6 w-fit">{h.cta} <ArrowRight size={18} /></Link>
+              </div>
             </div>
-            <div className="mt-8 flex items-center gap-7 text-sm text-ink-500">
-              <span className="flex items-center gap-1.5">
-                <span className="text-brand-400">{'★★★★★'}</span> <b className="text-ink-900">4.8</b>/5
-              </span>
-              <span><b className="text-ink-900">12,000+</b> happy dogs</span>
-              <span className="hidden sm:inline"><b className="text-ink-900">100%</b> vet-approved</span>
-            </div>
-          </div>
+          ))}
 
-          <div className="relative">
-            <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=900&q=75"
-              alt="Happy dog" className="rounded-[2rem] w-full aspect-[4/3] object-cover shadow-2xl" />
-            <div className="absolute -bottom-5 -left-3 card p-4 shadow-xl flex items-center gap-3">
-              <span className="grid place-items-center w-11 h-11 rounded-2xl bg-brand-100 text-brand-600"><Truck size={22} /></span>
-              <div><p className="font-bold text-sm">Free delivery</p><p className="text-xs text-ink-500">on orders over ₹999</p></div>
-            </div>
-            <div className="absolute -top-4 -right-2 card px-4 py-3 shadow-xl hidden sm:flex items-center gap-2">
-              <span className="text-xl">🐾</span>
-              <div><p className="font-bold text-sm leading-none">Real meat</p><p className="text-xs text-ink-500 mt-0.5">first ingredient</p></div>
-            </div>
+          <button onClick={() => go(-1)} aria-label="Previous"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-full bg-white/85 hover:bg-white shadow-md transition">
+            <ChevronLeft size={22} />
+          </button>
+          <button onClick={() => go(1)} aria-label="Next"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-full bg-white/85 hover:bg-white shadow-md transition">
+            <ChevronRight size={22} />
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {HERO.map((_, i) => (
+              <button key={i} onClick={() => setSlide(i)} aria-label={`Slide ${i + 1}`}
+                className={`h-2 rounded-full transition-all ${i === slide ? 'w-6 bg-brand-500' : 'w-2 bg-white/80'}`} />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ---------- Category circles ---------- */}
-      <section className="container-x py-12">
-        <div className="flex items-end justify-between mb-7">
-          <div>
-            <p className="eyebrow mb-1">Browse</p>
-            <h2 className="text-2xl sm:text-3xl font-semibold">Shop by category</h2>
+      {/* ---------- Category circles overlapping the banner ---------- */}
+      <section className="container-x">
+        <div className="relative -mt-8 sm:-mt-10 bg-white rounded-[1.75rem] ring-1 ring-ink-100 shadow-[0_18px_40px_-28px_rgba(26,26,23,.4)] px-4 sm:px-6 pt-5 pb-5">
+          <div className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar sm:grid sm:grid-cols-7">
+            {categories.map((c, i) => (
+              <Link key={c.slug} to={`/shop?cat=${c.slug}`} className="group flex flex-col items-center gap-2 shrink-0 w-[76px] sm:w-auto">
+                <span className={`w-[68px] h-[68px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center text-3xl ${CAT_TINT[i % CAT_TINT.length]} ring-1 ring-ink-100 group-hover:ring-brand-300 group-hover:-translate-y-1 transition shadow-sm`}>
+                  {CAT_EMOJI[c.slug] || '🐾'}
+                </span>
+                <span className="text-[11px] sm:text-xs font-bold text-center text-ink-700 group-hover:text-brand-600 leading-tight">{c.name}</span>
+              </Link>
+            ))}
           </div>
-          <Link to="/shop" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
-        </div>
-        <div className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-7">
-          {categories.map((c, i) => (
-            <Link key={c.slug} to={`/shop?cat=${c.slug}`} className="group flex flex-col items-center gap-2.5 shrink-0 w-[88px] sm:w-auto">
-              <span className={`w-[76px] h-[76px] sm:w-20 sm:h-20 rounded-full grid place-items-center text-3xl ${CAT_TINT[i % CAT_TINT.length]} ring-1 ring-ink-100 group-hover:ring-brand-300 group-hover:-translate-y-1 transition shadow-sm`}>
-                {CAT_EMOJI[c.slug] || '🐾'}
-              </span>
-              <span className="text-xs font-bold text-center text-ink-700 group-hover:text-brand-600 leading-tight">{c.name}</span>
-            </Link>
-          ))}
         </div>
       </section>
 
       {/* ---------- Shop by need ---------- */}
-      <section className="container-x py-4">
+      <section className="container-x py-12">
         <h2 className="text-2xl sm:text-3xl font-semibold mb-7">Who are we shopping for today?</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {NEED_TILES.map((t) => (
@@ -110,7 +114,7 @@ export default function Home() {
       </section>
 
       {/* ---------- Bestsellers ---------- */}
-      <section className="container-x pt-14 pb-4">
+      <section className="container-x pb-4">
         <div className="flex items-end justify-between mb-7">
           <div>
             <p className="eyebrow mb-1">Loved by pups</p>
