@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Phone, Mail, Clock, MessageCircle, Send, Globe, Camera, ArrowRight, ShieldCheck, Truck, RotateCcw, Stethoscope } from 'lucide-react'
+import { useState } from 'react'
+import { Phone, Mail, Clock, MessageCircle, Share2, Check, Camera, ArrowRight, ShieldCheck, Truck, RotateCcw, Stethoscope } from 'lucide-react'
 import Logo from './Logo'
 import { categories } from '@/data/products'
 
@@ -54,13 +55,7 @@ export default function Footer() {
                 <span key={a} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/5 ring-1 ring-white/10 rounded-full px-2.5 py-1">{e} {a}</span>
               ))}
             </div>
-            <div className="flex gap-2 mt-5">
-              {[[MessageCircle, 'WhatsApp'], [Send, 'Telegram'], [Globe, 'Website']].map(([Icon, label]) => (
-                <a key={label} href="#" className="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-brand-500 transition" aria-label={label}>
-                  <Icon size={16} />
-                </a>
-              ))}
-            </div>
+            <SocialButtons />
           </div>
 
           <div>
@@ -129,5 +124,33 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+  )
+}
+
+// Chat on WhatsApp · share the website · email us
+function SocialButtons() {
+  const [copied, setCopied] = useState(false)
+  const site = typeof window !== 'undefined' ? window.location.origin : 'https://animalveda.com'
+  const share = async () => {
+    const data = { title: 'AnimalVeda', text: 'Vet medicines, food and care for every animal, delivered across India 🐾', url: site }
+    try {
+      if (navigator.share) { await navigator.share(data); return }
+    } catch (e) { if (e?.name === 'AbortError') return }
+    try { await navigator.clipboard.writeText(site); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { window.prompt('Copy this link:', site) }
+  }
+  const cls = 'relative w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-brand-500 transition'
+  return (
+    <div className="flex gap-2 mt-5">
+      <a href={`https://wa.me/91${PHONES[0]}?text=${encodeURIComponent('Hi AnimalVeda! I have a question.')}`} target="_blank" rel="noopener noreferrer" className={cls} aria-label="Chat with us on WhatsApp" title="Chat on WhatsApp">
+        <MessageCircle size={16} />
+      </a>
+      <button type="button" onClick={share} className={cls} aria-label="Share AnimalVeda" title={copied ? 'Link copied!' : 'Share this website'}>
+        {copied ? <Check size={16} /> : <Share2 size={16} />}
+        {copied && <span role="status" className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-white text-pine-900 text-[11px] font-bold px-2 py-1 animate-fade-in">Link copied!</span>}
+      </button>
+      <a href={`mailto:care@animalveda.com?subject=${encodeURIComponent('Hello AnimalVeda')}`} className={cls} aria-label="Email us" title="Email us">
+        <Mail size={16} />
+      </a>
+    </div>
   )
 }
