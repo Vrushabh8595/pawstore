@@ -11,13 +11,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const payLabel = (o) => (o.payment?.method === 'COD' ? 'Cash on delivery' : 'UPI')
 
 const STATUS_COPY = {
-  Confirmed: ['Your order is confirmed', 'Great news — we have confirmed your order and are getting it ready.'],
+  Confirmed: ['Your order is confirmed', 'Great news! We have confirmed your order and are getting it ready.'],
   Packed: ['Your order is packed', 'Your order is packed and will be handed to our delivery partner soon.'],
   Shipped: ['Your order has shipped', 'Your order is on its way.'],
-  'Out for Delivery': ['Out for delivery today', 'Your order is out for delivery — please keep your phone handy.'],
-  Delivered: ['Delivered — enjoy!', 'Your order has been delivered. We hope your pet loves it!'],
-  Cancelled: ['Your order was cancelled', 'Your order has been cancelled. If you paid by UPI, the refund reaches your account in 5–7 working days.'],
-  Returned: ['Return received', 'We have received your return. Any refund due will be processed in 5–7 working days.'],
+  'Out for Delivery': ['Out for delivery today', 'Your order is out for delivery. Please keep your phone handy.'],
+  Delivered: ['Delivered, enjoy!', 'Your order has been delivered. We hope your pet loves it!'],
+  Cancelled: ['Your order was cancelled', 'Your order has been cancelled. If you paid by UPI, the refund reaches your account in 5 to 7 working days.'],
+  Returned: ['Return received', 'We have received your return. Any refund due will be processed in 5 to 7 working days.'],
   'Payment Rejected': ['We could not verify your payment', 'We could not verify your UPI payment. Please contact us so we can sort it out.'],
 }
 export const statusCopy = (s) => STATUS_COPY[s] || [`Order update: ${s}`, `Your order status is now “${s}”.`]
@@ -56,7 +56,7 @@ export function emailLayout({ heading, intro, order, cta, ctaUrl, badge }) {
         ${order.codFee ? `<tr><td>COD fee</td><td align="right">${inr(order.codFee)}</td></tr>` : ''}
         <tr><td style="padding-top:6px;font-size:15px;font-weight:700;color:#1a3450">Total</td><td align="right" style="padding-top:6px;font-size:15px;font-weight:700;color:#1a3450">${inr(order.total)}</td></tr>
       </table>
-      <p style="font-size:13px;color:#4b5563;margin:16px 0 0;line-height:1.5"><b style="color:#1a3450">Deliver to</b><br>${esc(a.name)} · ${esc(a.phone)}<br>${esc(a.line1)}, ${esc(a.city)}${a.state ? ', ' + esc(a.state) : ''} – ${esc(a.pincode)}</p>
+      <p style="font-size:13px;color:#4b5563;margin:16px 0 0;line-height:1.5"><b style="color:#1a3450">Deliver to</b><br>${esc(a.name)} · ${esc(a.phone)}<br>${esc(a.line1)}, ${esc(a.city)}${a.state ? ', ' + esc(a.state) : ''}, ${esc(a.pincode)}</p>
       ${cta ? `<p style="margin:22px 0 4px"><a href="${ctaUrl}" style="background:#f97316;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 22px;border-radius:999px;display:inline-block">${esc(cta)}</a></p>` : ''}
     </td></tr>
     <tr><td style="background:#fff7ed;padding:14px 24px;font-size:12px;color:#6b7280">AnimalVeda · Open 24×7 · Questions? Just reply to this email.</td></tr>
@@ -77,12 +77,12 @@ export async function notifyNewOrder(order) {
     await Promise.all([
       sendMail({
         to: ADMIN_EMAIL(),
-        subject: `🛒 New order ${order.orderNo} — ${inr(order.total)} (${payLabel(order)})`,
+        subject: `🛒 New order ${order.orderNo}: ${inr(order.total)} (${payLabel(order)})`,
         html: emailLayout({ badge: 'New order', heading: `New order from ${order.customerName || 'a customer'}`, intro: `${count} item${count === 1 ? '' : 's'} · ${payLabel(order)}${to ? ` · ${esc(to)}` : ''}`, order, cta: 'Open in admin', ctaUrl: `${SITE()}/admin/orders` }),
       }),
       to && sendMail({
         to,
-        subject: `Order ${order.orderNo} received — thank you! 🐾`,
+        subject: `Order ${order.orderNo} received, thank you! 🐾`,
         html: emailLayout({ badge: 'Order placed', heading: `Thanks, ${(order.customerName || '').split(' ')[0] || 'friend'}! Your order is in.`, intro: 'We have received your order and will confirm it shortly. You will get an email at every step.', order, cta: order.user ? 'Track your order' : 'Visit AnimalVeda', ctaUrl: link }),
       }),
     ])
