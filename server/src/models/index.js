@@ -178,7 +178,7 @@ const notificationSchema = new Schema(
   {
     audience: { type: String, enum: ['admin', 'user'], required: true, index: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // for audience 'user'
-    type: { type: String, enum: ['new_order', 'status'], required: true },
+    type: { type: String, enum: ['new_order', 'status', 'account'], required: true },
     title: String,
     body: String,
     orderNo: String,
