@@ -4,7 +4,8 @@ import { User } from '../models/index.js'
 // Reads the JWT from the httpOnly cookie (or Authorization header) and loads the user.
 export async function authenticate(req, res, next) {
   try {
-    const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '')
+    // Header first: Safari/iOS blocks the cross-site cookie, so the app sends the token itself
+    const token = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.token
     if (!token) return res.status(401).json({ message: 'Not authenticated' })
     const payload = verifyToken(token)
     const user = await User.findById(payload.id).select('-passwordHash')
