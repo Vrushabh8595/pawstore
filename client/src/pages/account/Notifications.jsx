@@ -33,7 +33,7 @@ export default function AccountNotifications() {
         <ul className="space-y-2.5">
           {items.map((n) => (
             <li key={n._id}>
-              <Link to={`/account/orders/${n.orderNo}`} onClick={() => open(n)}
+              <Link to={n.orderNo ? `/account/orders/${n.orderNo}` : '/account/notifications'} onClick={() => open(n)}
                 className={`card p-3.5 sm:p-4 flex gap-3 items-start hover:border-brand-300 transition ${n.read ? '' : 'border-brand-200 bg-brand-50/50'}`}>
                 <Thumb src={n.image} />
                 <span className="flex-1 min-w-0">
@@ -43,7 +43,9 @@ export default function AccountNotifications() {
                   </span>
                   <span className="block text-sm text-ink-700 mt-0.5">{n.body}</span>
                   <span className="flex items-center gap-2 flex-wrap mt-1.5 text-xs text-ink-500">
-                    {n.status && <StatusBadge status={n.status} />} Order {n.orderNo} · {ago(n.createdAt)}
+                    {n.type === 'account'
+                      ? <span className={`font-bold ${n.status === 'Blocked' ? 'text-red-600' : 'text-green-700'}`}>{n.status === 'Blocked' ? '🔒 Account blocked' : '✓ Account active'}</span>
+                      : <>{n.status && <StatusBadge status={n.status} />} Order {n.orderNo}</>} · {ago(n.createdAt)}
                   </span>
                 </span>
               </Link>
