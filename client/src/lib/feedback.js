@@ -46,6 +46,12 @@ function audio() {
   if (ctx.state === 'suspended') ctx.resume()
   return ctx
 }
+// Browsers keep audio muted until the visitor interacts with the page; unlock
+// it on the first tap/click/key so later alerts (e.g. a new order) can play.
+export function unlockAudioOnFirstGesture() {
+  const go = () => { try { audio() } catch { /* ignore */ } ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.removeEventListener(e, go, true)) }
+  ;['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, go, { capture: true, passive: true }))
+}
 function tone(ac, { freq, to, start = 0, dur = 0.12, type = 'sine', vol = 0.18 }) {
   const t = ac.currentTime + start
   const o = ac.createOscillator()
@@ -71,6 +77,26 @@ const SOUNDS = {
   // two short low buzzes = "can't do that"
   limit: (ac) => { tone(ac, { freq: 220, dur: 0.09, type: 'square', vol: 0.06 }); tone(ac, { freq: 196, start: 0.12, dur: 0.12, type: 'square', vol: 0.06 }) },
   success: (ac) => [523, 659, 784, 1047].forEach((f, i) => tone(ac, { freq: f, start: i * 0.07, dur: 0.18, vol: 0.12 })),
+  // Order placed: bright, bouncy "ta-da!" — rising major arpeggio, a warm
+  // final chord and a little sparkle on top.
+  celebrate: (ac) => {
+    const bell = (freq, start, dur, vol) => { tone(ac, { freq, start, dur, vol, type: 'triangle' }); tone(ac, { freq: freq * 2, start, dur: dur * 0.6, vol: vol * 0.35 }) }
+    ;[523.25, 659.25, 783.99, 1046.5].forEach((f, i) => bell(f, i * 0.085, 0.22, 0.16))
+    ;[523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f) => bell(f, 0.4, 0.9, 0.07))
+    ;[2093, 2637, 3136, 2637, 3520].forEach((f, i) => tone(ac, { freq: f, start: 0.46 + i * 0.07, dur: 0.12, vol: 0.035 }))
+  },
+  // Admin: new order — cheerful cash-register "ka-ching" (played twice so it's noticed)
+  newOrder: (ac) => {
+    const ching = (at) => {
+      tone(ac, { freq: 1568, start: at, dur: 0.12, type: 'square', vol: 0.05 })
+      tone(ac, { freq: 2093, start: at + 0.09, dur: 0.5, vol: 0.13 })
+      tone(ac, { freq: 2637, start: at + 0.1, dur: 0.45, vol: 0.07 })
+      tone(ac, { freq: 3136, start: at + 0.12, dur: 0.35, vol: 0.04 })
+    }
+    ching(0); ching(0.7)
+  },
+  // Customer: order update — friendly two-note chime
+  notify: (ac) => { tone(ac, { freq: 880, dur: 0.18, type: 'triangle', vol: 0.15 }); tone(ac, { freq: 1318.5, start: 0.14, dur: 0.38, vol: 0.13 }) },
 }
 /* ------------------------- animal sounds (order placed) ------------------------- */
 function noiseBuffer(ac, dur) {
