@@ -31,7 +31,7 @@ export default function Register() {
   return (
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
-        <div className="flex justify-center mb-6"><Logo size={40} className="text-2xl" /></div>
+        <div className="flex justify-center mb-6"><Logo size={60} /></div>
         <h1 className="text-2xl font-extrabold text-center">Create your account</h1>
         <form onSubmit={submit} className="mt-6 space-y-3">
           <Field label="Full name" value={form.name} onChange={set('name')} />

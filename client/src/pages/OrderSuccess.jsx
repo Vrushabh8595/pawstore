@@ -1,16 +1,23 @@
-import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Package } from 'lucide-react'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { playAnimal } from '@/lib/feedback'
+import { Package } from 'lucide-react'
 import { useOrders } from '@/store/orders'
 import { inr } from '@/lib/format'
 
 export default function OrderSuccess() {
   const { orderNo } = useParams()
   const order = useOrders((s) => s.get(orderNo))
+  const animal = useLocation().state?.animal || 'dog'
 
   return (
     <div className="container-x py-16 max-w-xl text-center">
-      <CheckCircle2 size={64} className="mx-auto text-green-500 mb-4" />
-      <h1 className="text-3xl font-extrabold">Order placed!</h1>
+      <button type="button" onClick={() => playAnimal(animal)} aria-label={`Play ${animal} sound`}
+        className="relative mx-auto mb-5 grid place-items-center w-28 h-28 rounded-full bg-brand-100 ring-8 ring-brand-50 animate-pop active:scale-90 transition">
+        <span className="text-6xl animate-float" style={{ '--r': '0deg' }}>{animal === 'cat' ? '🐱' : '🐶'}</span>
+        <span className="absolute -top-2 -right-6 bg-pine-800 text-white text-xs font-extrabold px-2.5 py-1 rounded-full rounded-bl-none shadow-lg"
+          style={{ animation: 'fade-up .5s .35s both' }}>{animal === 'cat' ? 'Meow!' : 'Woof woof!'}</span>
+      </button>
+      <h1 className="text-3xl sm:text-4xl">Order placed!</h1>
       <p className="text-ink-500 mt-2">
         Thank you. Your order <b className="text-ink-900">{orderNo}</b> has been received and is
         <b> pending verification</b>. You'll get an update once it's confirmed.

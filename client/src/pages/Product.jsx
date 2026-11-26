@@ -93,21 +93,20 @@ export default function Product() {
             </p>
           </div>
 
-          {/* Qty + actions */}
-          <div className="flex flex-wrap items-center gap-3 mt-6">
-            <div className="flex items-center border border-[#e5e5e0] rounded-xl">
+          {/* Qty + actions — phones: qty + wishlist row, then two full-width buttons */}
+          <div className="mt-6 grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:gap-3">
+            <div className="flex items-center justify-between border border-ink-200 rounded-xl bg-white sm:justify-start">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="p-3 active:scale-75 transition" aria-label="Decrease quantity"><Minus size={16} /></button>
               <span key={qty} className="animate-pop w-10 text-center font-bold">{qty}</span>
               <button onClick={(e) => (qty >= Math.max(room, 1) ? cartFeedback('limit', { button: e.currentTarget }) : setQty((q) => q + 1))}
                 className={`p-3 active:scale-75 transition ${qty >= Math.max(room, 1) ? 'opacity-40' : ''}`} aria-label="Increase quantity"><Plus size={16} /></button>
             </div>
-            <button onClick={addClick} className="ripple btn-ghost flex-1 min-w-[120px] active:scale-95">Add to cart</button>
-            <button onClick={buyNow} className="btn-primary flex-1 min-w-[120px] active:scale-95">Buy now</button>
-            <button onClick={() => toggle(product.id)} className="btn-ghost !px-3" aria-label="Wishlist">
-              <Heart size={18} className={wished ? 'fill-brand-500 text-brand-500' : ''} />
+            <button onClick={() => toggle(product.id)} className="btn-ghost !px-3 sm:order-last" aria-label="Wishlist">
+              <Heart size={18} className={wished ? 'fill-brand-500 text-brand-500' : ''} /><span className="sm:hidden text-sm">Wishlist</span>
             </button>
+            <button onClick={addClick} className="ripple btn-ghost whitespace-nowrap !px-3 text-sm sm:text-base sm:flex-1 active:scale-95">Add to cart</button>
+            <button onClick={buyNow} className="btn-primary whitespace-nowrap !px-3 text-sm sm:text-base sm:flex-1 active:scale-95">Buy now</button>
           </div>
-
           <p className={`text-xs mt-2.5 font-semibold ${room <= 0 ? 'text-red-600' : 'text-ink-500'}`}>
             {room <= 0
               ? `You already have ${MAX_PER_PRODUCT} of this in your cart — the most allowed per order. Place this order first to buy more.`

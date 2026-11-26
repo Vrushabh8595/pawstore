@@ -4,7 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown } from 'lucide-react'
 import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
-import { playSound, haptic } from '@/lib/feedback'
+import { playAnimal, haptic } from '@/lib/feedback'
 import { useAuth } from '@/store/auth'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE, COD_FEE, orderNo, upiLink, UPI } from '@/lib/format'
 
@@ -64,10 +64,12 @@ export default function Checkout() {
       statusHistory: [{ status: 'Pending Verification', at: Date.now() }],
     }
     place(order)
-    playSound('success')
+    // Happy bark (or a meow if the order is for a cat) 🐶🐱
+    const forCat = items.some((it) => /\bcat\b|kitten|feline/i.test(`${it.product.name} ${it.product.short}`))
+    playAnimal(forCat ? 'cat' : 'dog')
     haptic([30, 50, 30, 50, 70])
     clear()
-    nav(`/order/${no}`)
+    nav(`/order/${no}`, { state: { animal: forCat ? 'cat' : 'dog' } })
   }
 
   const set = (k) => (v) => setAddr({ ...addr, [k]: v })
