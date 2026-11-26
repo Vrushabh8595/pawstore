@@ -37,3 +37,6 @@ export const orderLimiter = limiter(15 * 60 * 1000, 15, 'Too many orders in a sh
 export const claimLimiter = limiter(15 * 60 * 1000, 20, 'Too many attempts. Please try again later.')
 export const trackLimiter = limiter(60 * 1000, 120, 'Too many requests.')
 export const reviewLimiter = limiter(60 * 60 * 1000, 20, 'Too many reviews. Please try again later.')
+export const profileLimiter = limiter(15 * 60 * 1000, 30, 'Too many profile changes. Please wait a few minutes.')
+// Email change needs the password, so treat failures like login attempts
+export const emailChangeLimiter = limiter(15 * 60 * 1000, 8, 'Too many attempts. Please wait 15 minutes and try again.', { skipSuccessfulRequests: true })
