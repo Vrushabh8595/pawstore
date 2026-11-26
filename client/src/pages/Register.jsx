@@ -32,7 +32,7 @@ export default function Register() {
   return (
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
-        <div className="flex justify-center mb-6"><Logo size={60} /></div>
+        <div className="flex justify-center mb-6"><Logo className="h-11" /></div>
         <h1 className="text-2xl text-center">Create your account</h1>
         <div className="mt-6"><GoogleButton label="Sign up with Google" /></div>
         <OrDivider />

@@ -30,7 +30,7 @@ export default function Login() {
   return (
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
-        <div className="flex justify-center mb-6"><Logo size={60} /></div>
+        <div className="flex justify-center mb-6"><Logo className="h-11" /></div>
         <h1 className="text-2xl text-center">Welcome back</h1>
         <p className="text-ink-500 text-center text-sm mt-1">Login to track orders and checkout faster.</p>
 

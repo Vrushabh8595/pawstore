@@ -6,6 +6,7 @@ import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
 import { playAnimal, haptic } from '@/lib/feedback'
 import { usePincode } from '@/lib/usePincode'
+import { api } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE, COD_FEE, orderNo, upiLink, UPI } from '@/lib/format'
 
@@ -26,6 +27,7 @@ export default function Checkout() {
   const [copied, setCopied] = useState(false)
   const [err, setErr] = useState('')
   const [no] = useState(() => orderNo())
+  const [placing, setPlacing] = useState(false)
   const pin = usePincode(addr.pincode, (d) => setAddr((a) => ({ ...a, city: d.city, state: d.state }))) // stable across re-renders so QR note == order no
 
   if (items.length === 0) return <Navigate to="/cart" replace />
@@ -43,7 +45,7 @@ export default function Checkout() {
     requestAnimationFrame(() => [...document.querySelectorAll('[role=alert]')].find((el) => el.offsetParent)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
   }
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     setErr('')
     if (!addr.name || !addr.phone || !addr.line1 || !addr.city || !addr.pincode) return fail('Please fill in all delivery details.')
@@ -51,8 +53,24 @@ export default function Checkout() {
     if (!/^\d{6}$/.test(addr.pincode)) return fail('Enter a valid 6-digit pincode.')
     if (method === 'UPI_MANUAL' && !/^\d{12}$/.test(utr)) return fail('Enter the 12-digit UPI reference / UTR number after paying.')
 
+    // Send the order to the server (prices are re-checked there). If the
+    // server can't be reached we still keep the order locally so nothing is lost.
+    setPlacing(true)
+    let orderNoFinal = no
+    try {
+      const res = await api.post('/store/orders', {
+        items: items.map((it) => ({ slug: it.product.slug, sku: it.sku, qty: it.qty })),
+        address: addr, paymentMethod: method, ...(method === 'UPI_MANUAL' ? { utr } : {}),
+      })
+      orderNoFinal = res?.order?.orderNo || no
+    } catch (e2) {
+      const down = e2 instanceof TypeError || /Route not found|Request failed \(5/.test(e2.message)
+      if (!down) { setPlacing(false); return fail(e2.message === 'Validation failed' ? 'Please check your details and try again.' : e2.message) }
+    }
+    setPlacing(false)
+
     const order = {
-      orderNo: no,
+      orderNo: orderNoFinal,
       email: user?.email || 'guest@animalveda.com',
       customer: addr.name,
       createdAt: Date.now(),
@@ -71,7 +89,7 @@ export default function Checkout() {
     playAnimal(forCat ? 'cat' : 'dog')
     haptic([30, 50, 30, 50, 70])
     clear()
-    nav(`/order/${no}`, { state: { animal: forCat ? 'cat' : 'dog' } })
+    nav(`/order/${orderNoFinal}`, { state: { animal: forCat ? 'cat' : 'dog' } })
   }
 
   const set = (k) => (v) => setAddr({ ...addr, [k]: v })
@@ -157,7 +175,7 @@ export default function Checkout() {
           <h2 className="font-extrabold text-lg mb-4">Your order</h2>
           <Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} />
           {err && <p role="alert" className="text-sm text-red-600 mt-3">{err}</p>}
-          <button type="submit" className="btn-primary w-full mt-4">
+          <button type="submit" disabled={placing} className="btn-primary w-full mt-4 disabled:opacity-70">
             <Lock size={16} /> {method === 'COD' ? 'Place COD order' : 'I have paid — place order'}
           </button>
           <p className="text-xs text-ink-500 text-center mt-3">Demo checkout · no real payment is taken</p>
@@ -172,7 +190,7 @@ export default function Checkout() {
             <p className="text-[11px] text-ink-500 font-semibold leading-none">Total</p>
             <p key={total} className="animate-pop font-extrabold text-lg leading-tight">{inr(total)}</p>
           </div>
-          <button type="submit" form="checkout-form" className="btn-primary flex-1 min-w-0 !px-3 text-sm">
+          <button type="submit" form="checkout-form" disabled={placing} className="btn-primary flex-1 min-w-0 !px-3 text-sm disabled:opacity-70">
             <Lock size={15} className="shrink-0" /><span className="truncate">{method === 'COD' ? 'Place COD order' : 'I have paid — place order'}</span>
           </button>
         </div>
