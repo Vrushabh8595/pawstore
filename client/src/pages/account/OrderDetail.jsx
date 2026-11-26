@@ -5,6 +5,7 @@ import { useOrders } from '@/store/orders'
 import { api } from '@/lib/api'
 import { normOrder } from '@/lib/myOrders'
 import { inr, STATUS_FLOW } from '@/lib/format'
+import RefreshButton from './RefreshButton'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
 
 export default function OrderDetail() {
@@ -22,7 +23,10 @@ export default function OrderDetail() {
 
   return (
     <div>
-      <Link to="/account" className="text-sm text-brand-600 font-semibold">← All orders</Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/account" className="text-sm text-brand-600 font-semibold">← All orders</Link>
+        <RefreshButton />
+      </div>
       <div className="flex items-center gap-3 flex-wrap mt-2 mb-6">
         <h1 className="text-2xl sm:text-3xl break-all">{order.orderNo}</h1>
         <StatusBadge status={order.status} />

@@ -3,13 +3,17 @@ import { Package, ChevronRight } from 'lucide-react'
 import { inr } from '@/lib/format'
 import { useMyOrders } from '@/lib/myOrders'
 import StatusBadge from '@/components/StatusBadge'
+import RefreshButton from './RefreshButton'
 
 export default function MyOrders() {
   const { orders, isLoading, isError, refetch } = useMyOrders()
 
   return (
     <div className="min-w-0">
-      <h1 className="text-2xl sm:text-3xl mb-4 sm:mb-5">My Orders</h1>
+      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5">
+        <h1 className="text-2xl sm:text-3xl">My Orders</h1>
+        <RefreshButton />
+      </div>
       {isLoading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading your orders">
           {[0, 1, 2].map((i) => (
