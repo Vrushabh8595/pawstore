@@ -5,6 +5,7 @@ import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, Bar
 import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
 import Logo from '@/components/Logo'
+import { NotificationAlerts, NotificationBell, AdminAlertSetup } from '@/components/Notifications'
 
 const NAV = [
   ['/admin', 'Dashboard', LayoutDashboard, true],
@@ -34,7 +35,7 @@ export default function AdminLayout() {
       </Link>
       <span className="mx-2 mt-1 w-fit text-[10px] font-extrabold uppercase tracking-[.16em] text-brand-300 bg-white/5 rounded-full px-2.5 py-1">Admin panel</span>
 
-      <Link to="/admin/traffic" className="mx-1 mt-5 flex items-center gap-3 rounded-2xl bg-white/5 ring-1 ring-white/10 px-4 py-3 hover:bg-white/10 transition">
+      <Link to="/admin/traffic" className="mx-1 mt-4 flex items-center gap-3 rounded-2xl bg-white/5 ring-1 ring-white/10 px-4 py-3 hover:bg-white/10 transition">
         <span className="relative flex w-3 h-3"><span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-60" /><span className="relative w-3 h-3 rounded-full bg-green-400" /></span>
         <span className="text-sm"><b className="text-white text-lg leading-none">{live.data?.count ?? '–'}</b> <span className="text-white/60">live on site</span></span>
       </Link>
@@ -60,7 +61,8 @@ export default function AdminLayout() {
       <header className="md:hidden sticky top-0 z-30 bg-pine-900 text-white flex items-center gap-3 px-4 h-14">
         <button onClick={() => setOpen(true)} aria-label="Open admin menu" className="p-1.5 -ml-1.5"><Menu size={22} /></button>
         <Logo light className="h-7" />
-        <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 rounded-full px-2.5 py-1">
+        <NotificationBell admin className="ml-auto" />
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 rounded-full px-2.5 py-1">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />{live.data?.count ?? '–'} live
         </span>
       </header>
@@ -75,8 +77,16 @@ export default function AdminLayout() {
       )}
 
       <main className="p-4 sm:p-6 lg:p-8 min-w-0">
+        {/* Desktop top bar: greeting + alerts bell */}
+        <div className="hidden md:flex items-center gap-3 -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 mb-6 px-6 lg:px-8 py-2.5 sticky top-0 z-30 bg-sand-50/90 backdrop-blur border-b border-ink-100">
+          <p className="text-sm text-ink-500">Hi <b className="text-ink-900">{user?.name?.split(' ')[0] || 'Admin'}</b> 👋</p>
+          <Link to="/admin/orders?status=Pending%20Verification" className="ml-auto text-xs font-bold text-ink-700 hover:text-brand-600">Pending orders</Link>
+          <div className="rounded-xl bg-pine-900"><NotificationBell admin /></div>
+        </div>
+        <AdminAlertSetup />
         <Outlet />
       </main>
+      <NotificationAlerts admin />
     </div>
   )
 }

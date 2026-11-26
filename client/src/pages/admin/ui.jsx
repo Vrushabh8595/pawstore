@@ -103,9 +103,12 @@ export function HBars({ rows, valueKey, labelKey = '_id', format = fmtNum, color
   return (
     <ul className="space-y-3">
       {rows.map((r) => (
-        <li key={r[labelKey]} className="text-sm">
-          <div className="flex justify-between gap-3 mb-1"><span className="font-semibold truncate">{r[labelKey]}</span><span className="font-bold shrink-0">{format(r[valueKey])}</span></div>
-          <div className="h-2 rounded-full bg-ink-50 overflow-hidden"><div className={`h-full rounded-full ${color}`} style={{ width: `${((r[valueKey] || 0) / max) * 100}%` }} /></div>
+        <li key={r[labelKey]} className="text-sm flex items-center gap-3">
+          {'image' in r && <ItemImg src={r.image} alt={r[labelKey]} className="w-10 h-10" />}
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between gap-3 mb-1"><span className="font-semibold truncate">{r[labelKey]}</span><span className="font-bold shrink-0">{format(r[valueKey])}</span></div>
+            <div className="h-2 rounded-full bg-ink-50 overflow-hidden"><div className={`h-full rounded-full ${color}`} style={{ width: `${((r[valueKey] || 0) / max) * 100}%` }} /></div>
+          </div>
         </li>
       ))}
     </ul>
@@ -148,5 +151,27 @@ export function ErrorBox({ error }) {
       <p className="font-bold text-red-600">Couldn’t load data</p>
       <p className="text-ink-500 mt-1">{error?.message || 'Unknown error'}. If you just deployed, make sure the latest server is live on Render.</p>
     </div>
+  )
+}
+
+// Product photo for an order line (falls back to a paw tile)
+export function ItemImg({ src, alt = '', className = 'w-12 h-12' }) {
+  const [bad, setBad] = useState(false)
+  return (
+    <span className={`${className} shrink-0 rounded-xl bg-white ring-1 ring-ink-100 overflow-hidden grid place-items-center`}>
+      {src && !bad ? <img src={src} alt={alt} loading="lazy" className="w-full h-full object-contain p-0.5" onError={() => setBad(true)} /> : <span className="text-lg" aria-hidden="true">🐾</span>}
+    </span>
+  )
+}
+
+// Overlapping stack of an order's product photos (+N)
+export function ItemStack({ items = [], max = 3, size = 'w-11 h-11' }) {
+  const shown = items.slice(0, max)
+  const more = items.length - shown.length
+  return (
+    <span className="flex items-center -space-x-3 shrink-0">
+      {shown.map((i, k) => <ItemImg key={k} src={i.image} alt={i.name} className={`${size} ring-2 !ring-white shadow-sm`} />)}
+      {more > 0 && <span className={`${size} rounded-xl bg-pine-800 text-white text-xs font-extrabold grid place-items-center ring-2 ring-white`}>+{more}</span>}
+    </span>
   )
 }

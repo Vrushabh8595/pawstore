@@ -4,7 +4,7 @@ import { ArrowLeft, IndianRupee, ShoppingBag, CheckCircle2, Clock, XCircle, Tren
 import { api } from '@/lib/api'
 import { inr } from '@/lib/format'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
-import { Stat, Panel, OutcomeRing, HBars, Loading, ErrorBox, fmtNum, fmtDate, fmtDateTime, timeAgo } from './ui'
+import { Stat, Panel, OutcomeRing, HBars, Loading, ErrorBox, fmtNum, fmtDate, fmtDateTime, timeAgo, ItemStack } from './ui'
 import { Avatar } from './Users'
 
 export default function UserDetail() {
@@ -48,12 +48,17 @@ export default function UserDetail() {
             <ul className="divide-y divide-ink-100">
               {orders.map((o) => (
                 <li key={o._id} className="py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <b>{o.orderNo}</b><StatusBadge status={o.status} /><PaymentBadge payment={o.payment} />
-                    <span className="ml-auto font-extrabold">{inr(o.total)}</span>
-                  </div>
-                  <p className="text-xs text-ink-500 mt-1">{fmtDateTime(o.createdAt)} · {o.payment.method === 'COD' ? 'Cash on delivery' : `UPI ${o.payment.utr || ''}`} · {o.shippingAddress?.city}</p>
-                  <p className="text-sm text-ink-700 mt-1">{o.items.map((i) => `${i.name} (${i.size}) × ${i.qty}`).join(', ')}</p>
+                  <Link to={`/admin/orders?open=${o.orderNo}`} className="flex gap-3 group">
+                    <ItemStack items={o.items} size="w-12 h-12" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <b className="group-hover:text-brand-600">{o.orderNo}</b><StatusBadge status={o.status} /><PaymentBadge payment={o.payment} />
+                        <span className="ml-auto font-extrabold">{inr(o.total)}</span>
+                      </div>
+                      <p className="text-xs text-ink-500 mt-1">{fmtDateTime(o.createdAt)} · {o.payment.method === 'COD' ? 'Cash on delivery' : `UPI ${o.payment.utr || ''}`} · {o.shippingAddress?.city}</p>
+                      <p className="text-sm text-ink-700 mt-1">{o.items.map((i) => `${i.name} (${i.size}) × ${i.qty}`).join(', ')}</p>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>

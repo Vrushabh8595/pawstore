@@ -4,7 +4,7 @@ import { IndianRupee, ShoppingBag, Users, Radio, Eye, Clock, XCircle, Inbox, Tre
 import { api } from '@/lib/api'
 import { inr } from '@/lib/format'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
-import { PageHead, Stat, Panel, BarLineChart, HBars, OutcomeRing, Loading, ErrorBox, fmtNum, timeAgo, custName } from './ui'
+import { PageHead, Stat, Panel, BarLineChart, HBars, OutcomeRing, Loading, ErrorBox, fmtNum, timeAgo, custName, ItemStack } from './ui'
 
 export default function Overview() {
   const q = useQuery({ queryKey: ['admin-dashboard'], queryFn: () => api.get('/admin/dashboard'), refetchInterval: 30_000 })
@@ -55,23 +55,20 @@ export default function Overview() {
       <div className="grid lg:grid-cols-3 gap-4 mt-4">
         <Panel title="Recent orders" className="lg:col-span-2" right={<Link to="/admin/orders" className="text-sm font-bold text-brand-600">All orders →</Link>}>
           {d.recentOrders.length === 0 ? <p className="text-sm text-ink-500 py-6 text-center">No orders yet.</p> : (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <table className="w-full text-sm min-w-[560px]">
-                <thead className="text-left text-ink-500 text-xs"><tr><th className="py-2 px-4 sm:px-2">Order</th><th className="px-2">Customer</th><th className="px-2">Total</th><th className="px-2">Payment</th><th className="px-2">Status</th><th className="px-2">When</th></tr></thead>
-                <tbody>
-                  {d.recentOrders.map((o) => (
-                    <tr key={o._id} className="border-t border-ink-100">
-                      <td className="py-2.5 px-4 sm:px-2 font-bold">{o.orderNo}</td>
-                      <td className="px-2">{o.user ? <Link to={`/admin/users/${o.user._id}`} className="hover:text-brand-600 font-semibold">{custName(o)}</Link> : <span>{custName(o)} <span className="text-xs text-ink-500">(guest)</span></span>}</td>
-                      <td className="px-2 font-semibold">{inr(o.total)}</td>
-                      <td className="px-2"><PaymentBadge payment={o.payment} /></td>
-                      <td className="px-2"><StatusBadge status={o.status} /></td>
-                      <td className="px-2 text-ink-500 text-xs">{timeAgo(o.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="divide-y divide-ink-100 -my-1">
+              {d.recentOrders.map((o) => (
+                <li key={o._id}>
+                  <Link to={`/admin/orders?open=${o.orderNo}`} className="flex items-center gap-3 py-2.5 group min-w-0">
+                    <ItemStack items={o.items} size="w-11 h-11" />
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-2 flex-wrap"><b className="group-hover:text-brand-600">{o.orderNo}</b><StatusBadge status={o.status} /><PaymentBadge payment={o.payment} /></span>
+                      <span className="block text-xs text-ink-500 truncate mt-0.5">{custName(o)}{!o.user && ' (guest)'} · {o.items.map((i) => i.name).join(', ')}</span>
+                    </span>
+                    <span className="text-right shrink-0"><b className="block">{inr(o.total)}</b><span className="text-xs text-ink-500">{timeAgo(o.createdAt)}</span></span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
         </Panel>
         <Panel title="Latest requests" right={<Link to="/admin/requests" className="text-sm font-bold text-brand-600">All →</Link>}>
