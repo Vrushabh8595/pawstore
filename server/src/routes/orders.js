@@ -89,6 +89,25 @@ router.post(
 )
 
 router.get('/my', asyncHandler(async (req, res) => res.json(await Order.find({ user: req.user._id }).sort('-createdAt'))))
+// Link guest orders to the signed-in account. The customer proves ownership
+// with the order number + the delivery phone number from their own receipt.
+router.post(
+  '/claim',
+  validate(z.object({ orders: z.array(z.object({ orderNo: z.string().max(40), phone: z.string().regex(/^\d{10}$/) })).min(1).max(30) })),
+  asyncHandler(async (req, res) => {
+    let linked = 0
+    for (const { orderNo, phone } of req.body.orders) {
+      const r = await Order.updateOne(
+        { orderNo, user: { $exists: false }, 'shippingAddress.phone': phone },
+        { $set: { user: req.user._id } }
+      )
+      const r2 = r.modifiedCount ? r : await Order.updateOne({ orderNo, user: null, 'shippingAddress.phone': phone }, { $set: { user: req.user._id } })
+      linked += r2.modifiedCount
+    }
+    res.json({ linked })
+  })
+)
+
 // A customer's own order by its order number (used by the account pages)
 router.get(
   '/no/:orderNo',
