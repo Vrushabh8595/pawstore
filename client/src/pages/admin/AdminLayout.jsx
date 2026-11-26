@@ -6,6 +6,7 @@ import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
 import Logo from '@/components/Logo'
 import { NotificationAlerts, NotificationBell, AdminAlertSetup } from '@/components/Notifications'
+import EmailStatus from './EmailStatus'
 
 const NAV = [
   ['/admin', 'Dashboard', LayoutDashboard, true],
@@ -37,7 +38,7 @@ export default function AdminLayout() {
 
       <Link to="/admin/traffic" className="mx-1 mt-4 flex items-center gap-3 rounded-2xl bg-white/5 ring-1 ring-white/10 px-4 py-3 hover:bg-white/10 transition">
         <span className="relative flex w-3 h-3"><span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-60" /><span className="relative w-3 h-3 rounded-full bg-green-400" /></span>
-        <span className="text-sm"><b className="text-white text-lg leading-none">{live.data?.count ?? '–'}</b> <span className="text-white/60">live on site</span></span>
+        <span className="text-sm"><b className="text-white text-lg leading-none">{live.data?.count ?? '…'}</b> <span className="text-white/60">live on site</span></span>
       </Link>
 
       <nav className="mt-5 space-y-1 flex-1">
@@ -63,7 +64,7 @@ export default function AdminLayout() {
         <Logo light className="h-7" />
         <NotificationBell admin className="ml-auto" />
         <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 rounded-full px-2.5 py-1">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />{live.data?.count ?? '–'} live
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />{live.data?.count ?? '…'} live
         </span>
       </header>
       {open && (
@@ -84,6 +85,7 @@ export default function AdminLayout() {
           <div className="rounded-xl bg-pine-900"><NotificationBell admin /></div>
         </div>
         <AdminAlertSetup />
+        {['/admin', '/admin/orders'].includes(pathname) && <EmailStatus />}
         <Outlet />
       </main>
       <NotificationAlerts admin />

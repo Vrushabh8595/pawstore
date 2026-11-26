@@ -104,7 +104,7 @@ export default function AdminOrders() {
                 <span className="block text-sm text-ink-700 truncate mt-1">{o.items.map((i) => `${i.name} (${i.size}) ×${i.qty}`).join(', ')}</span>
                 <span className="flex items-center gap-x-3 gap-y-0.5 flex-wrap text-xs text-ink-500 mt-1">
                   <span className="inline-flex items-center gap-1"><UserIcon size={12} />{custName(o)}{!o.user && ' · guest'}</span>
-                  <span className="inline-flex items-center gap-1"><MapPin size={12} />{o.shippingAddress?.city || '—'}</span>
+                  <span className="inline-flex items-center gap-1"><MapPin size={12} />{o.shippingAddress?.city || 'None'}</span>
                   <span className="inline-flex items-center gap-1"><Clock size={12} />{timeAgo(o.createdAt)}</span>
                   <span>{qty} item{qty === 1 ? '' : 's'} · {o.payment.method === 'COD' ? 'Cash on delivery' : 'UPI'}</span>
                 </span>
@@ -185,7 +185,7 @@ function OrderDrawer({ order: o, onClose, onChanged }) {
           {o.payment.method === 'UPI_MANUAL' ? (
             <section className="card p-4 bg-amber-50 border-amber-200">
               <p className="font-bold flex items-center gap-1.5"><IndianRupee size={15} /> UPI payment</p>
-              <p className="text-ink-700 mt-1">UTR / reference: <b className="font-mono">{o.payment.utr || '—'}</b></p>
+              <p className="text-ink-700 mt-1">UTR / reference: <b className="font-mono">{o.payment.utr || 'None'}</b></p>
               {o.payment.status === 'pending_verification' ? (
                 <div className="flex gap-2 mt-3">
                   <button disabled={busy} onClick={() => verify.mutate('approve')} className="btn-primary !py-2 flex-1"><Check size={16} /> Mark paid</button>
@@ -196,7 +196,7 @@ function OrderDrawer({ order: o, onClose, onChanged }) {
           ) : (
             <section className="card p-4 bg-white flex items-center gap-3">
               <span className="w-10 h-10 rounded-xl bg-green-50 text-green-600 grid place-items-center"><IndianRupee size={18} /></span>
-              <p className="flex-1"><b>Cash on delivery</b><br /><span className="text-ink-500 text-xs">Collect {inr(o.total)} at the door{o.payment.status === 'cod_collected' ? ' — collected ✓' : ''}</span></p>
+              <p className="flex-1"><b>Cash on delivery</b><br /><span className="text-ink-500 text-xs">Collect {inr(o.total)} at the door{o.payment.status === 'cod_collected' ? ', collected ✓' : ''}</span></p>
             </section>
           )}
 

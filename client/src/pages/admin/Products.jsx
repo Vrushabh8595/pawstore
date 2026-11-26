@@ -98,7 +98,7 @@ export default function AdminProducts() {
                       </div>
                     </Td>
                     <Td className="capitalize">{(p.category || '').replace(/-/g, ' ')}</Td>
-                    <Td>{(p.variants || []).map((v) => v.size).filter(Boolean).join(', ') || '—'}</Td>
+                    <Td>{(p.variants || []).map((v) => v.size).filter(Boolean).join(', ') || 'None'}</Td>
                     <Td className="font-semibold">{inr(minPrice(p))}</Td>
                     <Td>
                       <span className={cx('font-bold', stock >= 30 ? 'text-green-600' : stock >= LOW_STOCK ? 'text-amber-600' : 'text-red-600')}>{stock}</span>

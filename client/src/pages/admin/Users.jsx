@@ -22,7 +22,7 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <PageHead title="Users" sub="Search a customer to open their dashboard — orders, spend and activity." />
+      <PageHead title="Users" sub="Search a customer to open their dashboard: orders, spend and activity." />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <Stat icon={UsersIcon} label={debounced ? 'Matching users' : 'Total users'} value={fmtNum(users.length)} />
         <Stat icon={Radio} tone="green" label="Logged-in users online" value={fmtNum(live)} live />
@@ -52,13 +52,13 @@ export default function AdminUsers() {
                   <td className="px-4 py-3">
                     <Link to={`/admin/users/${u._id}`} className="flex items-center gap-3 group">
                       <Avatar name={u.name} live={isLive(u.lastSeen)} />
-                      <span className="min-w-0"><span className="block font-bold group-hover:text-brand-600 truncate">{u.name}</span><span className="block text-xs text-ink-500 truncate">{u.email}{u.phone ? ` · ${u.phone}` : ''}</span></span>
+                      <span className="min-w-0"><span className="flex items-center gap-1.5 font-bold group-hover:text-brand-600 min-w-0"><span className="truncate">{u.name}</span>{u.blocked && <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-wider text-white bg-red-500 rounded-full px-1.5 py-0.5">Blocked</span>}</span><span className="block text-xs text-ink-500 truncate">{u.email}{u.phone ? ` · ${u.phone}` : ''}</span></span>
                     </Link>
                   </td>
                   <td className="px-3 font-semibold">{u.orderCount}</td>
                   <td className="px-3 font-bold">{inr(u.spent)}</td>
                   <td className="px-3"><span className="text-green-600 font-bold">{u.success}</span> / <span className="text-amber-600 font-bold">{u.pending}</span> / <span className="text-red-600 font-bold">{u.failed}</span></td>
-                  <td className="px-3 text-ink-500">{u.lastOrderAt ? timeAgo(u.lastOrderAt) : '—'}</td>
+                  <td className="px-3 text-ink-500">{u.lastOrderAt ? timeAgo(u.lastOrderAt) : 'None'}</td>
                   <td className="px-3">{isLive(u.lastSeen) ? <span className="text-green-600 font-bold">Online now</span> : <span className="text-ink-500">{timeAgo(u.lastSeen)}</span>}</td>
                   <td className="px-3 text-ink-500">{fmtDate(u.createdAt)}</td>
                 </tr>

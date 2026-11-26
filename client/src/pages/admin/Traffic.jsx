@@ -14,7 +14,7 @@ export default function Traffic() {
 
   return (
     <div>
-      <PageHead title="Traffic" sub="First-party analytics — no cookies, admin visits excluded."
+      <PageHead title="Traffic" sub="First-party analytics: no cookies, admin visits excluded."
         right={
           <div className="flex bg-white rounded-full p-1 ring-1 ring-ink-200">
             {[[1, 'Today'], [7, '7 days'], [30, '30 days'], [90, '90 days']].map(([d, l]) => (

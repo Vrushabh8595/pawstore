@@ -31,7 +31,7 @@ export default function Overview() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 mt-4">
-        <Panel title="Orders & revenue — last 14 days" className="lg:col-span-2">
+        <Panel title="Orders & revenue (last 14 days)" className="lg:col-span-2">
           <BarLineChart data={d.series} bar="revenue" line="orders" barLabel="Revenue" lineLabel="Orders" money />
         </Panel>
         <Panel title="Order outcomes">
@@ -44,7 +44,7 @@ export default function Overview() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 mt-4">
-        <Panel title="Traffic — last 14 days" className="lg:col-span-2" right={<Link to="/admin/traffic" className="text-sm font-bold text-brand-600">Details →</Link>}>
+        <Panel title="Traffic (last 14 days)" className="lg:col-span-2" right={<Link to="/admin/traffic" className="text-sm font-bold text-brand-600">Details →</Link>}>
           <BarLineChart data={d.series} bar="views" line="visitors" barLabel="Page views" lineLabel="Visitors" />
         </Panel>
         <Panel title="Most ordered (30 days)">

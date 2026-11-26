@@ -4,8 +4,8 @@ import { createPortal } from 'react-dom'
 import { inr } from '@/lib/format'
 
 export const fmtNum = (n) => new Intl.NumberFormat('en-IN').format(n || 0)
-export const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—')
-export const fmtDateTime = (d) => (d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '—')
+export const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'None')
+export const fmtDateTime = (d) => (d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'None')
 export function timeAgo(d) {
   if (!d) return 'never'
   const s = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000)
@@ -155,31 +155,45 @@ export function ErrorBox({ error }) {
   )
 }
 
-// Product photo for an order line (falls back to a paw tile).
-// Hovering it (mouse / trackpad) pops up a large zoomed preview.
+// Product photo (falls back to a paw tile).
+// • Mouse / trackpad hover → large zoomed preview next to it.
+// • Click / tap (when not inside a link or button) → full-screen view.
 export function ItemImg({ src, alt = '', className = 'w-12 h-12', zoom = true }) {
   const [bad, setBad] = useState(false)
   const [pos, setPos] = useState(null)
+  const [full, setFull] = useState(false)
   const ref = useRef(null)
   const canZoom = zoom && src && !bad
-  const show = () => {
-    if (!canZoom || !window.matchMedia?.('(hover: hover)').matches) return
+  const show = (e) => {
+    if (!canZoom || e.pointerType === 'touch') return
     const r = ref.current.getBoundingClientRect()
-    const size = Math.min(280, window.innerWidth - 24, window.innerHeight - 24)
-    const right = r.right + 12 + size <= window.innerWidth
-    const left = right ? r.right + 12 : Math.max(12, r.left - 12 - size)
+    const size = Math.min(380, window.innerWidth - 24, window.innerHeight - 24)
+    const right = r.right + 14 + size <= window.innerWidth
+    const left = right ? r.right + 14 : Math.max(12, r.left - 14 - size)
     const top = Math.min(Math.max(12, r.top + r.height / 2 - size / 2), window.innerHeight - size - 12)
     setPos({ left, top, size })
   }
+  const openFull = (e) => {
+    if (!canZoom || e.target.closest('a,button')) return
+    e.stopPropagation(); setPos(null); setFull(true)
+  }
   return (
-    <span ref={ref} onMouseEnter={show} onMouseLeave={() => setPos(null)}
+    <span ref={ref} onPointerEnter={show} onPointerLeave={() => setPos(null)} onClick={openFull}
       className={`${className} shrink-0 rounded-xl bg-white ring-1 ring-ink-100 overflow-hidden grid place-items-center ${canZoom ? 'cursor-zoom-in' : ''}`}>
-      {src && !bad ? <img src={src} alt={alt} loading="lazy" className={`w-full h-full object-contain p-0.5 transition-transform duration-200 ${canZoom ? 'hover:scale-110' : ''}`} onError={() => setBad(true)} /> : <span className="text-lg" aria-hidden="true">🐾</span>}
+      {src && !bad ? <img src={src} alt={alt} loading="lazy" className={`w-full h-full object-contain p-0.5 transition-transform duration-200 ${canZoom ? 'hover:scale-125' : ''}`} onError={() => setBad(true)} /> : <span className="text-lg" aria-hidden="true">🐾</span>}
       {pos && createPortal(
-        <span role="presentation" className="fixed z-[100] pointer-events-none rounded-2xl bg-white p-2 shadow-[0_24px_60px_-12px_rgba(26,52,80,.55)] ring-1 ring-ink-100 animate-zoom-in"
+        <span role="presentation" className="fixed z-[100] pointer-events-none rounded-2xl bg-white p-3 shadow-[0_24px_60px_-12px_rgba(26,52,80,.55)] ring-1 ring-ink-100 animate-zoom-in"
           style={{ left: pos.left, top: pos.top, width: pos.size, height: pos.size }}>
           <img src={src} alt="" className="w-full h-full object-contain rounded-xl" />
-          {alt && <span className="absolute inset-x-2 bottom-2 rounded-lg bg-pine-900/85 text-white text-[11px] font-semibold px-2 py-1 line-clamp-2">{alt}</span>}
+          {alt && <span className="absolute inset-x-3 bottom-3 rounded-lg bg-pine-900/85 text-white text-xs font-semibold px-2.5 py-1.5 line-clamp-2">{alt}</span>}
+        </span>,
+        document.body
+      )}
+      {full && createPortal(
+        <span role="dialog" aria-label={alt || 'Product photo'} onClick={() => setFull(false)}
+          className="fixed inset-0 z-[110] bg-black/80 grid place-items-center p-4 cursor-zoom-out animate-fade-in">
+          <img src={src} alt={alt} className="max-w-full max-h-[85vh] rounded-2xl bg-white p-3 object-contain" />
+          {alt && <span className="mt-3 text-white text-sm font-semibold text-center">{alt}</span>}
         </span>,
         document.body
       )}

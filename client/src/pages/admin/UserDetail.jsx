@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, IndianRupee, ShoppingBag, CheckCircle2, Clock, XCircle, TrendingUp, Phone, Mail, CalendarDays, Eye } from 'lucide-react'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Ban, ShieldCheck, Loader2, ArrowLeft, IndianRupee, ShoppingBag, CheckCircle2, Clock, XCircle, TrendingUp, Phone, Mail, CalendarDays, Eye } from 'lucide-react'
 import { api } from '@/lib/api'
 import { inr } from '@/lib/format'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
@@ -21,7 +22,7 @@ export default function UserDetail() {
       <div className="card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
         <Avatar name={u.name} live={live} size="w-16 h-16 text-xl" />
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl truncate">{u.name}</h1>
+          <h1 className="text-2xl sm:text-3xl truncate flex items-center gap-2">{u.name}{u.blocked && <span className="shrink-0 font-sans text-xs font-extrabold uppercase tracking-wider text-white bg-red-500 rounded-full px-2 py-1">Blocked</span>}</h1>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-500 mt-1">
             <span className="inline-flex items-center gap-1.5"><Mail size={14} />{u.email}</span>
             {u.phone && <a href={`tel:${u.phone}`} className="inline-flex items-center gap-1.5 hover:text-brand-600"><Phone size={14} />{u.phone}</a>}
@@ -32,6 +33,8 @@ export default function UserDetail() {
           {live ? '● Online now' : `Last seen ${timeAgo(u.lastSeen)}`}
         </span>
       </div>
+
+      <BlockPanel user={u} />
 
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
         <Stat icon={IndianRupee} tone="green" label="Total spent (to date)" value={inr(u.spent)} />
@@ -93,6 +96,55 @@ export default function UserDetail() {
           )}
         </Panel>
       </div>
+    </div>
+  )
+}
+
+// Block / unblock: blocked customers can browse but can't place orders
+function BlockPanel({ user: u }) {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const m = useMutation({
+    mutationFn: (blocked) => api.patch(`/admin/users/${u._id}/block`, { blocked, reason: reason.trim() || undefined }),
+    onSuccess: () => { setOpen(false); setReason(''); qc.invalidateQueries({ queryKey: ['admin-user', u._id] }); qc.invalidateQueries({ queryKey: ['admin-users'] }) },
+  })
+  if (u.blocked) {
+    return (
+      <div className="card p-4 mb-4 flex flex-wrap items-center gap-3 bg-red-50 border-red-200">
+        <span className="w-10 h-10 rounded-xl bg-red-500 text-white grid place-items-center shrink-0"><Ban size={19} /></span>
+        <p className="flex-1 min-w-[200px] text-sm text-red-800">
+          <b>This customer is blocked</b> since {fmtDateTime(u.blockedAt)}. They can browse but can’t place orders (also not as a guest with the same email or phone).
+          {u.blockedReason && <span className="block mt-0.5">Reason: {u.blockedReason}</span>}
+        </p>
+        <button disabled={m.isPending} onClick={() => m.mutate(false)} className="btn-primary !py-2 !px-4 text-sm !bg-green-600 hover:!bg-green-700">
+          {m.isPending ? <Loader2 size={15} className="animate-spin" /> : <ShieldCheck size={16} />} Unblock
+        </button>
+        {m.error && <p className="w-full text-sm text-red-600">{m.error.message}</p>}
+      </div>
+    )
+  }
+  return (
+    <div className="mb-4">
+      {!open ? (
+        <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-bold text-red-600 border border-red-200 rounded-full px-3.5 py-1.5 hover:bg-red-50">
+          <Ban size={15} /> Block this customer
+        </button>
+      ) : (
+        <div className="card p-4 border-red-200 animate-fade-in">
+          <p className="font-bold text-ink-900">Block {u.name}?</p>
+          <p className="text-sm text-ink-500 mt-0.5">They won’t be able to place orders. When they try, they’ll see a message asking them to contact support.</p>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder="Reason (only visible to admins), e.g. repeated fake COD orders"
+            className="mt-3 w-full rounded-xl border border-ink-200 px-3 py-2 text-sm outline-none focus:border-red-400" />
+          <div className="flex gap-2 mt-3">
+            <button disabled={m.isPending} onClick={() => m.mutate(true)} className="btn-primary !py-2 !px-4 text-sm !bg-red-600 hover:!bg-red-700">
+              {m.isPending ? <Loader2 size={15} className="animate-spin" /> : <Ban size={15} />} Block customer
+            </button>
+            <button onClick={() => setOpen(false)} className="btn-ghost !py-2 !px-4 text-sm">Cancel</button>
+          </div>
+          {m.error && <p className="text-sm text-red-600 mt-2">{m.error.message}</p>}
+        </div>
+      )}
     </div>
   )
 }
