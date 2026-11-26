@@ -29,7 +29,7 @@ async function run() {
   const email = (process.env.ADMIN_EMAIL || 'admin@pawstore.in').trim()
   const rawPassword = process.env.ADMIN_PASSWORD || 'admin123'
   console.log(
-    'ADMIN seed — email len ' + email.length +
+    'ADMIN seed. Email len ' + email.length +
     ', password raw len ' + rawPassword.length +
     ', trimmed len ' + rawPassword.trim().length
   )
