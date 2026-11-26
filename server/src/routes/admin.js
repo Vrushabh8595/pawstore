@@ -244,10 +244,10 @@ router.patch(
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
     if (!ORDER_STATUSES.includes(req.body.status)) return res.status(400).json({ message: 'Unknown status' })
+    const changed = order.status !== req.body.status // compare BEFORE updating
     order.status = req.body.status
     // Delivering a COD order means the cash was collected
     if (req.body.status === 'Delivered' && order.payment.method === 'COD') order.payment.status = 'cod_collected'
-    const changed = order.status !== req.body.status
     order.statusHistory.push({ status: req.body.status, note: req.body.note })
     await order.save()
     if (changed) notifyStatus(order, req.body.note)
