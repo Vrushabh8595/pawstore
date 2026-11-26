@@ -24,7 +24,7 @@ export const STATIC_PAGES = {
   '/offers': { title: 'Pet Food & Medicine Offers and Deals', desc: 'Today’s best deals on dog food, treats, medicines and accessories. Save more at AnimalVeda — limited-time discounts.' },
   '/request-medicine': { title: 'Request a Pet or Animal Medicine — Send a Photo', desc: 'Can’t find a medicine, food or custom-compounded medicine for your dog, cat, cattle, goat, horse or poultry? Send a photo and details — AnimalVeda will source it.' },
   '/about-us': { title: 'About AnimalVeda', desc: 'AnimalVeda supplies veterinary medicines, food and care products for pets and farm animals across India.' },
-  '/contact-us': { title: 'Contact AnimalVeda', desc: `Questions about an order or a medicine? Call ${PHONE} or email care@animalveda.com, Mon–Sat 10am–7pm.` },
+  '/contact-us': { title: 'Contact AnimalVeda', desc: `Questions about an order or a medicine? Call ${PHONE} or email care@animalveda.com — open all 7 days, weekends included.` },
   '/shipping-policy': { title: 'Shipping Policy', desc: 'Delivery across India in 2–5 business days. Free shipping over ₹999, COD available.' },
   '/refund-policy': { title: 'Refund & Return Policy', desc: 'Return unopened products within 7 days. Damaged or wrong items are replaced or refunded.' },
   '/privacy-policy': { title: 'Privacy Policy', desc: 'How AnimalVeda collects, uses and protects your personal information.' },

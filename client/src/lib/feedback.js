@@ -48,9 +48,14 @@ function audio() {
 }
 // Browsers keep audio muted until the visitor interacts with the page; unlock
 // it on the first tap/click/key so later alerts (e.g. a new order) can play.
+// Stays armed: iPhones suspend audio again whenever the tab goes to the
+// background, so every tap re-wakes it (cheap no-op when already running).
+let unlockArmed = false
 export function unlockAudioOnFirstGesture() {
-  const go = () => { try { audio() } catch { /* ignore */ } ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.removeEventListener(e, go, true)) }
-  ;['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, go, { capture: true, passive: true }))
+  if (unlockArmed) return
+  unlockArmed = true
+  const go = () => { try { if (!ctx || ctx.state !== 'running') audio() } catch { /* ignore */ } }
+  ;['pointerdown', 'keydown', 'touchend'].forEach((e) => window.addEventListener(e, go, { capture: true, passive: true }))
 }
 function tone(ac, { freq, to, start = 0, dur = 0.12, type = 'sine', vol = 0.18 }) {
   const t = ac.currentTime + start
@@ -75,6 +80,8 @@ const SOUNDS = {
   remove: (ac) => { tone(ac, { freq: 600, to: 260, dur: 0.18, type: 'triangle', vol: 0.14 }) },
   dec: (ac) => tone(ac, { freq: 700, to: 480, dur: 0.08, type: 'triangle', vol: 0.1 }),
   // two short low buzzes = "can't do that"
+  // Form error: soft low "uh-oh" buzz (two falling notes)
+  error: (ac) => { tone(ac, { freq: 330, to: 300, dur: 0.12, type: 'square', vol: 0.07 }); tone(ac, { freq: 247, to: 220, start: 0.14, dur: 0.2, type: 'square', vol: 0.07 }) },
   limit: (ac) => { tone(ac, { freq: 220, dur: 0.09, type: 'square', vol: 0.06 }); tone(ac, { freq: 196, start: 0.12, dur: 0.12, type: 'square', vol: 0.06 }) },
   success: (ac) => [523, 659, 784, 1047].forEach((f, i) => tone(ac, { freq: f, start: i * 0.07, dur: 0.18, vol: 0.12 })),
   // Order placed: bright, bouncy "ta-da!" — rising major arpeggio, a warm
