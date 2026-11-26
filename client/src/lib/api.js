@@ -1,4 +1,4 @@
-// Tiny fetch wrapper for the PawStore backend API.
+// Tiny fetch wrapper for the AnimalVeda backend API.
 // Base URL comes from VITE_API_URL (set on Vercel). Falls back to same-origin.
 const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 
