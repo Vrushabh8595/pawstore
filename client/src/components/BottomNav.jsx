@@ -35,7 +35,7 @@ export default function BottomNav() {
             className="relative flex flex-col items-center justify-end pb-1.5 text-[10.5px] font-bold text-pine-800">
             <span className={`absolute -top-5 grid place-items-center w-[58px] h-[58px] rounded-full bg-white p-[3px] shadow-[0_8px_20px_-6px_rgba(17,37,58,.55)] transition active:scale-90 ${active ? 'ring-4 ring-brand-400' : 'ring-4 ring-white'}`}>
               <LogoMark size={52} className={active ? 'animate-pop' : ''} />
-              <span className="absolute -right-0.5 -top-0.5 w-5 h-5 rounded-full bg-brand-500 text-white text-[11px] font-black grid place-items-center ring-2 ring-white">+</span>
+              <span className="absolute -right-0.5 -top-0.5 w-5 h-5 rounded-full bg-pine-800 text-white text-[11px] font-black grid place-items-center ring-2 ring-white">+</span>
             </span>
             <span className={active ? 'text-brand-600' : ''}>{label}</span>
           </Link>

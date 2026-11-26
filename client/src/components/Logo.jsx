@@ -1,9 +1,20 @@
-// AnimalVeda mark: white paw with a medical cross on a navy disc.
-export function LogoMark({ size = 40, className = '' }) {
+// AnimalVeda logo — an icon-only mark (no wordmark): white paw with a navy
+// medical cross on a warm orange disc, finished with a soft inner ring.
+// The brand name stays available to screen readers and search engines.
+let uid = 0
+export function LogoMark({ size = 40, className = '', title = 'AnimalVeda' }) {
+  const id = `avg${++uid}`
   return (
-    <svg viewBox="0 0 48 48" width={size} height={size} className={className} role="img" aria-label="AnimalVeda">
-      <circle cx="24" cy="24" r="24" fill="#1a3450" />
-      <circle cx="24" cy="24" r="21.2" fill="none" stroke="#fff" strokeOpacity=".28" strokeWidth="1.2" />
+    <svg viewBox="0 0 48 48" width={size} height={size} className={className} role="img" aria-label={title}>
+      <defs>
+        <linearGradient id={id} x1="8" y1="4" x2="40" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ffab3d" />
+          <stop offset=".55" stopColor="#f8830b" />
+          <stop offset="1" stopColor="#d85f02" />
+        </linearGradient>
+      </defs>
+      <circle cx="24" cy="24" r="24" fill={`url(#${id})`} />
+      <circle cx="24" cy="24" r="21.2" fill="none" stroke="#fff" strokeOpacity=".45" strokeWidth="1.2" />
       <g fill="#fff">
         <ellipse cx="13.4" cy="20.2" rx="3.3" ry="4.3" transform="rotate(-24 13.4 20.2)" />
         <ellipse cx="19.6" cy="13.6" rx="3.5" ry="4.7" transform="rotate(-8 19.6 13.6)" />
@@ -19,13 +30,12 @@ export function LogoMark({ size = 40, className = '' }) {
   )
 }
 
-export default function Logo({ size = 40, dark = false, className = '' }) {
+// Site logo = the mark alone (no "AnimalVeda" text), per brand direction.
+export default function Logo({ size = 40, className = '' }) {
   return (
-    <span className={`inline-flex items-center gap-2 font-display font-bold tracking-tight ${className}`}>
-      <LogoMark size={size} className="shrink-0 drop-shadow-[0_6px_14px_rgba(26,52,80,.35)]" />
-      <span className="leading-none">
-        <span className={dark ? 'text-white' : 'text-pine-800'}>Animal</span><span className="text-brand-500">Veda</span>
-      </span>
+    <span className={`inline-flex items-center ${className}`}>
+      <LogoMark size={size} className="shrink-0 drop-shadow-[0_6px_14px_rgba(224,100,2,.35)]" />
+      <span className="sr-only">AnimalVeda</span>
     </span>
   )
 }

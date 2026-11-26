@@ -26,7 +26,7 @@ export default function Footer() {
 
       <div className="container-x py-14 grid gap-10 md:grid-cols-[1.5fr_repeat(3,1fr)_1.3fr]">
         <div>
-          <Logo size={42} dark className="text-2xl mb-3" />
+          <Logo size={56} className="mb-3" />
           <p className="text-sm text-white/55 max-w-xs">Vet medicines, nutrition and care for pets, livestock and every animal you love. Can’t find a medicine? Send us a photo — we’ll source it.</p>
           <div className="flex gap-2 mt-5">
             {[MessageCircle, Send, Globe].map((Icon, i) => (

@@ -4,6 +4,13 @@ import { ArrowRight, ChevronLeft, ChevronRight, PawPrint } from 'lucide-react'
 
 const SLIDES = [
   {
+    eyebrow: 'For your fur baby', title: ['Your baby,', 'their health,', 'our care.'], sub: 'You love your baby like family — give them the best for their health.',
+    cta: 'Shop baby’s health', to: '/category/health', price: 'Vet-approved care', sticker: ['Made with', 'LOVE', 'for babies'],
+    theme: { bg: 'bg-[#fff0df]', text: 'text-ink-900', sub: 'text-ink-700', hi: 'text-brand-600', arch: 'bg-pine-800', ring: 'border-brand-300', chip: 'bg-white text-pine-800 ring-brand-200', sticker: 'bg-pine-800 text-white', blob: 'bg-brand-100' },
+    img: 'https://images.unsplash.com/photo-1542570945-494cd4a258be?auto=format&fit=crop&crop=faces&w=1000&q=72',
+    imgAlt: 'White Siberian husky',
+  },
+  {
     eyebrow: 'Everyday nutrition', title: ['Food they’ll', 'wag', 'for.'], sub: 'Vet-approved meals made with real meat, first.',
     cta: 'Shop dry food', to: '/category/dry-food', price: 'From ₹236', sticker: ['Up to', '20%', 'OFF'],
     theme: { bg: 'bg-pine-800', text: 'text-white', sub: 'text-white/75', hi: 'text-brand-400', arch: 'bg-brand-400', ring: 'border-white/25', chip: 'bg-white/10 text-white ring-white/20', sticker: 'bg-brand-400 text-ink-900', blob: 'bg-pine-600' },
@@ -117,7 +124,7 @@ export default function HeroCarousel() {
                 <div className="absolute right-0 bottom-0 w-[64%] h-[54%] sm:w-[48%] sm:h-[92%] sm:right-[4%]">
                   <div className={`absolute inset-0 rounded-t-full ${t.arch}`} />
                   <div className="absolute inset-[6px] bottom-0 rounded-t-full overflow-hidden">
-                    <img src={s.img} alt="" draggable="false" loading={i === 0 ? 'eager' : 'lazy'}
+                    <img src={s.img} alt={s.imgAlt || ""} draggable="false" loading={i === 0 ? 'eager' : 'lazy'}
                       className="hero-img w-full h-full object-cover" />
                   </div>
                   {/* Sticker */}

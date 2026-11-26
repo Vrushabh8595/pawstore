@@ -87,7 +87,7 @@ export default function Header() {
             </button>
 
             <Link to="/" className="shrink-0 min-w-0 text-[1.3rem] min-[360px]:text-[1.4rem] sm:text-2xl" aria-label="AnimalVeda home">
-              <Logo size={34} className="sm:[&>svg]:w-10 sm:[&>svg]:h-10" />
+              <Logo size={40} className="sm:[&>svg]:w-12 sm:[&>svg]:h-12" />
             </Link>
 
             <form onSubmit={submit} className="hidden md:flex items-center flex-1 max-w-xl mx-2">
