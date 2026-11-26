@@ -29,8 +29,13 @@ async function request(path, { method = 'GET', body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   })
   const text = await res.text()
-  const data = text ? JSON.parse(text) : null
-  if (!res.ok) throw new Error((data && data.message) || ('Request failed (' + res.status + ')'))
+  let data = null
+  try { data = text ? JSON.parse(text) : null } catch { /* non-JSON (e.g. host waking up) */ }
+  if (!res.ok) {
+    const err = new Error((data && data.message) || ('Request failed (' + res.status + ')'))
+    err.status = res.status
+    throw err
+  }
   return data
 }
 

@@ -20,9 +20,21 @@ export function useMyOrders() {
   const user = useAuth((s) => s.user)
   const local = useOrders((s) => s.orders)
   const qc = useQueryClient()
-  const key = ['my-orders', user?.id || user?._id]
+  const uid = user?.id || user?._id
+  const key = ['my-orders', uid]
+  // Last result is cached on the device so the list (or "No orders yet")
+  // appears instantly, then refreshes from the server in the background.
+  const cacheKey = `animalveda-myorders-${uid}`
   const q = useQuery({
-    queryKey: key, queryFn: () => api.get('/orders/my'), enabled: !!user,
+    queryKey: key,
+    queryFn: async () => {
+      const data = await api.get('/orders/my')
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)) } catch { /* ignore */ }
+      return data
+    },
+    enabled: !!user,
+    initialData: () => { try { return JSON.parse(localStorage.getItem(cacheKey) || 'null') ?? undefined } catch { return undefined } },
+    initialDataUpdatedAt: 0, // always refresh cached data
     staleTime: 0, refetchOnWindowFocus: true, refetchInterval: 60_000,
   })
   const server = (q.data || []).map(normOrder)
@@ -44,5 +56,5 @@ export function useMyOrders() {
   }, [q.isSuccess, q.dataUpdatedAt, localOnly.length])
 
   const orders = [...server, ...localOnly.map(normOrder)].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  return { orders, isLoading: q.isLoading, isError: q.isError }
+  return { orders, isLoading: q.isLoading && !localOnly.length, isError: q.isError && !q.data, refetch: q.refetch }
 }
