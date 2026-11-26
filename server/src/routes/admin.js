@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import mongoose from 'mongoose'
-import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence, Notification } from '../models/index.js'
+import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence, Notification, Review } from '../models/index.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyStatus } from '../utils/notify.js'
@@ -277,6 +277,41 @@ router.patch(
     res.json(order)
   })
 )
+
+/* --------------------------------- Reviews --------------------------------- */
+router.get('/reviews', asyncHandler(async (req, res) => {
+  const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : undefined
+  const [reviews, counts] = await Promise.all([
+    Review.find(status ? { status } : {}).sort('-createdAt').limit(300).populate('user', 'name email').lean(),
+    Review.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
+  ])
+  res.json({ reviews, counts: Object.fromEntries(counts.map((c) => [c._id, c.n])) })
+}))
+router.patch(
+  '/reviews/:id',
+  validate(z.object({ status: z.enum(['approved', 'rejected', 'pending']) })),
+  asyncHandler(async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Review not found' })
+    const review = await Review.findById(req.params.id)
+    if (!review) return res.status(404).json({ message: 'Review not found' })
+    const was = review.status
+    review.status = req.body.status
+    review.moderatedAt = new Date()
+    await review.save()
+    if (was !== 'approved' && review.status === 'approved') {
+      Notification.create({
+        audience: 'user', user: review.user, type: 'review', status: 'approved', image: review.productImage, link: `/product/${review.productSlug}`,
+        title: 'Your review is live! ⭐', body: `Thanks for reviewing ${review.productName}. Other pet parents can now read it.`,
+      }).catch(() => {})
+    }
+    res.json({ review })
+  })
+)
+router.delete('/reviews/:id', asyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Review not found' })
+  await Review.findByIdAndDelete(req.params.id)
+  res.json({ ok: true })
+}))
 
 /* ---------------------------------- Email ---------------------------------- */
 const ADMIN_EMAIL = () => process.env.ADMIN_NOTIFY_EMAIL || 'gulhanev33@gmail.com'
