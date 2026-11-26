@@ -9,7 +9,7 @@ export const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`
 const PHONE = '+91-7620377278'
 
 export const CATEGORY_META = {
-  'dry-food': { title: 'Dry Dog Food Online — Drools, Pedigree & More', h1: 'Dry Dog Food', desc: 'Buy dry dog food online at the best prices — Drools, Pedigree and vet-approved kibble for puppies, adults and seniors. Free delivery over ₹999, COD available.' },
+  'dry-food': { title: 'Dry Dog Food Online: Drools, Pedigree & More', h1: 'Dry Dog Food', desc: 'Buy dry dog food online at the best prices: Drools, Pedigree and vet-approved kibble for puppies, adults and seniors. Free delivery over ₹999, COD available.' },
   'wet-food': { title: 'Wet Dog Food & Gravy Pouches Online', h1: 'Wet Dog Food', desc: 'Shop wet dog food, gravy pouches and chunks online. Tasty, complete meals for picky eaters. Free delivery over ₹999 across India.' },
   treats: { title: 'Dog Treats, Biscuits & Chews Online', h1: 'Dog Treats & Chews', desc: 'Healthy dog treats, biscuits and chews for training and rewards. Shop Pedigree Biscrok and more with fast delivery and COD.' },
   'collars-leashes': { title: 'Dog Collars, Leashes & Harnesses Online', h1: 'Collars, Leashes & Harnesses', desc: 'Durable dog collars, leashes and no-pull harnesses for every size. Shop reflective and designer styles online at AnimalVeda.' },
@@ -19,13 +19,13 @@ export const CATEGORY_META = {
 }
 
 export const STATIC_PAGES = {
-  '/': { title: 'AnimalVeda — Pet & Animal Medicine, Food and Care Online', desc: 'Buy vet medicines, dog food, treats and care products for pets and farm animals online. Can’t find a medicine? Send a photo — we’ll source it. COD & free delivery over ₹999.' },
+  '/': { title: 'AnimalVeda: Pet & Animal Medicine, Food and Care Online', desc: 'Buy vet medicines, dog food, treats and care products for pets and farm animals online. Can’t find a medicine? Send a photo. We’ll source it. COD & free delivery over ₹999.' },
   '/products': { title: 'Shop All Pet Food, Medicines & Accessories', desc: 'Browse all pet and animal food, medicines, treats and accessories at AnimalVeda. Great prices, COD and free delivery over ₹999.' },
-  '/offers': { title: 'Pet Food & Medicine Offers and Deals', desc: 'Today’s best deals on dog food, treats, medicines and accessories. Save more at AnimalVeda — limited-time discounts.' },
-  '/request-medicine': { title: 'Request a Pet or Animal Medicine — Send a Photo', desc: 'Can’t find a medicine, food or custom-compounded medicine for your dog, cat, cattle, goat, horse or poultry? Send a photo and details — AnimalVeda will source it.' },
+  '/offers': { title: 'Pet Food & Medicine Offers and Deals', desc: 'Today’s best deals on dog food, treats, medicines and accessories. Save more at AnimalVeda with limited-time discounts.' },
+  '/request-medicine': { title: 'Request a Pet or Animal Medicine: Send a Photo', desc: 'Can’t find a medicine, food or custom-compounded medicine for your dog, cat, cattle, goat, horse or poultry? Send a photo and details. AnimalVeda will source it.' },
   '/about-us': { title: 'About AnimalVeda', desc: 'AnimalVeda supplies veterinary medicines, food and care products for pets and farm animals across India.' },
-  '/contact-us': { title: 'Contact AnimalVeda', desc: `Questions about an order or a medicine? Call ${PHONE} or email care@animalveda.com — open all 7 days, weekends included.` },
-  '/shipping-policy': { title: 'Shipping Policy', desc: 'Delivery across India in 2–5 business days. Free shipping over ₹999, COD available.' },
+  '/contact-us': { title: 'Contact AnimalVeda', desc: `Questions about an order or a medicine? Call ${PHONE} or email care@animalveda.com. Open all 7 days, weekends included.` },
+  '/shipping-policy': { title: 'Shipping Policy', desc: 'Delivery across India in 2 to 5 business days. Free shipping over ₹999, COD available.' },
   '/refund-policy': { title: 'Refund & Return Policy', desc: 'Return unopened products within 7 days. Damaged or wrong items are replaced or refunded.' },
   '/privacy-policy': { title: 'Privacy Policy', desc: 'How AnimalVeda collects, uses and protects your personal information.' },
   '/terms-and-conditions': { title: 'Terms & Conditions', desc: 'Terms of ordering, pricing and delivery at AnimalVeda.' },
@@ -75,7 +75,7 @@ export function seoFor(pathname) {
       const v = p.variants[0]
       const c = categories.find((x) => x.slug === p.category)
       return {
-        title: withBrand(`${p.name} — Buy Online at ₹${v.price}`), description: clip(`${p.short} ${p.brand} ${v.size} at ₹${v.price}${v.mrp > v.price ? ` (MRP ₹${v.mrp})` : ''}. COD & free delivery over ₹999.`),
+        title: withBrand(`${p.name}: Buy Online at ₹${v.price}`), description: clip(`${p.short} ${p.brand} ${v.size} at ₹${v.price}${v.mrp > v.price ? ` (MRP ₹${v.mrp})` : ''}. COD & free delivery over ₹999.`),
         canonical: abs(path), image: p.images[0], type: 'product',
         jsonLd: [
           {
