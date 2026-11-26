@@ -5,6 +5,7 @@ import { useCart } from '@/store/cart'
 import { useWishlist } from '@/store/wishlist'
 import { useAuth } from '@/store/auth'
 import Logo, { LogoMark } from './Logo'
+import { NotificationBell } from './Notifications'
 import { soundOn, setSoundOn, playSound } from '@/lib/feedback'
 
 const PHONES = ['7620377278', '8982826363']
@@ -117,6 +118,7 @@ export default function Header() {
                 <Heart size={21} />
                 {wish > 0 && <Badge>{wish}</Badge>}
               </Link>
+              {user && user.role !== 'admin' && <NotificationBell />}
               <Link to="/cart" data-cart-target className="hidden lg:block relative p-2 sm:p-2.5 rounded-xl hover:bg-sand-100" aria-label={`Cart, ${count} items`}>
                 <ShoppingCart size={22} />
                 {count > 0 && <Badge key={count}>{count}</Badge>}
