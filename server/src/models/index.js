@@ -84,6 +84,8 @@ const orderSchema = new Schema(
   {
     orderNo: { type: String, required: true, unique: true },
     user: { type: Schema.Types.ObjectId, ref: 'User' },
+    guestEmail: String, // checkout without login
+    customerName: String,
     items: [
       { product: { type: Schema.Types.ObjectId, ref: 'Product' }, name: String, variantSku: String, size: String, price: Number, qty: Number },
     ],
@@ -139,6 +141,33 @@ const productRequestSchema = new Schema(
   { timestamps: true }
 )
 
+/* -------------------------------- Analytics -------------------------------- */
+// One row per page view (kept 120 days)
+const pageViewSchema = new Schema(
+  {
+    sid: { type: String, index: true }, // anonymous visitor id (localStorage)
+    user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+    path: String,
+    ref: String, // referrer host
+    device: { type: String, enum: ['mobile', 'tablet', 'desktop'] },
+    at: { type: Date, default: Date.now, expires: 60 * 60 * 24 * 120 },
+  },
+  { versionKey: false }
+)
+// One row per visitor, refreshed by a heartbeat — "live" = seen in the last 2 min
+const presenceSchema = new Schema(
+  {
+    sid: { type: String, unique: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User' },
+    path: String,
+    device: String,
+    firstSeen: Date, // set via $setOnInsert (no defaults, so upserts don't conflict)
+    lastSeen: { type: Date, index: true },
+    views: Number,
+  },
+  { versionKey: false }
+)
+
 /* -------------------------------- Settings -------------------------------- */
 const settingsSchema = new Schema(
   {
@@ -162,3 +191,5 @@ export const Wishlist = model('Wishlist', wishlistSchema)
 export const Order = model('Order', orderSchema)
 export const Settings = model('Settings', settingsSchema)
 export const ProductRequest = model('ProductRequest', productRequestSchema)
+export const PageView = model('PageView', pageViewSchema)
+export const Presence = model('Presence', presenceSchema)
