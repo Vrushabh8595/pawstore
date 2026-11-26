@@ -1,12 +1,18 @@
 import { Link, useParams } from 'react-router-dom'
 import { Check } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useOrders } from '@/store/orders'
+import { api } from '@/lib/api'
+import { normOrder } from '@/lib/myOrders'
 import { inr, STATUS_FLOW } from '@/lib/format'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
 
 export default function OrderDetail() {
   const { orderNo } = useParams()
-  const order = useOrders((s) => s.get(orderNo))
+  const local = useOrders((s) => s.get(orderNo))
+  const q = useQuery({ queryKey: ['my-order', orderNo], queryFn: () => api.get(`/orders/no/${encodeURIComponent(orderNo)}`), retry: false })
+  const order = q.data ? normOrder(q.data) : local ? normOrder(local) : null
+  if (q.isLoading && !local) return <div className="card h-40 animate-pulse" />
   if (!order) return <div className="card p-12 text-center text-ink-500">Order not found. <Link to="/account" className="text-brand-600 font-semibold">My orders</Link></div>
 
   const doneIndex = STATUS_FLOW.indexOf(order.status)
@@ -16,13 +22,13 @@ export default function OrderDetail() {
     <div>
       <Link to="/account" className="text-sm text-brand-600 font-semibold">← All orders</Link>
       <div className="flex items-center gap-3 flex-wrap mt-2 mb-6">
-        <h1 className="text-2xl font-extrabold">{order.orderNo}</h1>
+        <h1 className="text-2xl sm:text-3xl break-all">{order.orderNo}</h1>
         <StatusBadge status={order.status} />
         <PaymentBadge payment={order.payment} />
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
+        <div className="space-y-6 min-w-0">
           {/* Timeline */}
           {!rejected && (
             <section className="card p-5">
@@ -53,9 +59,9 @@ export default function OrderDetail() {
           <section className="card p-5">
             <h2 className="font-bold mb-4">Items</h2>
             {order.items.map((it) => (
-              <div key={it.sku} className="flex justify-between text-sm py-1.5 border-b border-[#f0f0ec] last:border-0">
-                <span className="text-ink-700">{it.name} · {it.size} × {it.qty}</span>
-                <span className="font-semibold">{inr(it.price * it.qty)}</span>
+              <div key={it.sku + it.name} className="flex justify-between text-sm py-1.5 border-b border-[#f0f0ec] last:border-0">
+                <span className="text-ink-700 min-w-0 pr-3">{it.name} · {it.size} × {it.qty}</span>
+                <span className="font-semibold shrink-0">{inr(it.price * it.qty)}</span>
               </div>
             ))}
           </section>
