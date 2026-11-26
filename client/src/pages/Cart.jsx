@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react'
 import { useCart, detailCart } from '@/store/cart'
 import { inr, SHIPPING_FEE, FREE_SHIP_ABOVE } from '@/lib/format'
+import { cartFeedback } from '@/lib/feedback'
 
 export default function Cart() {
   const rawItems = useCart((s) => s.items)
@@ -37,14 +38,14 @@ export default function Cart() {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between gap-3">
                   <Link to={`/product/${it.product.slug}`} className="font-bold hover:text-brand-600 line-clamp-2">{it.product.name}</Link>
-                  <button onClick={() => remove(it.id, it.sku)} className="text-ink-500 hover:text-red-500 shrink-0"><Trash2 size={18} /></button>
+                  <button onClick={(e) => { cartFeedback('remove', { button: e.currentTarget }); remove(it.id, it.sku) }} aria-label="Remove item" className="text-ink-500 hover:text-red-500 shrink-0 active:scale-75 transition"><Trash2 size={18} /></button>
                 </div>
                 <p className="text-sm text-ink-500">{it.variant.size} · {it.variant.flavour}</p>
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center border border-[#e5e5e0] rounded-lg">
-                    <button onClick={() => setQty(it.id, it.sku, it.qty - 1)} className="p-2"><Minus size={14} /></button>
-                    <span className="w-8 text-center text-sm font-bold">{it.qty}</span>
-                    <button onClick={() => setQty(it.id, it.sku, it.qty + 1)} className="p-2"><Plus size={14} /></button>
+                    <button onClick={(e) => { if (it.qty <= 1) { cartFeedback('remove', { button: e.currentTarget }); remove(it.id, it.sku) } else { cartFeedback('dec', { button: e.currentTarget }); setQty(it.id, it.sku, it.qty - 1) } }} aria-label="Decrease" className="p-2 active:scale-75 transition"><Minus size={14} /></button>
+                    <span key={it.qty} className="animate-pop w-8 text-center text-sm font-bold">{it.qty}</span>
+                    <button onClick={(e) => { cartFeedback('inc', { button: e.currentTarget }); setQty(it.id, it.sku, it.qty + 1) }} aria-label="Increase" className="p-2 active:scale-75 transition"><Plus size={14} /></button>
                   </div>
                   <span className="font-extrabold">{inr(it.lineTotal)}</span>
                 </div>

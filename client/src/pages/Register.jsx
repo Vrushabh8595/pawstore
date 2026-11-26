@@ -1,6 +1,6 @@
+import Logo from '@/components/Logo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Dog } from 'lucide-react'
 import { useAuth } from '@/store/auth'
 
 export default function Register() {
@@ -31,10 +31,7 @@ export default function Register() {
   return (
     <div className="container-x py-16 max-w-md">
       <div className="card p-8">
-        <div className="flex items-center gap-2 font-extrabold text-xl justify-center mb-6">
-          <span className="grid place-items-center w-9 h-9 rounded-xl bg-brand-500 text-white"><Dog size={20} /></span>
-          PawStore
-        </div>
+        <div className="flex justify-center mb-6"><Logo size={40} className="text-2xl" /></div>
         <h1 className="text-2xl font-extrabold text-center">Create your account</h1>
         <form onSubmit={submit} className="mt-6 space-y-3">
           <Field label="Full name" value={form.name} onChange={set('name')} />

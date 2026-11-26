@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Heart, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight } from 'lucide-react'
 import { getProduct, products } from '@/data/products'
 import { inr, discountPct } from '@/lib/format'
 import { useCart } from '@/store/cart'
 import { useWishlist } from '@/store/wishlist'
-import ProductCard from '@/components/ProductCard'
+import ProductRail from '@/components/ProductRail'
+import { useAddToCart } from '@/lib/useAddToCart'
 
 export default function Product() {
   const { slug } = useParams()
   const product = getProduct(slug)
   const nav = useNavigate()
   const add = useCart((s) => s.add)
+  const addToCart = useAddToCart()
+  const imgRef = useRef(null)
   const toggle = useWishlist((s) => s.toggle)
   const wished = useWishlist((s) => product && s.ids.includes(product.id))
   const [variant, setVariant] = useState(product?.variants[0])
@@ -27,7 +30,7 @@ export default function Product() {
   const buyNow = () => { add(product.id, variant.sku, qty); nav('/checkout') }
 
   return (
-    <div className="container-x py-8">
+    <div className="container-x py-5 sm:py-8">
       <nav className="flex items-center gap-1 text-sm text-ink-500 mb-6">
         <Link to="/" className="hover:text-brand-600">Home</Link><ChevronRight size={14} />
         <Link to="/shop" className="hover:text-brand-600">Shop</Link><ChevronRight size={14} />
@@ -38,7 +41,7 @@ export default function Product() {
         {/* Gallery */}
         <div>
           <div className="card overflow-hidden">
-            <img src={product.images[img]} alt={product.name} className="w-full aspect-square object-cover" />
+            <img ref={imgRef} src={product.images[img]} alt={product.name} className="w-full aspect-square object-cover" />
           </div>
           <div className="flex gap-3 mt-3">
             {product.images.map((src, i) => (
@@ -90,14 +93,14 @@ export default function Product() {
               <span className="w-10 text-center font-bold">{qty}</span>
               <button onClick={() => setQty((q) => q + 1)} className="p-3"><Plus size={16} /></button>
             </div>
-            <button onClick={() => add(product.id, variant.sku, qty)} className="btn-ghost flex-1 min-w-[140px]">Add to cart</button>
-            <button onClick={buyNow} className="btn-primary flex-1 min-w-[140px]">Buy now</button>
+            <button onClick={(e) => addToCart(product, variant, qty, imgRef.current, e.currentTarget)} className="ripple btn-ghost flex-1 min-w-[120px] active:scale-95">Add to cart</button>
+            <button onClick={buyNow} className="btn-primary flex-1 min-w-[120px] active:scale-95">Buy now</button>
             <button onClick={() => toggle(product.id)} className="btn-ghost !px-3" aria-label="Wishlist">
               <Heart size={18} className={wished ? 'fill-brand-500 text-brand-500' : ''} />
             </button>
           </div>
 
-          <div className="flex gap-6 mt-6 text-sm text-ink-500">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-6 text-sm text-ink-500">
             <span className="flex items-center gap-2"><Truck size={18} className="text-brand-600" /> Free over ₹999</span>
             <span className="flex items-center gap-2"><ShieldCheck size={18} className="text-brand-600" /> UPI & COD</span>
           </div>
@@ -106,10 +109,10 @@ export default function Product() {
 
       {/* Tabs */}
       <div className="mt-12 max-w-3xl">
-        <div className="flex gap-1 border-b border-[#ecece7]">
+        <div className="flex gap-1 border-b border-[#ecece7] overflow-x-auto no-scrollbar">
           {[['desc', 'Description'], ['ingredients', 'Ingredients'], ['feeding', 'Feeding'], ['nutrition', 'Nutrition']].map(([k, label]) => (
             <button key={k} onClick={() => setTab(k)}
-              className={`px-4 py-3 text-sm font-bold border-b-2 -mb-px ${tab === k ? 'border-brand-500 text-brand-600' : 'border-transparent text-ink-500'}`}>
+              className={`shrink-0 whitespace-nowrap px-4 py-3 text-sm font-bold border-b-2 -mb-px ${tab === k ? 'border-brand-500 text-brand-600' : 'border-transparent text-ink-500'}`}>
               {label}
             </button>
           ))}
@@ -134,11 +137,9 @@ export default function Product() {
       </div>
 
       {related.length > 0 && (
-        <div className="mt-14">
-          <h2 className="text-2xl font-extrabold mb-6">You may also like</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {related.map((p) => <ProductCard key={p.id} product={p} />)}
-          </div>
+        <div className="mt-10 sm:mt-14">
+          <h2 className="text-xl sm:text-2xl font-extrabold mb-4 sm:mb-6">You may also like</h2>
+          <ProductRail products={related} />
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { SlidersHorizontal, X, ChevronRight } from 'lucide-react'
+import { SlidersHorizontal, X, ChevronRight, LayoutGrid, Grid3x3 } from 'lucide-react'
 import { products, categories, filterOptions } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
 
@@ -29,14 +29,19 @@ export default function Shop() {
   const [params, setParams] = useSearchParams()
   const q = (params.get('q') || '').toLowerCase()
   const cat = params.get('cat') || ''
-  const [sort, setSort] = useState('popular')
-  const [quick, setQuick] = useState(null) // 'bestseller' | 'sale' | null
+  const [sort, setSort] = useState(() => (sorts[params.get('sort')] ? params.get('sort') : 'popular'))
+  const deal = params.get('deal')
+  const [quickState, setQuick] = useState(null) // 'bestseller' | 'sale' | null
+  const quick = quickState ?? (deal === 'sale' ? 'sale' : null)
+  const [cols, setCols] = useState(() => { try { return localStorage.getItem('pawstore-cols') || '2' } catch { return '2' } })
+  useEffect(() => { setQuick(null) }, [deal])
+  const pickCols = (c) => { setCols(c); try { localStorage.setItem('pawstore-cols', c) } catch { /* ignore */ } }
   const [f, setF] = useState({ lifeStage: [], breedSize: [], foodType: [], diet: [] })
   const [mobileFilters, setMobileFilters] = useState(false)
 
   const toggle = (group, val) =>
     setF((s) => ({ ...s, [group]: s[group].includes(val) ? s[group].filter((x) => x !== val) : [...s[group], val] }))
-  const clearAll = () => { setF({ lifeStage: [], breedSize: [], foodType: [], diet: [] }); setQuick(null) }
+  const clearAll = () => { setF({ lifeStage: [], breedSize: [], foodType: [], diet: [] }); setQuick(null); if (deal) { params.delete('deal'); setParams(params) } }
 
   const list = useMemo(() => {
     let out = products.filter((p) => {
@@ -56,7 +61,7 @@ export default function Shop() {
   const catName = categories.find((c) => c.slug === cat)?.name
   const title = catName || (q ? `Results for “${q}”` : 'All Products')
   const [tagline, grad] = CAT_BANNER[cat] || ['Everything your dog will love', 'from-brand-100 to-pine-50']
-  const activeFilterCount = Object.values(f).flat().length + (quick ? 1 : 0)
+  const activeFilterCount = Object.values(f).flat().length + (quick && quick !== 'none' ? 1 : 0)
 
   const setCat = (slug) => {
     if (slug) params.set('cat', slug); else params.delete('cat')
@@ -99,20 +104,20 @@ export default function Shop() {
   )
 
   return (
-    <div className="container-x py-6">
+    <div className="container-x py-4 sm:py-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-ink-500 mb-4">
+      <nav className="hidden sm:flex items-center gap-1.5 text-sm text-ink-500 mb-4">
         <Link to="/" className="hover:text-brand-600">Home</Link>
         <ChevronRight size={14} />
         <span className="font-semibold text-ink-900">{title}</span>
       </nav>
 
       {/* Category banner */}
-      <div className={`relative overflow-hidden rounded-[1.6rem] bg-gradient-to-r ${grad} px-7 sm:px-10 py-8 sm:py-10 mb-6`}>
-        <div className="absolute -right-4 -bottom-6 text-[8rem] sm:text-[11rem] opacity-20 leading-none select-none">{CAT_EMOJI[cat] || '🐾'}</div>
+      <div className={`relative overflow-hidden rounded-[1.6rem] bg-gradient-to-r ${grad} px-5 sm:px-10 py-5 sm:py-10 mb-4 sm:mb-6`}>
+        <div className="absolute -right-4 -bottom-6 text-[5.5rem] sm:text-[11rem] opacity-20 leading-none select-none">{CAT_EMOJI[cat] || '🐾'}</div>
         <div className="relative">
-          <h1 className="font-display text-3xl sm:text-5xl font-semibold text-ink-900">{title}</h1>
-          <p className="text-ink-700 mt-1.5 sm:text-lg">{tagline}</p>
+          <h1 className="font-display text-2xl sm:text-5xl font-semibold text-ink-900">{title}</h1>
+          <p className="text-ink-700 mt-1 text-sm sm:text-lg">{tagline}</p>
         </div>
       </div>
 
@@ -134,16 +139,16 @@ export default function Shop() {
 
         <div className="flex-1 min-w-0">
           {/* Toolbar */}
-          <div className="flex items-center gap-2 mb-5 flex-wrap">
-            <button onClick={() => setMobileFilters(true)} className="lg:hidden btn-ghost !py-2 !px-3.5 text-sm relative">
+          <div className="flex items-center gap-2 mb-4 sm:mb-5 overflow-x-auto no-scrollbar -mx-[1.1rem] px-[1.1rem] sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
+            <button onClick={() => setMobileFilters(true)} className="lg:hidden btn-ghost !py-2 !px-3.5 text-sm relative shrink-0">
               <SlidersHorizontal size={16} /> Filters
               {activeFilterCount > 0 && <span className="ml-1 bg-brand-500 text-white text-[10px] font-bold w-4 h-4 grid place-items-center rounded-full">{activeFilterCount}</span>}
             </button>
-            <Chip active={quick === 'bestseller'} onClick={() => setQuick(quick === 'bestseller' ? null : 'bestseller')}>⭐ Bestsellers</Chip>
-            <Chip active={quick === 'sale'} onClick={() => setQuick(quick === 'sale' ? null : 'sale')}>🏷️ On Sale</Chip>
+            <Chip active={quick === 'bestseller'} onClick={() => setQuick(quick === 'bestseller' ? 'none' : 'bestseller')}>⭐ Bestsellers</Chip>
+            <Chip active={quick === 'sale'} onClick={() => setQuick(quick === 'sale' ? 'none' : 'sale')}>🏷️ On Sale</Chip>
             <span className="hidden sm:block text-sm text-ink-500 ml-1">{list.length} products</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value)}
-              className="ml-auto bg-white border border-ink-200 rounded-full px-4 py-2 text-sm font-semibold outline-none focus:border-brand-400">
+            <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort products"
+              className="shrink-0 sm:ml-auto bg-white border border-ink-200 rounded-full px-4 py-2 text-sm font-semibold outline-none focus:border-brand-400">
               <option value="popular">Most popular</option>
               <option value="rating">Top rated</option>
               <option value="price-asc">Price: low to high</option>
@@ -158,9 +163,27 @@ export default function Shop() {
               <button onClick={clearAll} className="btn-ghost mt-4 mx-auto">Clear filters</button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
-              {list.map((p) => <ProductCard key={p.id} product={p} />)}
-            </div>
+            <>
+              {/* Phone view toggle: 2-up (detailed) or 3-up (compact) */}
+              <div className="sm:hidden flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-ink-500">{list.length} products</span>
+                <div className="flex items-center gap-0.5 bg-white rounded-full p-0.5 ring-1 ring-ink-200">
+                  {[['2', LayoutGrid], ['3', Grid3x3]].map(([c, Icon]) => (
+                    <button key={c} onClick={() => pickCols(c)} aria-label={`${c} per row`} aria-pressed={cols === c}
+                      className={`w-8 h-7 grid place-items-center rounded-full transition ${cols === c ? 'bg-brand-500 text-white' : 'text-ink-500'}`}>
+                      <Icon size={15} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={`grid md:grid-cols-3 ${cols === '3' ? 'grid-cols-3 gap-2' : 'grid-cols-2 gap-3'} sm:grid-cols-2 sm:gap-5`}>
+                {list.map((p, i) => (
+                  <div key={p.id} className="min-w-0" style={{ animation: `fade-up .45s ${Math.min(i, 8) * 0.04}s both` }}>
+                    <ProductCard product={p} size={cols === '3' ? 'compact' : 'default'} />
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -192,7 +215,7 @@ export default function Shop() {
 function Chip({ active, onClick, children }) {
   return (
     <button onClick={onClick}
-      className={`px-3.5 py-2 rounded-full text-sm font-semibold border transition ${active ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-ink-700 border-ink-200 hover:border-brand-300'}`}>
+      className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full text-sm font-semibold border transition active:scale-95 ${active ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-ink-700 border-ink-200 hover:border-brand-300'}`}>
       {children}
     </button>
   )

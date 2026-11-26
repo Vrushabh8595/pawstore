@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Truck, ShieldCheck, Leaf, HeartHandshake, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, Truck, ShieldCheck, Leaf, HeartHandshake, Camera } from 'lucide-react'
+import { LogoMark } from '@/components/Logo'
 import { products, categories } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
+import ProductRail from '@/components/ProductRail'
+import HeroCarousel from '@/components/HeroCarousel'
 
 const CAT_EMOJI = {
   'dry-food': '🦴', 'wet-food': '🍲', treats: '🍪',
   'collars-leashes': '🦮', health: '💊', apparel: '🧥', bedding: '🛏️',
 }
 const CAT_TINT = ['bg-brand-50', 'bg-pine-50', 'bg-sand-100', 'bg-brand-50', 'bg-pine-50', 'bg-sand-100', 'bg-brand-50']
-
-const HERO = [
-  { eyebrow: '✦ Winter Comfort Collection', title: 'Feels like a hug', sub: 'Cosy beds, warm sweaters & hearty winter meals.', cta: 'Shop winter', to: '/shop?cat=apparel', grad: 'from-pine-100 to-sand-100', img: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=1100&q=70' },
-  { eyebrow: '✦ Everyday Nutrition', title: 'Food they’ll wag for', sub: 'Vet-approved meals made with real meat, first.', cta: 'Shop food', to: '/shop?cat=dry-food', grad: 'from-brand-100 to-sand-100', img: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1100&q=70' },
-  { eyebrow: '✦ Treats & Rewards', title: 'Good boys deserve more', sub: 'Tasty, healthy and tail-wag approved.', cta: 'Shop treats', to: '/shop?cat=treats', grad: 'from-sand-200 to-brand-50', img: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1100&q=70' },
-]
 
 const NEED_TILES = [
   { to: '/shop?cat=dry-food', title: 'Everyday Meals', copy: 'Complete dry nutrition', emoji: '🥣', from: 'bg-gradient-to-br from-brand-100 to-brand-50' },
@@ -32,56 +28,18 @@ const PROMOS = [
 
 export default function Home() {
   const picked = products.filter((p) => p.tags?.includes('bestseller'))
-  const bestsellers = (picked.length ? picked : products).slice(0, 4)
+  const bestsellers = (picked.length ? picked : products).slice(0, 8)
+  const under300 = products.filter((p) => p.variants[0].price <= 300).slice(0, 6)
   const fresh = products.slice(0, 8)
 
-  const [slide, setSlide] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % HERO.length), 5500)
-    return () => clearInterval(t)
-  }, [])
-  const go = (d) => setSlide((s) => (s + d + HERO.length) % HERO.length)
 
   return (
     <div>
-      {/* ---------- Hero banner carousel ---------- */}
-      <section className="container-x pt-5">
-        <div className="relative rounded-[2rem] overflow-hidden h-[320px] sm:h-[420px] shadow-sm">
-          {HERO.map((h, i) => (
-            <div key={i}
-              className={`absolute inset-0 bg-gradient-to-r ${h.grad} transition-opacity duration-700 ${i === slide ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <img src={h.img} alt="" aria-hidden="true"
-                className="absolute right-0 top-0 h-full w-[62%] object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-sand-100)] via-[var(--color-sand-100)]/85 to-transparent" />
-              <div className="relative h-full flex flex-col justify-center max-w-md px-7 sm:px-12">
-                <span className="text-xs font-extrabold tracking-wide text-pine-700 mb-2">{h.eyebrow}</span>
-                <h1 className="font-display text-4xl sm:text-6xl font-semibold leading-[1.02] text-ink-900">{h.title}</h1>
-                <p className="mt-3 text-ink-700 sm:text-lg max-w-xs">{h.sub}</p>
-                <Link to={h.to} className="btn-primary mt-6 w-fit">{h.cta} <ArrowRight size={18} /></Link>
-              </div>
-            </div>
-          ))}
-
-          <button onClick={() => go(-1)} aria-label="Previous"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-full bg-white/85 hover:bg-white shadow-md transition">
-            <ChevronLeft size={22} />
-          </button>
-          <button onClick={() => go(1)} aria-label="Next"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-full bg-white/85 hover:bg-white shadow-md transition">
-            <ChevronRight size={22} />
-          </button>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {HERO.map((_, i) => (
-              <button key={i} onClick={() => setSlide(i)} aria-label={`Slide ${i + 1}`}
-                className={`h-2 rounded-full transition-all ${i === slide ? 'w-6 bg-brand-500' : 'w-2 bg-white/80'}`} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <HeroCarousel />
 
       {/* ---------- Category circles overlapping the banner ---------- */}
       <section className="container-x">
-        <div className="relative -mt-8 sm:-mt-10 bg-white rounded-[1.75rem] ring-1 ring-ink-100 shadow-[0_18px_40px_-28px_rgba(26,26,23,.4)] px-4 sm:px-6 pt-5 pb-5">
+        <div className="relative mt-5 sm:mt-6 bg-white rounded-[1.75rem] ring-1 ring-ink-100 shadow-[0_18px_40px_-28px_rgba(26,26,23,.4)] px-4 sm:px-6 pt-5 pb-5">
           <div className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar sm:grid sm:grid-cols-7">
             {categories.map((c, i) => (
               <Link key={c.slug} to={`/shop?cat=${c.slug}`} className="group flex flex-col items-center gap-2 shrink-0 w-[76px] sm:w-auto">
@@ -95,13 +53,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------- Request a product ---------- */}
+      <section className="container-x pt-6 sm:pt-8">
+        <Link to="/request" className="group relative flex items-center gap-4 sm:gap-6 overflow-hidden rounded-[1.6rem] bg-pine-800 text-white p-4 sm:p-7 active:scale-[.99] transition">
+          <span aria-hidden="true" className="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-pine-600/60" />
+          <span aria-hidden="true" className="absolute right-24 -bottom-16 w-32 h-32 rounded-full bg-brand-500/25" />
+          <LogoMark size={64} className="relative shrink-0 animate-float sm:w-20 sm:h-20" />
+          <div className="relative flex-1 min-w-0">
+            <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-[.14em] text-brand-300">Medicine · Food · Custom</p>
+            <p className="font-display text-lg sm:text-3xl font-semibold leading-tight mt-0.5">Can’t find what your animal needs?</p>
+            <p className="text-white/70 text-xs sm:text-base mt-1">Send us a photo — we’ll source it & get back with a price.</p>
+          </div>
+          <span className="relative hidden sm:inline-flex items-center gap-2 bg-brand-500 text-white font-extrabold px-5 py-3 rounded-full group-hover:gap-3 transition-all shrink-0">
+            <Camera size={18} /> Request now
+          </span>
+          <span className="relative sm:hidden grid place-items-center w-10 h-10 rounded-full bg-brand-500 shrink-0"><Camera size={18} /></span>
+        </Link>
+      </section>
+
       {/* ---------- Shop by need ---------- */}
-      <section className="container-x py-12">
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-7">Who are we shopping for today?</h2>
+      <section className="container-x pt-8 pb-8 sm:pt-12 sm:pb-12">
+        <h2 className="text-xl sm:text-3xl font-semibold mb-4 sm:mb-7">Who are we shopping for today?</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {NEED_TILES.map((t) => (
             <Link key={t.title} to={t.to}
-              className={`group relative rounded-[1.4rem] p-6 overflow-hidden ${t.from} ring-1 ring-ink-100 hover:shadow-lg transition min-h-[160px] flex flex-col justify-between`}>
+              className={`group relative rounded-[1.4rem] p-4 sm:p-6 overflow-hidden ${t.from} ring-1 ring-ink-100 hover:shadow-lg active:scale-[.98] transition min-h-[140px] sm:min-h-[160px] flex flex-col justify-between`}>
               <span className="text-4xl">{t.emoji}</span>
               <div>
                 <p className="font-display font-semibold text-lg text-ink-900 leading-tight">{t.title}</p>
@@ -115,33 +91,49 @@ export default function Home() {
 
       {/* ---------- Bestsellers ---------- */}
       <section className="container-x pb-4">
-        <div className="flex items-end justify-between mb-7">
+        <div className="flex items-end justify-between mb-3 sm:mb-7">
           <div>
             <p className="eyebrow mb-1">Loved by pups</p>
-            <h2 className="text-2xl sm:text-3xl font-semibold">Bestsellers</h2>
+            <h2 className="text-xl sm:text-3xl font-semibold">Bestsellers</h2>
           </div>
           <Link to="/shop" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {bestsellers.map((p) => <ProductCard key={p.id} product={p} />)}
-        </div>
+        <ProductRail products={bestsellers} scroll />
       </section>
 
-      {/* ---------- Why PawStore ---------- */}
+      {/* ---------- Under ₹300: 3-up compact grid on phones ---------- */}
+      {under300.length > 0 && (
+        <section className="container-x pt-8 sm:pt-12">
+          <div className="rounded-[1.75rem] bg-gradient-to-br from-brand-50 to-sand-100 ring-1 ring-brand-100 p-3.5 sm:p-7">
+            <div className="flex items-end justify-between mb-3 sm:mb-5 px-0.5">
+              <div>
+                <p className="eyebrow mb-0.5">Pocket-friendly</p>
+                <h2 className="text-xl sm:text-3xl font-semibold">Everything under ₹300</h2>
+              </div>
+              <Link to="/shop?sort=price-asc" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">See all <ArrowRight size={16} /></Link>
+            </div>
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+              {under300.map((p) => <ProductCard key={p.id} product={p} size="compact" />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ---------- Why AnimalVeda ---------- */}
       <section className="container-x py-14">
-        <div className="relative overflow-hidden rounded-[2rem] bg-pine-900 text-white p-8 sm:p-12">
+        <div className="relative overflow-hidden rounded-[2rem] bg-pine-900 text-white p-5 sm:p-12">
           <div className="absolute -bottom-20 -right-16 w-80 h-80 rounded-full bg-pine-700/40 blur-3xl" />
           <div className="relative">
-            <p className="eyebrow !text-brand-300 mb-2">Why PawStore</p>
+            <p className="eyebrow !text-brand-300 mb-2">Why AnimalVeda</p>
             <h2 className="font-display text-2xl sm:text-4xl font-semibold max-w-xl leading-tight">Good food, great comfort, zero nasties.</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-9">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mt-6 sm:mt-9">
               {[
                 [Leaf, 'Real ingredients', 'Meat first, no artificial colours or fillers'],
                 [ShieldCheck, 'Vet-approved', 'Formulated with canine nutritionists'],
                 [Truck, 'Fast, free delivery', 'Across India, free over ₹999'],
                 [HeartHandshake, 'Pet-parent support', 'Mon–Sat, 10am–7pm on call'],
               ].map(([Icon, h, s]) => (
-                <div key={h} className="bg-white/5 rounded-2xl p-5 ring-1 ring-white/10">
+                <div key={h} className="bg-white/5 rounded-2xl p-3.5 sm:p-5 ring-1 ring-white/10 min-w-0">
                   <span className="grid place-items-center w-11 h-11 rounded-xl bg-brand-500 text-white mb-3"><Icon size={21} /></span>
                   <p className="font-bold text-white">{h}</p>
                   <p className="text-sm text-white/60 mt-1">{s}</p>
@@ -154,11 +146,11 @@ export default function Home() {
 
       {/* ---------- Promo rail ---------- */}
       <section className="container-x pb-4">
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-7">Deals worth a tail wag</h2>
+        <h2 className="text-xl sm:text-3xl font-semibold mb-4 sm:mb-7">Deals worth a tail wag</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {PROMOS.map((p) => (
             <Link key={p.label} to={p.to}
-              className="card p-5 flex items-center gap-4 hover:border-brand-300 hover:shadow-md transition">
+              className="card p-3 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 hover:border-brand-300 hover:shadow-md transition">
               <span className="w-14 h-14 rounded-2xl bg-sand-100 grid place-items-center text-2xl shrink-0">{p.emoji}</span>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-ink-500">{p.label}</p>
@@ -172,21 +164,19 @@ export default function Home() {
 
       {/* ---------- Fresh picks ---------- */}
       <section className="container-x pt-10 pb-4">
-        <div className="flex items-end justify-between mb-7">
+        <div className="flex items-end justify-between mb-3 sm:mb-7">
           <div>
             <p className="eyebrow mb-1">Just in</p>
-            <h2 className="text-2xl sm:text-3xl font-semibold">Fresh picks</h2>
+            <h2 className="text-xl sm:text-3xl font-semibold">Fresh picks</h2>
           </div>
           <Link to="/shop" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {fresh.map((p) => <ProductCard key={p.id} product={p} />)}
-        </div>
+        <ProductRail products={fresh} scroll />
       </section>
 
       {/* ---------- Newsletter CTA ---------- */}
       <section className="container-x py-14">
-        <div className="rounded-[2rem] bg-brand-500 text-white p-8 sm:p-12 grid lg:grid-cols-2 gap-6 items-center">
+        <div className="rounded-[2rem] bg-brand-500 text-white p-6 sm:p-12 grid lg:grid-cols-2 gap-6 items-center">
           <div>
             <p className="eyebrow !text-white/80 mb-2">Join the pack</p>
             <h3 className="font-display text-2xl sm:text-4xl font-semibold leading-tight">Get 10% off your first order.</h3>
