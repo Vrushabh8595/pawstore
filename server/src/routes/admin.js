@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { Product, Category, Order, Settings } from '../models/index.js'
+import { Product, Category, Order, Settings, ProductRequest } from '../models/index.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 
@@ -92,6 +92,27 @@ router.patch(
   asyncHandler(async (req, res) => {
     const s = await Settings.findOneAndUpdate({ key: 'global' }, req.body, { new: true, upsert: true })
     res.json(s)
+  })
+)
+
+
+/* ---------------------------- Product requests ---------------------------- */
+router.get(
+  '/requests',
+  asyncHandler(async (req, res) => {
+    const filter = req.query.status ? { status: req.query.status } : {}
+    const requests = await ProductRequest.find(filter).sort({ createdAt: -1 }).limit(200).lean()
+    res.json({ requests })
+  })
+)
+
+router.patch(
+  '/requests/:id',
+  validate(z.object({ status: z.enum(['New', 'Contacted', 'Sourcing', 'Quoted', 'Fulfilled', 'Unavailable']) })),
+  asyncHandler(async (req, res) => {
+    const doc = await ProductRequest.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true })
+    if (!doc) return res.status(404).json({ message: 'Request not found' })
+    res.json({ request: doc })
   })
 )
 
