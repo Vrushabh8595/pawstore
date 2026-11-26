@@ -101,7 +101,10 @@ export default function HeroCarousel() {
         <div
           className="flex gap-3 sm:gap-5 touch-pan-y select-none [--w:88%] sm:[--w:100%] [--g:.75rem] sm:[--g:1.25rem]"
           style={{
-            transform: `translateX(calc(${-slide} * (var(--w) + var(--g)) + ${drag}px))`,
+            // Last slide is right-aligned so the peek gap doesn't leave empty space on phones
+            transform: slide === n - 1
+              ? `translateX(calc(100% - ${n} * var(--w) - ${n - 1} * var(--g) + ${drag}px))`
+              : `translateX(calc(${-slide} * (var(--w) + var(--g)) + ${drag}px))`,
             transition: dragging ? 'none' : 'transform .55s cubic-bezier(.22,1,.36,1)',
           }}
           onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
@@ -129,7 +132,7 @@ export default function HeroCarousel() {
                   </div>
                   {/* Sticker */}
                   <div style={{ '--r': '-10deg' }}
-                    className={`reveal reveal-4 animate-float absolute -left-3 top-2 sm:left-auto sm:-right-4 sm:top-[10%] w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-full grid place-items-center text-center leading-none shadow-xl ring-4 ring-white/30 ${t.sticker}`}>
+                    className={`reveal reveal-4 animate-float absolute right-0 -top-5 sm:-right-4 sm:top-[10%] w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-full grid place-items-center text-center leading-none shadow-xl ring-4 ring-white/30 ${t.sticker}`}>
                     <div>
                       <p className="text-[8px] sm:text-[11px] font-bold uppercase tracking-wider opacity-85">{s.sticker[0]}</p>
                       <p className="font-display font-bold text-sm sm:text-2xl my-0.5">{s.sticker[1]}</p>
@@ -147,7 +150,7 @@ export default function HeroCarousel() {
                     {s.title[0]}<br />
                     <span className={`italic ${t.hi}`}>{s.title[1]}</span> {s.title[2]}
                   </h2>
-                  <p className={`reveal reveal-3 mt-3 text-sm sm:text-lg max-w-[15rem] sm:max-w-sm hidden min-[360px]:block ${t.sub}`}>{s.sub}</p>
+                  <p className={`reveal reveal-3 mt-3 text-sm sm:text-lg max-w-[15rem] sm:max-w-sm hidden min-[360px]:line-clamp-3 sm:line-clamp-none ${t.sub}`}>{s.sub}</p>
                   <div className="reveal reveal-4 mt-auto sm:mt-7 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-fit">
                     <Link to={s.to} tabIndex={active ? 0 : -1} draggable="false"
                       className="group inline-flex items-center gap-2 bg-white text-ink-900 font-extrabold text-sm sm:text-base pl-5 pr-2 py-2 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition">

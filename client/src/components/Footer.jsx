@@ -61,7 +61,7 @@ export default function Footer() {
             ))}
             <li className="flex items-center gap-2.5">
               <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Mail size={14} /></span>
-              <span>care@animalveda.in</span>
+              <span>care@animalveda.com</span>
             </li>
             <li className="flex items-start gap-2.5">
               <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><MapPin size={14} /></span>
