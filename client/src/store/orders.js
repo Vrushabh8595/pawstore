@@ -5,45 +5,13 @@ import { persist } from 'zustand/middleware'
 // (POST /orders) which recalculates totals and reduces stock. Here we keep
 // them in localStorage so the user + admin dashboards have data to show.
 
-const seedOrders = [
-  {
-    orderNo: 'ORD1000012',
-    email: 'demo@animalveda.com',
-    customer: 'Demo Customer',
-    createdAt: Date.now() - 1000 * 60 * 60 * 26,
-    items: [{ name: 'Daily Chicken Adult Dry Food', sku: 'CAD-3', size: '3kg', price: 1399, qty: 1 }],
-    subtotal: 1399, shippingFee: 0, codFee: 0, total: 1399,
-    payment: { method: 'UPI_MANUAL', status: 'paid', utr: '402311889076' },
-    address: { name: 'Demo Customer', phone: '9876543210', line1: '12 Baker Street', city: 'Pune', state: 'MH', pincode: '411001' },
-    status: 'Shipped',
-    statusHistory: [
-      { status: 'Pending Verification', at: Date.now() - 1000 * 60 * 60 * 26 },
-      { status: 'Confirmed', at: Date.now() - 1000 * 60 * 60 * 25 },
-      { status: 'Packed', at: Date.now() - 1000 * 60 * 60 * 20 },
-      { status: 'Shipped', at: Date.now() - 1000 * 60 * 60 * 6 },
-    ],
-  },
-  {
-    orderNo: 'ORD1000019',
-    email: 'demo@animalveda.com',
-    customer: 'Demo Customer',
-    createdAt: Date.now() - 1000 * 60 * 90,
-    items: [
-      { name: 'Training Liver Bites', sku: 'TLB-2', size: '500g', price: 599, qty: 2 },
-      { name: 'Veg Dental Sticks', sku: 'VDS-7', size: '7 sticks', price: 249, qty: 1 },
-    ],
-    subtotal: 1447, shippingFee: 0, codFee: 49, total: 1496,
-    payment: { method: 'COD', status: 'cod_pending' },
-    address: { name: 'Demo Customer', phone: '9876543210', line1: '12 Baker Street', city: 'Pune', state: 'MH', pincode: '411001' },
-    status: 'Pending Verification',
-    statusHistory: [{ status: 'Pending Verification', at: Date.now() - 1000 * 60 * 90 }],
-  },
-]
-
+// Orders placed in this browser (kept as an offline fallback / receipt).
+// The account pages read the real list from the server (GET /orders/my).
+const DEMO = /^demo@/
 export const useOrders = create(
   persist(
     (set, get) => ({
-      orders: seedOrders,
+      orders: [],
       place: (order) => set((s) => ({ orders: [order, ...s.orders] })),
       updateStatus: (orderNo, status, note) =>
         set((s) => ({
@@ -72,6 +40,6 @@ export const useOrders = create(
       byEmail: (email) => get().orders.filter((o) => o.email === email),
       get: (orderNo) => get().orders.find((o) => o.orderNo === orderNo),
     }),
-    { name: 'pawstore-orders' }
+    { name: 'pawstore-orders', version: 2, migrate: (st) => ({ ...st, orders: (st?.orders || []).filter((o) => !DEMO.test(o.email || '')) }) }
   )
 )
