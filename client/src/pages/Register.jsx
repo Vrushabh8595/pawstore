@@ -25,7 +25,7 @@ export default function Register() {
       name: form.name.trim().length < 2 ? 'Enter your full name.' : null,
       email: !form.email.trim() ? 'Enter your email.' : !isEmail(form.email) ? 'This email doesn’t look right (e.g. name@gmail.com).' : null,
       phone: form.phone && !/^[6-9]\d{9}$/.test(form.phone) ? 'Enter a valid 10-digit mobile number, or leave it empty.' : null,
-      password: !form.password ? 'Create a password.' : form.password.length < 6 ? 'Use at least 6 characters.' : null,
+      password: !form.password ? 'Create a password.' : form.password.length < 8 ? 'Use at least 8 characters.' : !/[A-Za-z]/.test(form.password) || !/\d/.test(form.password) ? 'Use at least one letter and one number.' : null,
     })) return
     setBusy(true)
     try {
@@ -54,7 +54,7 @@ export default function Register() {
           <Field name="name" required error={fe.errors.name} label="Full name" autoComplete="name" value={form.name} onChange={set('name')} />
           <Field name="email" required error={fe.errors.email} label="Email" type="email" inputMode="email" autoComplete="email" value={form.email} onChange={set('email')} />
           <Field name="phone" optional error={fe.errors.phone} label="Phone" type="tel" inputMode="numeric" prefix="+91" autoComplete="tel-national" maxLength={10} value={form.phone} onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
-          <Field name="password" required error={fe.errors.password} label="Password" hint="min 6 characters" type="password" autoComplete="new-password" value={form.password} onChange={set('password')} />
+          <Field name="password" required error={fe.errors.password} label="Password" hint="8+ characters, a letter and a number" type="password" autoComplete="new-password" value={form.password} onChange={set('password')} />
           {err && <p role="alert" className="flex items-start gap-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-xl p-3"><AlertCircle size={16} className="shrink-0 mt-px" />{err}</p>}
           <button disabled={busy} className="btn-primary w-full disabled:opacity-60">{busy ? 'Creating…' : 'Create account'}</button>
         </form>
