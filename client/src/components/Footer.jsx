@@ -90,8 +90,9 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <h4 className="text-white font-bold mb-4 text-sm">Get in touch</h4>
             <div className="inline-flex items-center gap-2 bg-green-500/15 text-green-300 ring-1 ring-green-400/30 rounded-full px-3 py-1 text-xs font-bold mb-4">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Open 24×7 · all 7 days
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Open all 7 days · weekends too
             </div>
+            <p className="text-xs text-white/55 -mt-2 mb-4 leading-relaxed max-w-xs">Missed us on call or no reply yet? We usually get back to you within 2–3 days.</p>
             <ul className="space-y-3 text-sm">
               {PHONES.map((p) => (
                 <li key={p}>

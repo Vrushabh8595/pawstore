@@ -15,7 +15,7 @@ import StatusBadge from './StatusBadge'
 // The server is polled every 15 s while signed in; only one <NotificationAlerts>
 // is mounted per page, the bells just read the same cached query.
 
-const POLL_MS = 15_000
+const POLL_MS = 10_000
 const useToasts = create((set) => ({
   list: [],
   push: (t) => set((s) => ({ list: [...s.list.filter((x) => x._id !== t._id), t].slice(-4) })),
@@ -24,7 +24,7 @@ const useToasts = create((set) => ({
 
 const linkFor = (n, admin) => (admin ? `/admin/orders?open=${encodeURIComponent(n.orderNo)}` : `/account/orders/${encodeURIComponent(n.orderNo)}`)
 const seenKey = (uid) => `animalveda-notif-seen-${uid}`
-const ago = (d) => {
+export const ago = (d) => {
   const s = Math.max(1, Math.round((Date.now() - new Date(d)) / 1000))
   if (s < 60) return 'just now'
   if (s < 3600) return `${Math.round(s / 60)} min ago`
@@ -39,7 +39,7 @@ export function useNotificationFeed() {
     queryKey: ['notifications', uid],
     queryFn: () => api.get('/notifications'),
     enabled: !!uid,
-    refetchInterval: POLL_MS,
+    refetchInterval: () => (document.visibilityState === 'visible' ? POLL_MS : 30_000),
     refetchIntervalInBackground: true, // keep alerting while the admin works in another tab
     refetchOnWindowFocus: true,
     staleTime: 5_000,
@@ -47,7 +47,7 @@ export function useNotificationFeed() {
   return { user, uid, items: q.data?.items || [], unread: q.data?.unread || 0, refetch: q.refetch, data: q.data }
 }
 
-async function markRead(ids) {
+export async function markRead(ids) {
   try { await api.post('/notifications/read', ids ? { ids } : {}) } catch { /* ignore */ }
 }
 
@@ -64,13 +64,13 @@ export function NotificationAlerts({ admin = false }) {
     let seen = null
     try { seen = localStorage.getItem(seenKey(uid)) } catch { /* ignore */ }
     const newest = items[0]?.createdAt
-    if (!seen) { // first visit on this device: don't replay old alerts
-      try { localStorage.setItem(seenKey(uid), newest || new Date(0).toISOString()) } catch { /* ignore */ }
-      return
-    }
-    const fresh = items.filter((n) => new Date(n.createdAt) > new Date(seen) && !n.read).reverse()
+    // First visit on this device: only surface unread updates from the last day
+    const since = seen ? new Date(seen) : new Date(Date.now() - 24 * 3600e3)
+    const fresh = items.filter((n) => new Date(n.createdAt) > since && !n.read).reverse()
+    if (!seen) { try { localStorage.setItem(seenKey(uid), newest || new Date(0).toISOString()) } catch { /* ignore */ } }
     if (!fresh.length) return
     try { localStorage.setItem(seenKey(uid), newest) } catch { /* ignore */ }
+    fresh.splice(0, Math.max(0, fresh.length - 4)) // never flood the screen
 
     fresh.forEach((n) => push({ ...n, admin }))
     playSound(admin ? 'newOrder' : 'notify')
@@ -127,7 +127,7 @@ function Toast({ t }) {
   )
 }
 
-function Thumb({ src, admin, size = 'w-12 h-12' }) {
+export function Thumb({ src, admin, size = 'w-12 h-12' }) {
   const [bad, setBad] = useState(false)
   return (
     <span className={`${size} shrink-0 rounded-xl overflow-hidden grid place-items-center ${admin ? 'bg-brand-50 text-brand-600' : 'bg-sand-100 text-pine-700'}`}>
@@ -192,8 +192,8 @@ export function NotificationBell({ admin = false, className = '' }) {
               </button>
             ))}
           </div>
-          <Link to={admin ? '/admin/orders' : '/account'} onClick={() => setOpen(false)} className="block text-center text-sm font-bold text-brand-600 py-2.5 border-t border-ink-100 hover:bg-sand-50">
-            {admin ? 'All orders' : 'My orders'}
+          <Link to={admin ? '/admin/orders' : '/account/notifications'} onClick={() => setOpen(false)} className="block text-center text-sm font-bold text-brand-600 py-2.5 border-t border-ink-100 hover:bg-sand-50">
+            {admin ? 'All orders' : 'All notifications'}
           </Link>
         </div>
       )}
@@ -214,7 +214,7 @@ export function AdminAlertSetup() {
     if ('Notification' in window && Notification.permission === 'default') setPerm(await Notification.requestPermission())
   }
   return (
-    <div className="mb-5 card p-3.5 sm:p-4 flex flex-wrap items-center gap-3 bg-pine-900 text-white border-0">
+    <div className="mb-5 rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center gap-3 bg-pine-900 text-white shadow-lg shadow-pine-900/20">
       <span className="w-10 h-10 rounded-xl bg-brand-500 grid place-items-center shrink-0"><Bell size={19} /></span>
       <p className="flex-1 min-w-[200px] text-sm">
         <b>Turn on new-order alerts.</b>{' '}
