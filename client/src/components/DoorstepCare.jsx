@@ -48,7 +48,7 @@ export default function DoorstepCare() {
       <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#fff4e8] via-white to-[#eaf4ef] ring-1 ring-brand-100 grid lg:grid-cols-[1.05fr_1fr]">
         {/* photo */}
         <div className="relative min-h-[240px] sm:min-h-[320px] lg:min-h-full">
-          <img src="https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=1100&q=72" alt="A caring vet gently holding a cat" loading="lazy"
+          <img src="https://images.unsplash.com/photo-1585563003575-a00e42c64603?auto=format&fit=crop&w=1100&q=72" alt="A smiling grandmother sitting at her doorstep with her puppy" loading="lazy"
             className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-pine-900/70 via-pine-900/10 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-white/0" />
           <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-brand-500 text-white text-xs font-extrabold uppercase tracking-wider px-3 py-1.5 shadow-lg">
