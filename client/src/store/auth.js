@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { api } from '@/lib/api'
+import { api, authToken } from '@/lib/api'
 
 // Real auth backed by the API. The session is an httpOnly cookie set by the
 // backend, so we don't persist the user in localStorage — we verify via
@@ -19,20 +19,23 @@ export const useAuth = create((set) => ({
     try {
       const { user } = await api.get('/auth/me')
       if (mine === seq) set({ user, ready: true })
-    } catch {
+    } catch (e) {
+      if (/401|Not authenticated|Invalid or expired/i.test(e.message)) authToken.set(null)
       if (mine === seq) set({ user: null, ready: true })
     }
   },
 
   async login({ email, password }) {
-    const { user } = await api.post('/auth/login', { email, password })
+    const { user, token } = await api.post('/auth/login', { email, password })
+    authToken.set(token)
     seq++
     set({ user, ready: true })
     return user
   },
 
   async register({ name, email, phone, password }) {
-    const { user } = await api.post('/auth/register', { name, email, phone, password })
+    const { user, token } = await api.post('/auth/register', { name, email, phone, password })
+    authToken.set(token)
     seq++
     set({ user, ready: true })
     return user
@@ -40,7 +43,9 @@ export const useAuth = create((set) => ({
 
   // Exchange a Clerk (Google) session token for our own session cookie
   async loginWithClerk(token) {
-    const { user } = await api.post('/auth/clerk', { token })
+    const res = await api.post('/auth/clerk', { token })
+    authToken.set(res.token)
+    const user = res.user
     seq++
     set({ user, ready: true })
     return user
@@ -50,6 +55,7 @@ export const useAuth = create((set) => ({
     seq++
     set({ user: null, ready: true })
     try { await api.post('/auth/logout') } catch { /* ignore */ }
+    authToken.set(null)
     try { await window.Clerk?.signOut?.() } catch { /* ignore */ }
   },
 }))
