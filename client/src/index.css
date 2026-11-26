@@ -42,7 +42,9 @@
   --font-display: "Fraunces", ui-serif, Georgia, serif;
 }
 
-html { scroll-behavior: smooth; }
+/* html shows navy (= footer colour) in any rubber-band area, and bounce is
+   disabled so the fixed bottom bar never appears to collide with the footer */
+html { scroll-behavior: smooth; background: var(--color-pine-900); overscroll-behavior-y: none; }
 body {
   font-family: var(--font-sans);
   background: var(--color-sand-50);
