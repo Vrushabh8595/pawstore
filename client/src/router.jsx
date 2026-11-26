@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import { useAuth } from './store/auth'
 
@@ -35,12 +35,30 @@ function Protected({ children, role }) {
   return children
 }
 
+// Old query-string URLs → new SEO-friendly paths (Vercel also 308-redirects these)
+function LegacyShop() {
+  const [p] = useSearchParams()
+  if (p.get('cat')) return <Navigate to={`/category/${p.get('cat')}`} replace />
+  if (p.get('deal')) return <Navigate to="/offers" replace />
+  if (p.get('q')) return <Navigate to={`/search?q=${encodeURIComponent(p.get('q'))}`} replace />
+  return <Navigate to="/products" replace />
+}
+const POLICY_MAP = { about: 'about-us', contact: 'contact-us', shipping: 'shipping-policy', refund: 'refund-policy', privacy: 'privacy-policy', terms: 'terms-and-conditions' }
+function LegacyPolicy() {
+  const { slug } = useParams()
+  return <Navigate to={`/${POLICY_MAP[slug] || ''}`} replace />
+}
+
 export const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
       { path: '/', element: <Home /> },
-      { path: '/shop', element: <Shop /> },
+      { path: '/products', element: <Shop /> },
+      { path: '/category/:cat', element: <Shop /> },
+      { path: '/offers', element: <Shop /> },
+      { path: '/search', element: <Shop /> },
+      { path: '/shop', element: <LegacyShop /> },
       { path: '/product/:slug', element: <Product /> },
       { path: '/cart', element: <Cart /> },
       { path: '/wishlist', element: <Wishlist /> },
@@ -48,8 +66,11 @@ export const router = createBrowserRouter([
       { path: '/order/:orderNo', element: <OrderSuccess /> },
       { path: '/login', element: <Login /> },
       { path: '/register', element: <Register /> },
-      { path: '/policy/:slug', element: <Policy /> },
-      { path: '/request', element: <Request /> },
+      ...['about-us', 'contact-us', 'shipping-policy', 'refund-policy', 'privacy-policy', 'terms-and-conditions']
+        .map((slug) => ({ path: `/${slug}`, element: <Policy slug={slug} /> })),
+      { path: '/policy/:slug', element: <LegacyPolicy /> },
+      { path: '/request', element: <Navigate to="/request-medicine" replace /> },
+      { path: '/request-medicine', element: <Request /> },
       {
         path: '/account',
         element: <Protected><AccountLayout /></Protected>,

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* Fonts are loaded in index.html (non-blocking, preconnected). */
 @import "tailwindcss";
 
 @theme {
@@ -50,7 +50,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Brand typography — one system on every page:
+   Fraunces (display serif, as in the hero banner) for all h1–h3 at weight 600,
+   Plus Jakarta Sans for everything else. Unlayered, so it wins over ad-hoc
+   font-extrabold/font-bold utilities on headings. */
 h1, h2, h3, .font-display { font-family: var(--font-display); }
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.015em; font-optical-sizing: auto; }
+h1 em, h2 em, .hero-accent { font-style: italic; }
 
 /* Layout */
 .container-x { width: 100%; max-width: 1240px; margin-inline: auto; padding-inline: 1.1rem; }
