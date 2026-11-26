@@ -5,6 +5,7 @@ import { Product, Category, Order, Settings, ProductRequest, User, PageView, Pre
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyStatus } from '../utils/notify.js'
+import { sendMail, mailProvider } from '../utils/mailer.js'
 import { withImages } from '../utils/orderImages.js'
 
 const router = Router()
@@ -155,7 +156,7 @@ const userStatsPipeline = [
   { $lookup: { from: 'orders', let: { u: '$_id' }, pipeline: [{ $match: { $expr: { $eq: ['$user', '$$u'] } } }, { $project: { total: 1, createdAt: 1, outcome } }], as: 'orders' } },
   { $lookup: { from: 'presences', localField: '_id', foreignField: 'user', as: 'presence' } },
   { $project: {
-    name: 1, email: 1, phone: 1, role: 1, createdAt: 1,
+    name: 1, email: 1, phone: 1, role: 1, createdAt: 1, blocked: 1, blockedReason: 1, blockedAt: 1,
     orderCount: { $size: '$orders' },
     spent: { $sum: { $map: { input: { $filter: { input: '$orders', cond: { $eq: ['$$this.outcome', 'success'] } } }, in: '$$this.total' } } },
     success: { $size: { $filter: { input: '$orders', cond: { $eq: ['$$this.outcome', 'success'] } } } },
@@ -200,6 +201,23 @@ router.get(
       live: stats.lastSeen ? Date.now() - new Date(stats.lastSeen).getTime() < LIVE_MS : false,
       avgOrderValue: stats.success ? Math.round(stats.spent / stats.success) : 0,
     })
+  })
+)
+
+// Block / unblock a customer. Blocked customers can browse but cannot order.
+router.patch(
+  '/users/:id/block',
+  validate(z.object({ blocked: z.boolean(), reason: z.string().trim().max(200).optional() })),
+  asyncHandler(async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'User not found' })
+    const user = await User.findById(req.params.id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    if (user.role === 'admin') return res.status(400).json({ message: 'Admin accounts can’t be blocked' })
+    user.blocked = req.body.blocked
+    user.blockedReason = req.body.blocked ? req.body.reason || '' : undefined
+    user.blockedAt = req.body.blocked ? new Date() : undefined
+    await user.save()
+    res.json({ user: { _id: user._id, blocked: user.blocked, blockedReason: user.blockedReason, blockedAt: user.blockedAt } })
   })
 )
 
@@ -252,6 +270,24 @@ router.patch(
     await order.save()
     if (changed) notifyStatus(order, req.body.note)
     res.json(order)
+  })
+)
+
+/* ---------------------------------- Email ---------------------------------- */
+const ADMIN_EMAIL = () => process.env.ADMIN_NOTIFY_EMAIL || 'gulhanev33@gmail.com'
+router.get('/email-status', (req, res) => res.json({ provider: mailProvider(), adminEmail: ADMIN_EMAIL() }))
+router.post(
+  '/email-test',
+  asyncHandler(async (req, res) => {
+    if (!mailProvider()) return res.status(400).json({ message: 'Email isn’t set up on the server yet.' })
+    const r = await sendMail({
+      to: ADMIN_EMAIL(),
+      subject: '✅ AnimalVeda test email: order emails are working',
+      html: '<div style="font-family:Arial,sans-serif;font-size:15px;color:#1a3450"><h2 style="font-family:Georgia,serif">Order emails are working 🎉</h2><p>You will get an email like this for every new order, and customers will get one when they order and every time you change their order status.</p><p>AnimalVeda</p></div>',
+      text: 'Order emails are working. You will get an email for every new order.',
+    })
+    if (r.error) return res.status(502).json({ message: r.error })
+    res.json({ ok: true, to: ADMIN_EMAIL(), remaining: r.remaining })
   })
 )
 

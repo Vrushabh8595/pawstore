@@ -44,7 +44,7 @@ router.post(
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
       return res.status(401).json({ message: 'Invalid email or password' })
     res.cookie('token', signToken(user), cookieOptions())
-    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token: signToken(user) })
+    res.json({ user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role, blocked: !!user.blocked }, token: signToken(user) })
   })
 )
 
@@ -72,7 +72,7 @@ router.post(
       user = await User.create({ name, email, passwordHash })
     }
     res.cookie('token', signToken(user), cookieOptions())
-    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token: signToken(user) })
+    res.json({ user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role, blocked: !!user.blocked }, token: signToken(user) })
   })
 )
 

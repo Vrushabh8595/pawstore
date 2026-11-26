@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
-import { Product, Order, Settings, PageView, Presence } from '../models/index.js'
+import { Product, Order, Settings, PageView, Presence, User } from '../models/index.js'
 import { optionalAuth } from '../middleware/optionalAuth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyNewOrder } from '../utils/notify.js'
+
+export const BLOCKED_MSG = 'Your account has been blocked, so you can’t place orders right now. Please contact our support team to get unblocked and keep shopping with AnimalVeda.'
 
 // Public storefront endpoints: checkout (guest or logged in) + visitor tracking.
 const router = Router()
@@ -37,6 +39,9 @@ router.post(
   asyncHandler(async (req, res) => {
     const { items, address, paymentMethod, utr, email } = req.body
     if (!req.user && !email) return res.status(400).json({ message: 'Enter your email so we can send your order updates.' })
+    // Blocked customers can't order — also when they check out as a guest with the same email/phone
+    const blockedUser = req.user?.blocked ? req.user : await User.findOne({ blocked: true, $or: [...(email ? [{ email }] : []), { phone: address.phone }] }).select('_id').lean()
+    if (blockedUser) return res.status(403).json({ code: 'BLOCKED', message: BLOCKED_MSG })
     if (paymentMethod === 'UPI_MANUAL') {
       if (!utr) return res.status(400).json({ message: 'Enter the 12-digit UPI reference (UTR).' })
       if (await Order.exists({ 'payment.utr': utr })) return res.status(409).json({ message: 'This UPI reference has already been used.' })
