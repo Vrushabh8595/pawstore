@@ -5,6 +5,7 @@ import { products, categories } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
 import ProductRail from '@/components/ProductRail'
 import HeroCarousel from '@/components/HeroCarousel'
+import DoorstepCare from '@/components/DoorstepCare'
 
 const CAT_EMOJI = {
   'dry-food': '🦴', 'wet-food': '🍲', treats: '🍪',
@@ -62,7 +63,7 @@ export default function Home() {
           <div className="relative flex-1 min-w-0">
             <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-[.14em] text-brand-300">Medicine · Food · Custom</p>
             <p className="font-display text-lg sm:text-3xl font-semibold leading-tight mt-0.5">Can’t find what your animal needs?</p>
-            <p className="text-white/70 text-xs sm:text-base mt-1">Send us a photo — we’ll source it & get back with a price.</p>
+            <p className="text-white/70 text-xs sm:text-base mt-1">Send us a photo. We’ll source it & get back with a price.</p>
           </div>
           <span className="relative hidden sm:inline-flex items-center gap-2 bg-brand-500 text-white font-extrabold px-5 py-3 rounded-full group-hover:gap-3 transition-all shrink-0">
             <Camera size={18} /> Request now
@@ -120,7 +121,7 @@ export default function Home() {
       )}
 
       {/* ---------- Why AnimalVeda ---------- */}
-      <section className="container-x py-14">
+      <section className="container-x pt-14 pb-2">
         <div className="relative overflow-hidden rounded-[2rem] bg-pine-900 text-white p-5 sm:p-12">
           <div className="absolute -bottom-20 -right-16 w-80 h-80 rounded-full bg-pine-700/40 blur-3xl" />
           <div className="relative">
@@ -131,7 +132,7 @@ export default function Home() {
                 [Leaf, 'Real ingredients', 'Meat first, no artificial colours or fillers'],
                 [ShieldCheck, 'Vet-approved', 'Formulated with canine nutritionists'],
                 [Truck, 'Fast, free delivery', 'Across India, free over ₹999'],
-                [HeartHandshake, 'Pet-parent support', 'All 7 days — weekends too'],
+                [HeartHandshake, 'Pet-parent support', 'All 7 days, weekends too'],
               ].map(([Icon, h, s]) => (
                 <div key={h} className="bg-white/5 rounded-2xl p-3.5 sm:p-5 ring-1 ring-white/10 min-w-0">
                   <span className="grid place-items-center w-11 h-11 rounded-xl bg-brand-500 text-white mb-3"><Icon size={21} /></span>
@@ -143,6 +144,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ---------- Coming soon: doorstep care ---------- */}
+      <DoorstepCare />
 
       {/* ---------- Promo rail ---------- */}
       <section className="container-x pb-4">

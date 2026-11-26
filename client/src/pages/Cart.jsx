@@ -50,7 +50,7 @@ export default function Cart() {
                   <span className="font-extrabold">{inr(it.lineTotal)}</span>
                 </div>
                 {productQty(rawItems, it.id) >= MAX_PER_PRODUCT && (
-                  <p className="text-[11px] font-semibold text-brand-700 mt-2">Max {MAX_PER_PRODUCT} per order reached — place this order to buy more.</p>
+                  <p className="text-[11px] font-semibold text-brand-700 mt-2">Max {MAX_PER_PRODUCT} per order reached. Place this order to buy more.</p>
                 )}
               </div>
             </div>

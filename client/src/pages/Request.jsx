@@ -80,7 +80,7 @@ export default function Request() {
     setErr('')
     if (!fe.validate({
       animalOther: isOther && !f.animalOther.trim() ? 'Tell us which animal this is for.' : null,
-      product: !f.product.trim() && photos.length === 0 ? 'Enter the product name — or add a photo of it below.' : null,
+      product: !f.product.trim() && photos.length === 0 ? 'Enter the product name, or add a photo of it below.' : null,
       name: !f.name.trim() ? 'Please add your name.' : null,
       phone: !f.phone ? 'Enter your phone number so we can reach you.' : !/^[6-9]\d{9}$/.test(f.phone) ? 'Enter a valid 10-digit mobile number.' : null,
       pincode: f.pincode && !/^\d{6}$/.test(f.pincode) ? 'Pincode should be 6 digits.' : null,
@@ -116,7 +116,7 @@ export default function Request() {
         </div>
         <h1 className="font-display text-3xl font-semibold mt-6">Request received!</h1>
         <p className="text-ink-700 mt-2">Reference <b className="font-mono bg-sand-100 px-2 py-0.5 rounded">{done.ref}</b></p>
-        <p className="text-ink-500 mt-3 text-sm">Our team will check availability and {f.contactVia === 'Call' ? 'call' : 'WhatsApp'} you on <b>{f.phone}</b> with price & delivery time{f.urgency === 'Urgent' ? ' — we’ll prioritise this one' : ''}.</p>
+        <p className="text-ink-500 mt-3 text-sm">Our team will check availability and {f.contactVia === 'Call' ? 'call' : 'WhatsApp'} you on <b>{f.phone}</b> with price & delivery time{f.urgency === 'Urgent' ? '. We’ll prioritise this one' : ''}.</p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/products" className="btn-primary">Continue shopping</Link>
           <a href={`tel:${PHONE}`} className="btn-ghost"><Phone size={17} /> Call us</a>
@@ -141,7 +141,7 @@ export default function Request() {
             <h1 className="font-display text-[1.9rem] sm:text-5xl font-semibold leading-[1.05] mt-3">
               Can’t find it?<br /><span className="italic text-brand-400">Snap it.</span> We’ll source it.
             </h1>
-            <p className="text-white/75 mt-3 max-w-lg text-sm sm:text-base">Send a photo of the medicine, food or prescription for any animal. We’ll confirm availability and price — usually within a few hours.</p>
+            <p className="text-white/75 mt-3 max-w-lg text-sm sm:text-base">Send a photo of the medicine, food or prescription for any animal. We’ll confirm availability and price, usually within a few hours.</p>
           </div>
           <LogoMark size={120} className="hidden sm:block animate-float drop-shadow-2xl" />
         </div>
@@ -229,7 +229,7 @@ export default function Request() {
                 </div>
               </div>
               <Field as="textarea" name="details" optional className="sm:col-span-2" label="Details" value={f.details} onChange={set('details')} rows={3}
-                  placeholder={f.need === 'Custom medicine' ? 'Vet prescription details, dosage form (syrup / tablet / injection), flavour…' : 'Anything that helps — animal’s age/weight, vet’s advice, substitutes you’re OK with…'}
+                  placeholder={f.need === 'Custom medicine' ? 'Vet prescription details, dosage form (syrup / tablet / injection), flavour…' : 'Anything that helps: animal’s age/weight, vet’s advice, substitutes you’re OK with…'}
               />
             </div>
           </section>
@@ -244,7 +244,7 @@ export default function Request() {
               <div>
                 <Field name="pincode" error={fe.errors.pincode} label="Pincode" optional inputMode="numeric" value={f.pincode} onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} autoComplete="postal-code" />
                 {pin.status === 'found' && <p className="text-[11px] font-semibold text-pine-600 mt-1 animate-fade-in">📍 {pin.data.city}, {pin.data.state}</p>}
-                {pin.status === 'notfound' && <p className="text-[11px] font-semibold text-red-600 mt-1">Pincode not found — please check it</p>}
+                {pin.status === 'notfound' && <p className="text-[11px] font-semibold text-red-600 mt-1">Pincode not found. Please check it</p>}
               </div>
               <Field label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} optional={pin.status !== 'found'} value={f.city} onChange={set('city')} autoComplete="address-level2" />
               <div className="sm:col-span-2">
@@ -262,7 +262,7 @@ export default function Request() {
         <aside className="card p-4 sm:p-6 lg:sticky lg:top-32 min-w-0">
           <h2 className="font-extrabold text-lg">Your request</h2>
           <dl className="mt-3 text-sm space-y-1.5">
-            {[['Need', `${f.need} for ${animalName}`], ['Product', f.product || '—'], ['Photos', `${photos.length} attached`], ['Urgency', f.urgency]].map(([k, v]) => (
+            {[['Need', `${f.need} for ${animalName}`], ['Product', f.product || 'None'], ['Photos', `${photos.length} attached`], ['Urgency', f.urgency]].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3"><dt className="text-ink-500">{k}</dt><dd className="font-semibold text-right truncate">{v}</dd></div>
             ))}
           </dl>

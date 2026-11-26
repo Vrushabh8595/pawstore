@@ -33,7 +33,7 @@ export default function Register() {
       nav('/account')
     } catch (e2) {
       const m = e2.message || ''
-      if (/already|exists|registered/i.test(m)) fe.setError('email', 'An account with this email already exists — log in instead.')
+      if (/already|exists|registered/i.test(m)) fe.setError('email', 'An account with this email already exists. Log in instead.')
       else { setErr(m || 'Could not create account.'); errorFeedback() }
     } finally {
       setBusy(false)

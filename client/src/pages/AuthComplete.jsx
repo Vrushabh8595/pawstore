@@ -72,7 +72,7 @@ function Waiting({ step, slow }) {
         <li className="flex items-center gap-2"><Dot done={step > 1} active={step === 1} /> Confirming your Google account</li>
         <li className="flex items-center gap-2"><Dot active={step === 2} /> Opening your AnimalVeda account</li>
       </ol>
-      {slow && <p className="text-xs text-ink-500 mt-6 animate-fade-in">Our server is waking up — this can take up to a minute the first time. Please keep this page open.</p>}
+      {slow && <p className="text-xs text-ink-500 mt-6 animate-fade-in">Our server is waking up. This can take up to a minute the first time. Please keep this page open.</p>}
     </div>
   )
 }

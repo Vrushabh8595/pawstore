@@ -109,7 +109,7 @@ export default function Product() {
           </div>
           <p className={`text-xs mt-2.5 font-semibold ${room <= 0 ? 'text-red-600' : 'text-ink-500'}`}>
             {room <= 0
-              ? `You already have ${MAX_PER_PRODUCT} of this in your cart — the most allowed per order. Place this order first to buy more.`
+              ? `You already have ${MAX_PER_PRODUCT} of this in your cart, the most allowed per order. Place this order first to buy more.`
               : inCart > 0 ? `${inCart} in cart · you can add ${room} more (max ${MAX_PER_PRODUCT} per order)` : `Max ${MAX_PER_PRODUCT} per order`}
           </p>
 

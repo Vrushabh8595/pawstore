@@ -4,6 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail, ShoppingCart, PartyPopper } from 'lucide-react'
 import { locateAddress } from '@/lib/geolocate'
 import { Field, useFieldErrors, errorFeedback, isEmail } from '@/components/FormField'
+import BlockedNotice from '@/components/BlockedNotice'
 import { useCart, detailCart } from '@/store/cart'
 import { useOrders } from '@/store/orders'
 import { playSound, haptic } from '@/lib/feedback'
@@ -26,6 +27,7 @@ export default function Checkout() {
     name: user?.name || '', phone: '', line1: '', city: '', state: '', pincode: '',
   })
   const fe = useFieldErrors()
+  const [blocked, setBlocked] = useState(false)
   const [email, setEmail] = useState(() => { try { return localStorage.getItem('animalveda-guest-email') || '' } catch { return '' } })
   const [geo, setGeo] = useState({ status: 'idle', msg: '' }) // idle | busy | done | error
   const addressRef = useRef(null)
@@ -73,11 +75,11 @@ export default function Checkout() {
     e.preventDefault()
     setErr('')
     const ok = fe.validate({
-      email: user ? null : !email.trim() ? 'Enter your email — we send order updates there.' : !isEmail(email) ? 'This email doesn’t look right (e.g. name@gmail.com).' : null,
+      email: user ? null : !email.trim() ? 'Enter your email. We send order updates there.' : !isEmail(email) ? 'This email doesn’t look right (e.g. name@gmail.com).' : null,
       name: addr.name.trim().length < 2 ? 'Enter the name of the person receiving the order.' : null,
       phone: !addr.phone ? 'Enter a phone number for the delivery partner.' : !/^[6-9]\d{9}$/.test(addr.phone) ? 'Enter a valid 10-digit mobile number.' : null,
       line1: addr.line1.trim().length < 5 ? 'Enter your house / flat no., street and area.' : null,
-      pincode: !addr.pincode ? 'Enter your 6-digit pincode.' : !/^\d{6}$/.test(addr.pincode) || pin.status === 'notfound' ? 'This pincode doesn’t look right — please check it.' : null,
+      pincode: !addr.pincode ? 'Enter your 6-digit pincode.' : !/^\d{6}$/.test(addr.pincode) || pin.status === 'notfound' ? 'This pincode doesn’t look right. Please check it.' : null,
       city: !addr.city.trim() ? 'Enter your city.' : null,
       state: !addr.state.trim() ? 'Enter your state.' : null,
       utr: method === 'UPI_MANUAL' && !/^\d{12}$/.test(utr) ? (utr ? 'UTR should be exactly 12 digits.' : 'After paying, enter the 12-digit UPI reference (UTR).') : null,
@@ -98,6 +100,7 @@ export default function Checkout() {
       orderNoFinal = res?.order?.orderNo || no
       qc.invalidateQueries({ queryKey: ['my-orders'] })
     } catch (e2) {
+      if (e2.status === 403) { setPlacing(false); setBlocked(true); errorFeedback(); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
       const down = e2 instanceof TypeError || /Route not found|Request failed \(5/.test(e2.message)
       if (!down) { setPlacing(false); return fail(e2.message === 'Validation failed' ? 'Please check your details and try again.' : e2.message) }
     }
@@ -129,6 +132,8 @@ export default function Checkout() {
 
   const set = (k) => (v) => { setAddr((a) => ({ ...a, [k]: v })); fe.clear(k) }
   const E = fe.errors
+
+  if (user?.blocked || blocked) return <div className="container-x py-10 sm:py-16"><BlockedNotice /></div>
 
   return (
     <div className="container-x py-5 sm:py-8">
@@ -225,7 +230,7 @@ export default function Checkout() {
           <Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} />
           {err && <p role="alert" className="text-sm text-red-600 mt-3">{err}</p>}
           <button type="submit" disabled={placing} className="btn-primary w-full mt-4 disabled:opacity-70">
-            <Lock size={16} /> {method === 'COD' ? 'Place COD order' : 'I have paid — place order'}
+            <Lock size={16} /> {method === 'COD' ? 'Place COD order' : 'I have paid, place order'}
           </button>
           <p className="text-xs text-ink-500 text-center mt-3">Demo checkout · no real payment is taken</p>
         </aside>
@@ -246,7 +251,7 @@ export default function Checkout() {
             {mrpTotal > subtotal && <p className="text-[11px] text-ink-500 line-through leading-none">{inr(mrpTotal + (shipping === 0 ? SHIPPING_FEE : shipping) + codFee)}</p>}
           </div>
           <button type="submit" form="checkout-form" disabled={placing} className="btn-primary flex-1 min-w-0 !px-3 text-sm disabled:opacity-70">
-            <Lock size={15} className="shrink-0" /><span className="truncate">{method === 'COD' ? 'Place COD order' : 'I have paid — place order'}</span>
+            <Lock size={15} className="shrink-0" /><span className="truncate">{method === 'COD' ? 'Place COD order' : 'I have paid, place order'}</span>
           </button>
         </div>
       </div>
@@ -258,8 +263,8 @@ function PinStatus({ pin }) {
   if (pin.status === 'idle') return <p className="text-[11px] text-ink-500 mt-1">City & state fill in automatically</p>
   if (pin.status === 'loading') return <p className="text-[11px] text-ink-500 mt-1">Finding your area…</p>
   if (pin.status === 'found') return <p className="text-[11px] font-semibold text-pine-600 mt-1 animate-fade-in">📍 {pin.data.city}, {pin.data.state}</p>
-  if (pin.status === 'notfound') return <p className="text-[11px] font-semibold text-red-600 mt-1">We couldn’t find this pincode — please check it</p>
-  return <p className="text-[11px] text-ink-500 mt-1">Couldn’t look it up — please type city & state</p>
+  if (pin.status === 'notfound') return <p className="text-[11px] font-semibold text-red-600 mt-1">We couldn’t find this pincode. Please check it</p>
+  return <p className="text-[11px] text-ink-500 mt-1">Couldn’t look it up. Please type city & state</p>
 }
 
 function Summary({ items, subtotal, shipping, codFee, total, mrpTotal, saving }) {
