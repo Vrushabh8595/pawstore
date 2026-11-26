@@ -10,13 +10,15 @@ import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
 export default function OrderDetail() {
   const { orderNo } = useParams()
   const local = useOrders((s) => s.get(orderNo))
-  const q = useQuery({ queryKey: ['my-order', orderNo], queryFn: () => api.get(`/orders/no/${encodeURIComponent(orderNo)}`), retry: false })
+  const q = useQuery({ queryKey: ['my-order', orderNo], queryFn: () => api.get(`/orders/no/${encodeURIComponent(orderNo)}`), retry: false, staleTime: 0, refetchOnWindowFocus: true, refetchInterval: 60_000 })
   const order = q.data ? normOrder(q.data) : local ? normOrder(local) : null
   if (q.isLoading && !local) return <div className="card h-40 animate-pulse" />
   if (!order) return <div className="card p-12 text-center text-ink-500">Order not found. <Link to="/account" className="text-brand-600 font-semibold">My orders</Link></div>
 
   const doneIndex = STATUS_FLOW.indexOf(order.status)
   const rejected = order.status === 'Payment Rejected'
+  const ended = ['Cancelled', 'Returned'].includes(order.status) ? order.status : null
+  const lastNote = [...(order.statusHistory || [])].reverse().find((h) => h.status === order.status)?.note
 
   return (
     <div>
@@ -30,7 +32,7 @@ export default function OrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
         <div className="space-y-6 min-w-0">
           {/* Timeline */}
-          {!rejected && (
+          {!rejected && !ended && (
             <section className="card p-5">
               <h2 className="font-bold mb-4">Order status</h2>
               <ol className="space-y-4">
@@ -46,6 +48,18 @@ export default function OrderDetail() {
                   )
                 })}
               </ol>
+            </section>
+          )}
+          {ended && (
+            <section className="card p-5 bg-ink-50 border-ink-200">
+              <p className="font-bold text-ink-900">Order {ended === 'Cancelled' ? 'cancelled' : 'returned'}</p>
+              <p className="text-sm text-ink-700 mt-1">
+                {ended === 'Cancelled'
+                  ? 'This order has been cancelled. If you already paid by UPI, the amount will be refunded to your account within 5–7 working days.'
+                  : 'This order was returned. Your refund is being processed.'}
+                {lastNote ? ` Note: ${lastNote}` : ''}
+              </p>
+              <Link to="/contact-us" className="inline-block text-sm font-bold text-brand-600 mt-2">Need help? Contact us →</Link>
             </section>
           )}
           {rejected && (
