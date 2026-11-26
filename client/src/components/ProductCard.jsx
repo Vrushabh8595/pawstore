@@ -37,9 +37,9 @@ export default function ProductCard({ product, size = 'default' }) {
   return (
     <div className="group card overflow-hidden flex flex-col h-full transition duration-200 hover:shadow-[0_16px_40px_-20px_rgba(26,26,23,.3)] lg:hover:-translate-y-0.5 !rounded-2xl sm:!rounded-[1.25rem]">
       <div className="relative bg-sand-100">
-        <Link to={`/product/${product.slug}`} className="block">
+        <Link to={`/product/${product.slug}`} className="block aspect-square overflow-hidden">
           <img ref={imgRef} src={product.images[0]} alt={product.name} loading="lazy"
-            className="aspect-square w-full object-cover text-transparent group-hover:scale-[1.04] transition duration-500" />
+            className="block w-full h-full object-cover text-transparent group-hover:scale-[1.04] transition duration-500" />
         </Link>
         {off > 0 && (
           <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 bg-brand-600 text-white font-extrabold rounded-full shadow-sm ${compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5 sm:py-1'}`}>
