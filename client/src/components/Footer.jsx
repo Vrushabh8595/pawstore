@@ -1,80 +1,130 @@
-import Logo from './Logo'
 import { Link } from 'react-router-dom'
-import { Phone, Mail, MapPin, MessageCircle, Send, Globe } from 'lucide-react'
+import { Phone, Mail, Clock, MessageCircle, Send, Globe, Camera, ArrowRight, ShieldCheck, Truck, RotateCcw, Stethoscope } from 'lucide-react'
+import Logo from './Logo'
+import { categories } from '@/data/products'
 
 const PHONES = ['7620377278', '8982826363']
+const CAT_EMOJI = { 'dry-food': '🦴', 'wet-food': '🍲', treats: '🍪', 'collars-leashes': '🦮', health: '💊', apparel: '🧥', bedding: '🛏️' }
+
+const COLS = [
+  { h: 'Quick links', links: [['All products', '/products'], ['Today’s offers', '/offers'], ['Request a medicine', '/request-medicine'], ['Under ₹300', '/products?sort=price-asc'], ['My orders', '/account'], ['Wishlist', '/wishlist']] },
+  { h: 'Help', links: [['Track order', '/account'], ['Shipping policy', '/shipping-policy'], ['Refund & returns', '/refund-policy'], ['Contact us', '/contact-us']] },
+  { h: 'Company', links: [['About AnimalVeda', '/about-us'], ['Privacy policy', '/privacy-policy'], ['Terms & conditions', '/terms-and-conditions']] },
+]
+const ANIMALS = [['🐕', 'Dogs'], ['🐈', 'Cats'], ['🐄', 'Cattle'], ['🐐', 'Goats'], ['🐓', 'Poultry'], ['🐎', 'Horses'], ['🦜', 'Birds']]
 
 export default function Footer() {
-  const cols = [
-    { h: 'Shop', links: [['All Products', '/products'], ['Dry Food', '/category/dry-food'], ['Wet Food', '/category/wet-food'], ['Treats', '/category/treats'], ['Apparel', '/category/apparel'], ['Beds & Bedding', '/category/bedding']] },
-    { h: 'Help', links: [['Track Order', '/account'], ['Shipping Policy', '/shipping-policy'], ['Refund Policy', '/refund-policy'], ['Contact Us', '/contact-us']] },
-    { h: 'Company', links: [['About Us', '/about-us'], ['Privacy Policy', '/privacy-policy'], ['Terms', '/terms-and-conditions']] },
-  ]
   return (
-    <footer className="mt-24 bg-pine-900 text-white/75">
-      {/* Trust strip */}
-      <div className="border-b border-white/10">
-        <div className="container-x grid grid-cols-2 md:grid-cols-4 gap-6 py-7 text-sm">
-          {[['🚚', 'Free delivery', 'over ₹999'], ['🔄', 'Easy returns', 'within 7 days'], ['🔒', 'Secure payments', 'UPI · COD'], ['🐾', 'Vet-approved', 'real ingredients']].map(([e, h, s]) => (
-            <div key={h} className="flex items-center gap-3">
-              <span className="text-2xl">{e}</span>
-              <div><p className="font-bold text-white">{h}</p><p className="text-white/55 text-xs">{s}</p></div>
+    <footer className="mt-32 bg-pine-900 text-white/75">
+      {/* Request CTA band */}
+      <div className="container-x relative -mt-16 sm:-mt-12">
+        <Link to="/request-medicine"
+          className="group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 rounded-[1.6rem] bg-gradient-to-r from-brand-500 to-brand-600 text-white p-5 sm:px-8 sm:py-6 shadow-[0_20px_40px_-20px_rgba(224,100,2,.8)]">
+          <span className="grid place-items-center w-12 h-12 rounded-2xl bg-white/20 shrink-0"><Camera size={22} /></span>
+          <div className="flex-1">
+            <p className="font-display text-xl sm:text-2xl font-semibold leading-tight">Can’t find a medicine for your animal?</p>
+            <p className="text-white/85 text-sm mt-0.5">Send us a photo of the label or prescription — we’ll source it and call you back.</p>
+          </div>
+          <span className="inline-flex items-center gap-2 bg-white text-brand-700 font-extrabold text-sm px-5 py-2.5 rounded-full w-fit group-hover:gap-3 transition-all">
+            Request now <ArrowRight size={16} />
+          </span>
+        </Link>
+      </div>
+
+      <div className="container-x pt-8">
+        {/* Trust strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pb-10 border-b border-white/10">
+          {[[Truck, 'Free delivery', 'On orders over ₹999'], [RotateCcw, 'Easy returns', 'Within 7 days'], [ShieldCheck, 'Secure payments', 'UPI & Cash on delivery'], [Stethoscope, 'Vet-approved', 'Genuine products only']].map(([Icon, h, s]) => (
+            <div key={h} className="flex items-center gap-3 rounded-2xl bg-white/5 ring-1 ring-white/10 p-3 sm:p-4">
+              <span className="grid place-items-center w-10 h-10 rounded-xl bg-brand-500/15 text-brand-300 shrink-0"><Icon size={19} /></span>
+              <div className="min-w-0"><p className="font-bold text-white text-sm">{h}</p><p className="text-white/55 text-xs">{s}</p></div>
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="container-x py-14 grid gap-10 md:grid-cols-[1.5fr_repeat(3,1fr)_1.3fr]">
-        <div>
-          <Logo size={56} className="mb-3" />
-          <p className="text-sm text-white/55 max-w-xs">Vet medicines, nutrition and care for pets, livestock and every animal you love. Can’t find a medicine? Send us a photo — we’ll source it.</p>
-          <div className="flex gap-2 mt-5">
-            {[MessageCircle, Send, Globe].map((Icon, i) => (
-              <a key={i} href="#" className="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-brand-500 transition" aria-label="social">
-                <Icon size={16} />
-              </a>
-            ))}
+        {/* Main grid */}
+        <div className="py-12 grid gap-10 grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.4fr_1.1fr_1fr_.8fr_1fr_1.3fr]">
+          <div className="col-span-2 md:col-span-4 lg:col-span-1">
+            <Logo light className="h-10" />
+            <p className="text-sm text-white/60 max-w-sm mt-4 leading-relaxed">
+              Vet medicines, nutrition and everyday care for pets, livestock and every animal you love — delivered across India.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-5">
+              {ANIMALS.map(([e, a]) => (
+                <span key={a} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/5 ring-1 ring-white/10 rounded-full px-2.5 py-1">{e} {a}</span>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-5">
+              {[[MessageCircle, 'WhatsApp'], [Send, 'Telegram'], [Globe, 'Website']].map(([Icon, label]) => (
+                <a key={label} href="#" className="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-brand-500 transition" aria-label={label}>
+                  <Icon size={16} />
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {cols.map((c) => (
-          <div key={c.h}>
-            <h4 className="text-white font-bold mb-4 text-sm">{c.h}</h4>
+          <div>
+            <h4 className="text-white font-bold mb-4 text-sm">Shop by category</h4>
             <ul className="space-y-2.5 text-sm">
-              {c.links.map(([label, to]) => (
-                <li key={label}><Link to={to} className="hover:text-brand-300 transition">{label}</Link></li>
+              {categories.map((c) => (
+                <li key={c.slug}>
+                  <Link to={`/category/${c.slug}`} className="inline-flex items-center gap-2 hover:text-brand-300 transition">
+                    <span className="text-base leading-none">{CAT_EMOJI[c.slug] || '🐾'}</span>{c.name}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
-        ))}
 
-        <div>
-          <h4 className="text-white font-bold mb-4 text-sm">Get in touch</h4>
-          <ul className="space-y-3 text-sm">
-            {PHONES.map((p) => (
-              <li key={p}>
-                <a href={`tel:${p}`} className="flex items-center gap-2.5 hover:text-brand-300 transition">
-                  <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Phone size={14} /></span>
-                  <span className="font-semibold text-white">{p}</span>
+          {COLS.map((c) => (
+            <div key={c.h}>
+              <h4 className="text-white font-bold mb-4 text-sm">{c.h}</h4>
+              <ul className="space-y-2.5 text-sm">
+                {c.links.map(([label, to]) => (
+                  <li key={label}><Link to={to} className="hover:text-brand-300 transition">{label}</Link></li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          <div className="col-span-2 md:col-span-4 lg:col-span-1">
+            <h4 className="text-white font-bold mb-4 text-sm">Get in touch</h4>
+            <div className="inline-flex items-center gap-2 bg-green-500/15 text-green-300 ring-1 ring-green-400/30 rounded-full px-3 py-1 text-xs font-bold mb-4">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Open 24×7 · all 7 days
+            </div>
+            <ul className="space-y-3 text-sm">
+              {PHONES.map((p) => (
+                <li key={p}>
+                  <a href={`tel:${p}`} className="flex items-center gap-2.5 hover:text-brand-300 transition">
+                    <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Phone size={14} /></span>
+                    <span className="font-semibold text-white">+91 {p}</span>
+                  </a>
+                </li>
+              ))}
+              <li>
+                <a href="mailto:care@animalveda.com" className="flex items-center gap-2.5 hover:text-brand-300 transition">
+                  <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Mail size={14} /></span>
+                  care@animalveda.com
                 </a>
               </li>
-            ))}
-            <li className="flex items-center gap-2.5">
-              <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Mail size={14} /></span>
-              <span>care@animalveda.com</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><MapPin size={14} /></span>
-              <span className="text-white/55 text-xs leading-relaxed">Mon–Sat, 10am–7pm<br />Shipping across India</span>
-            </li>
-          </ul>
+              <li className="flex items-start gap-2.5">
+                <span className="w-8 h-8 grid place-items-center rounded-full bg-white/10 shrink-0"><Clock size={14} /></span>
+                <span className="text-white/60 text-xs leading-relaxed">Support & orders: 24 hours a day, 365 days a year<br />Delivering across India</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
       <div className="border-t border-white/10">
-        <div className="container-x py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/45">
-          <span>© {new Date().getFullYear()} AnimalVeda. All rights reserved.</span>
-          <span>Pay with UPI · COD · Cards (coming soon)</span>
+        <div className="container-x py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/50">
+          <span>© {new Date().getFullYear()} AnimalVeda. All rights reserved. Made with ❤️ in India.</span>
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            <span className="mr-1">We accept</span>
+            {['UPI', 'GPay', 'PhonePe', 'Paytm', 'Cash on delivery'].map((m) => (
+              <span key={m} className="bg-white/10 text-white/80 font-bold rounded-md px-2 py-1">{m}</span>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

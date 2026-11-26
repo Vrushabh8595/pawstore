@@ -3,10 +3,12 @@ import Header from './Header'
 import Footer from './Footer'
 import BottomNav from './BottomNav'
 import { useSeo } from '@/lib/useSeo'
+import { useTracking } from '@/lib/track'
 
 export default function Layout() {
   const { pathname } = useLocation()
   useSeo()
+  useTracking()
   // Checkout has its own sticky "place order" bar on phones
   const hideBottomNav = pathname === '/checkout'
   return (

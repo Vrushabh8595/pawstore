@@ -30,12 +30,12 @@ export function LogoMark({ size = 40, className = '', title = 'AnimalVeda' }) {
   )
 }
 
-// Site logo = the mark alone (no "AnimalVeda" text), per brand direction.
-export default function Logo({ size = 40, className = '' }) {
+// Full logo = an image (public/logo.svg) with the "AnimalVeda" name drawn as
+// vector outlines — it's a picture, not live text, so it looks identical everywhere.
+// `light` uses white lettering for dark backgrounds.
+export default function Logo({ light = false, className = 'h-8 sm:h-10' }) {
   return (
-    <span className={`inline-flex items-center ${className}`}>
-      <LogoMark size={size} className="shrink-0 drop-shadow-[0_6px_14px_rgba(224,100,2,.35)]" />
-      <span className="sr-only">AnimalVeda</span>
-    </span>
+    <img src={light ? '/logo-light.svg' : '/logo.svg'} alt="AnimalVeda" width="245" height="48"
+      className={`w-auto select-none ${className}`} draggable="false" />
   )
 }
