@@ -19,7 +19,7 @@ function Field({ label, value }) {
   return (
     <div>
       <p className="text-sm font-bold">{label}</p>
-      <p className="text-ink-700 capitalize">{value || '—'}</p>
+      <p className="text-ink-700 capitalize">{value || 'None'}</p>
     </div>
   )
 }

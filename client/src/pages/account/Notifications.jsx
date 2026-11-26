@@ -27,7 +27,7 @@ export default function AccountNotifications() {
       ) : items.length === 0 ? (
         <div className="card p-10 text-center text-ink-500">
           <BellOff size={36} className="mx-auto mb-3 text-brand-400" />
-          No notifications yet. When we confirm, ship or deliver your order you’ll see it here — with a sound alert.
+          No notifications yet. When we confirm, ship or deliver your order you’ll see it here, with a sound alert.
         </div>
       ) : (
         <ul className="space-y-2.5">

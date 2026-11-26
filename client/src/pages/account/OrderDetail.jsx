@@ -59,7 +59,7 @@ export default function OrderDetail() {
               <p className="font-bold text-ink-900">Order {ended === 'Cancelled' ? 'cancelled' : 'returned'}</p>
               <p className="text-sm text-ink-700 mt-1">
                 {ended === 'Cancelled'
-                  ? 'This order has been cancelled. If you already paid by UPI, the amount will be refunded to your account within 5–7 working days.'
+                  ? 'This order has been cancelled. If you already paid by UPI, the amount will be refunded to your account within 5 to 7 working days.'
                   : 'This order was returned. Your refund is being processed.'}
                 {lastNote ? ` Note: ${lastNote}` : ''}
               </p>
@@ -95,7 +95,7 @@ export default function OrderDetail() {
             <div className="border-t border-[#ecece7] my-2" />
             <Row k="Total" v={inr(order.total)} bold />
             <p className="text-xs text-ink-500 mt-3">
-              {order.payment.method === 'COD' ? 'Cash on Delivery' : `UPI · ref ${order.payment.utr || '—'}`}
+              {order.payment.method === 'COD' ? 'Cash on Delivery' : `UPI · ref ${order.payment.utr || 'None'}`}
             </p>
           </section>
           <section className="card p-5 text-sm">
