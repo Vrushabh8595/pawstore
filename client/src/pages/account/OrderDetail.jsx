@@ -83,6 +83,13 @@ export default function OrderDetail() {
                 <span className="font-semibold shrink-0">{inr(it.price * it.qty)}</span>
               </div>
             ))}
+            {order.status === 'Delivered' && (
+              <Link to="/account/reviews" className="mt-4 flex items-center gap-3 rounded-xl bg-amber-50 ring-1 ring-amber-200 p-3 hover:bg-amber-100 transition">
+                <span className="text-xl" aria-hidden="true">⭐</span>
+                <span className="flex-1 text-sm"><b className="text-ink-900">Rate these products</b><span className="block text-ink-700">Your review helps other pet parents choose.</span></span>
+                <span className="text-sm font-bold text-brand-700">Write review →</span>
+              </Link>
+            )}
           </section>
         </div>
 
@@ -90,6 +97,7 @@ export default function OrderDetail() {
           <section className="card p-5 text-sm">
             <h2 className="font-bold mb-3">Payment</h2>
             <Row k="Subtotal" v={inr(order.subtotal)} />
+            {order.discount > 0 && <Row k={`Coupon ${order.coupon || ''}`} v={`− ${inr(order.discount)}`} />}
             <Row k="Shipping" v={order.shippingFee === 0 ? 'FREE' : inr(order.shippingFee)} />
             {order.codFee > 0 && <Row k="COD fee" v={inr(order.codFee)} />}
             <div className="border-t border-[#ecece7] my-2" />
