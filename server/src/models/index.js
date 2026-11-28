@@ -235,6 +235,35 @@ const notificationSchema = new Schema(
   { versionKey: false }
 )
 
+/* ------------------------------ Admin-only costs ------------------------------ */
+// What the store pays, kept OUT of the Product document so it can never leak
+// through the public product / cart / wishlist / order APIs.
+const productCostSchema = new Schema(
+  {
+    product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true },
+    // Courier partner charge per unit, one way (a return costs it again)
+    courierCharge: { type: Number, default: 0, min: 0 },
+    // Buying price per variant
+    variants: [{ sku: { type: String, required: true }, costPrice: { type: Number, default: 0, min: 0 }, _id: false }],
+    dummy: { type: Boolean, default: false }, // sample numbers, not entered by the admin yet
+  },
+  { timestamps: true }
+)
+// Cost snapshot taken when an order is placed, so later price/cost edits
+// don't rewrite past profit.
+const orderCostSchema = new Schema(
+  {
+    order: { type: Schema.Types.ObjectId, ref: 'Order', required: true, unique: true },
+    orderNo: String,
+    orderedAt: { type: Date, index: true },
+    goodsCost: { type: Number, default: 0 },
+    courierCost: { type: Number, default: 0 }, // one way, all units
+    lines: [{ product: Schema.Types.ObjectId, sku: String, qty: Number, costPrice: Number, courierCharge: Number, _id: false }],
+    missing: { type: Boolean, default: false }, // an item had no cost entered
+  },
+  { versionKey: false }
+)
+
 /* -------------------------------- Settings -------------------------------- */
 const settingsSchema = new Schema(
   {
@@ -262,3 +291,5 @@ export const PageView = model('PageView', pageViewSchema)
 export const Presence = model('Presence', presenceSchema)
 export const Notification = model('Notification', notificationSchema)
 export const Review = model('Review', reviewSchema)
+export const ProductCost = model('ProductCost', productCostSchema)
+export const OrderCost = model('OrderCost', orderCostSchema)
