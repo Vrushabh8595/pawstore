@@ -51,7 +51,7 @@ export default function AdminUsers() {
                 <tr key={u._id} className="border-t border-ink-100 hover:bg-sand-50/60">
                   <td className="px-4 py-3">
                     <Link to={`/admin/users/${u._id}`} className="flex items-center gap-3 group">
-                      <Avatar name={u.name} live={isLive(u.lastSeen)} />
+                      <Avatar name={u.name} src={u.avatar} live={isLive(u.lastSeen)} />
                       <span className="min-w-0"><span className="flex items-center gap-1.5 font-bold group-hover:text-brand-600 min-w-0"><span className="truncate">{u.name}</span>{u.blocked && <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-wider text-white bg-red-500 rounded-full px-1.5 py-0.5">Blocked</span>}</span><span className="block text-xs text-ink-500 truncate">{u.email}{u.phone ? ` · ${u.phone}` : ''}</span></span>
                     </Link>
                   </td>
@@ -72,11 +72,15 @@ export default function AdminUsers() {
   )
 }
 
-export function Avatar({ name = '?', live, size = 'w-10 h-10 text-sm' }) {
+// Customer photo (Google photo or one they uploaded) with an initials fallback.
+// Only server-validated data:image URLs are ever shown.
+const SAFE_IMG = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/
+export function Avatar({ name = '?', src, live, size = 'w-10 h-10 text-sm' }) {
   const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+  const img = SAFE_IMG.test(src || '') ? src : null
   return (
     <span className={`relative grid place-items-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white font-extrabold shrink-0 ${size}`}>
-      {initials}
+      {img ? <img src={img} alt="" loading="lazy" className="w-full h-full rounded-full object-cover bg-sand-100" /> : initials}
       {live && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 ring-2 ring-white" />}
     </span>
   )
