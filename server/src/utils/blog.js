@@ -1,11 +1,11 @@
 import { z } from 'zod'
-import { BlogPost, BlogImage, User } from '../models/index.js'
+import { BlogPost, BlogImage, BlogCategory, User } from '../models/index.js'
 
+// Built-in categories; authors and the admin can add more (BlogCategory)
 export const BLOG_CATEGORIES = [
   ['dog-care', 'Dog care'], ['cat-care', 'Cat care'], ['nutrition', 'Nutrition & food'], ['health', 'Health & medicines'],
   ['grooming', 'Grooming'], ['training', 'Training & behaviour'], ['livestock', 'Cattle & livestock'], ['news', 'AnimalVeda news'],
 ]
-const CAT_SLUGS = BLOG_CATEGORIES.map(([s]) => s)
 
 export const slugify = (s = '') =>
   String(s).toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80)
@@ -18,6 +18,42 @@ export async function uniqueSlug(Model, field, base, exceptId) {
     if (!clash) return slug
   }
   return `${root}-${Date.now().toString(36)}`
+}
+
+// All categories: built-in first, then added ones (cached briefly)
+let catCache = null
+export async function getCategories() {
+  if (catCache && Date.now() - catCache.at < 30_000) return catCache.list
+  const added = await BlogCategory.find({}).select('slug name').sort({ name: 1 }).lean()
+  const list = [...BLOG_CATEGORIES.map(([slug, name]) => ({ slug, name, builtIn: true })), ...added.filter((c) => !BLOG_CATEGORIES.some(([s]) => s === c.slug)).map((c) => ({ slug: c.slug, name: c.name }))]
+  catCache = { list, at: Date.now() }
+  return list
+}
+export const clearCategoryCache = () => { catCache = null }
+
+// Add a category by name (returns the existing one if the name is already taken)
+export async function addCategory(rawName, userId) {
+  const name = String(rawName || '').replace(/\s+/g, ' ').trim()
+  if (name.length < 2 || name.length > 40) return { error: 'Use a category name of 2 to 40 characters.' }
+  if (/[<>{}]/.test(name)) return { error: 'Use letters, numbers and simple punctuation only.' }
+  const slug = slugify(name).slice(0, 40)
+  if (!slug) return { error: 'Use letters or numbers in the name.' }
+  const all = await getCategories()
+  const same = all.find((c) => c.slug === slug || c.name.toLowerCase() === name.toLowerCase())
+  if (same) return { category: same, existed: true }
+  if (all.length >= 60) return { error: 'There are already 60 categories. Ask the admin to remove unused ones.' }
+  try { await BlogCategory.create({ slug, name, createdBy: userId }) } catch (e) { if (e?.code !== 11000) throw e }
+  clearCategoryCache()
+  return { category: { slug, name } }
+}
+
+// Express middleware: a post's category must be one that exists
+export async function checkCategory(req, res, next) {
+  try {
+    const c = req.body?.category
+    if (c && !(await getCategories()).some((x) => x.slug === c)) return res.status(400).json({ message: 'Choose a category from the list.', errors: { category: 'Choose a category from the list.' } })
+    next()
+  } catch (e) { next(e) }
 }
 
 const words = (s = '') => (String(s).match(/[\p{L}\p{N}]+/gu) || []).length
@@ -34,7 +70,7 @@ export const postSchema = z.object({
   content: z.string().max(60000, 'The post is too long (60,000 characters max)').optional(),
   cover: z.union([httpsUrl, z.literal('')]).optional(),
   coverAlt: text(160).optional(),
-  category: z.union([z.enum(CAT_SLUGS), z.literal('')]).optional(),
+  category: z.union([text(40).regex(/^[a-z0-9-]+$/, 'Choose a category from the list.'), z.literal('')]).optional(),
   tags: z.array(text(30)).max(10).optional(),
   metaTitle: text(70).optional(),
   metaDescription: text(170).optional(),
