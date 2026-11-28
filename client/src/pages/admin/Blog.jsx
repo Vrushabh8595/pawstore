@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { PenLine, Check, X, Loader2, Trash2, UserPlus, Globe, Eye, Pencil, KeyRound, EyeOff } from 'lucide-react'
+import { PenLine, Check, X, Loader2, Trash2, UserPlus, Globe, Eye, Pencil, KeyRound, EyeOff, Copy, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
-import { blogDate, categoryName } from '@/lib/blog'
+import { blogDate, categoryName, useBlogCategories } from '@/lib/blog'
 import { StatusPill } from '@/components/blog/PostEditor'
 import Markdown from '@/components/blog/Markdown'
 import Avatar from '@/components/Avatar'
 import { PageHead } from './ui'
 
-const TABS = [['pending', 'Waiting for approval'], ['published', 'Live'], ['rejected', 'Changes requested'], ['draft', 'Drafts'], ['authors', 'Authors']]
+const TABS = [['pending', 'Waiting for approval'], ['published', 'Live'], ['rejected', 'Changes requested'], ['draft', 'Drafts'], ['authors', 'Authors'], ['categories', 'Categories']]
 
 export default function AdminBlog() {
   const [params, setParams] = useSearchParams()
@@ -17,6 +17,7 @@ export default function AdminBlog() {
   const review = params.get('review')
   const setTab = (t) => setParams({ tab: t })
   const q = useQuery({ queryKey: ['admin-blog'], queryFn: () => api.get('/admin/blog/posts'), refetchInterval: 60_000 })
+  const cats = useBlogCategories()
   const posts = q.data?.posts || []
   const counts = q.data?.counts || {}
   const list = posts.filter((p) => p.status === tab)
@@ -29,12 +30,12 @@ export default function AdminBlog() {
         {TABS.map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold ${tab === k ? 'bg-ink-900 text-white' : 'bg-white ring-1 ring-ink-200 text-ink-700'}`}>
-            {l}{k !== 'authors' && counts[k] ? <span className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] grid place-items-center ${k === 'pending' ? 'bg-amber-400 text-ink-900' : 'bg-ink-100 text-ink-700'}`}>{counts[k]}</span> : null}
+            {l}{!['authors', 'categories'].includes(k) && counts[k] ? <span className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] grid place-items-center ${k === 'pending' ? 'bg-amber-400 text-ink-900' : 'bg-ink-100 text-ink-700'}`}>{counts[k]}</span> : null}
           </button>
         ))}
       </div>
 
-      {tab === 'authors' ? <Authors /> : q.isLoading ? <div className="card p-10 text-center"><Loader2 className="mx-auto animate-spin" /></div> : !list.length ? (
+      {tab === 'authors' ? <Authors /> : tab === 'categories' ? <Categories /> : q.isLoading ? <div className="card p-10 text-center"><Loader2 className="mx-auto animate-spin" /></div> : !list.length ? (
         <div className="card p-10 text-center text-ink-500">{tab === 'pending' ? 'Nothing waiting for approval. 🎉' : 'No posts here yet.'}</div>
       ) : (
         <div className="card divide-y divide-ink-100">
@@ -45,7 +46,7 @@ export default function AdminBlog() {
                 <p className="font-bold text-ink-900 line-clamp-2">{p.title}</p>
                 <p className="text-xs text-ink-500 mt-1 flex flex-wrap gap-x-2">
                   <span>by <b className="text-ink-700">{p.authorName || 'Unknown'}</b></span>
-                  {p.category && <span>· {categoryName(p.category)}</span>}
+                  {p.category && <span>· {categoryName(p.category, cats)}</span>}
                   <span>· {p.status === 'published' ? `Live since ${blogDate(p.publishedAt)}` : p.status === 'pending' ? `Sent ${blogDate(p.submittedAt)}` : `Updated ${blogDate(p.updatedAt)}`}</span>
                   {p.status === 'published' && <span>· {p.views || 0} views</span>}
                 </p>
@@ -65,6 +66,7 @@ export default function AdminBlog() {
 
 function ReviewDrawer({ id, onClose }) {
   const qc = useQueryClient()
+  const cats = useBlogCategories()
   const q = useQuery({ queryKey: ['admin-blog-post', id], queryFn: () => api.get(`/admin/blog/posts/${id}`) })
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState('')
@@ -91,7 +93,7 @@ function ReviewDrawer({ id, onClose }) {
         {q.isLoading ? <p className="p-10 text-center"><Loader2 className="mx-auto animate-spin" /></p> : q.isError ? <p className="p-10 text-center text-red-600">{q.error.message}</p> : (
           <div className="p-5 sm:p-8">
             <p className="text-xs font-mono text-ink-500 break-all">/blog/{p.slug}</p>
-            {p.category && <p className="eyebrow mt-3">{categoryName(p.category)}</p>}
+            {p.category && <p className="eyebrow mt-3">{categoryName(p.category, cats)}</p>}
             <h1 className="text-3xl mt-1">{p.title}</h1>
             {p.excerpt && <p className="text-ink-700 mt-3">{p.excerpt}</p>}
             {p.cover && <img src={p.cover} alt={p.coverAlt} className="mt-5 w-full aspect-[16/9] object-cover rounded-2xl" />}
@@ -117,7 +119,8 @@ function ReviewDrawer({ id, onClose }) {
   )
 }
 
-const input = 'w-full mt-1 border border-ink-200 rounded-xl px-3 py-2 outline-none focus:border-brand-400 bg-white'
+const input = 'w-full mt-1 border border-ink-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 bg-white'
+const LOGIN_URL = `${typeof location !== 'undefined' ? location.origin : ''}/author/login`
 
 function Authors() {
   const qc = useQueryClient()
@@ -128,12 +131,12 @@ function Authors() {
   const authors = q.data?.authors || []
   const create = async (e) => {
     e.preventDefault(); setBusy('create'); setMsg(null)
-    try { await api.post('/admin/blog/authors', form); setMsg({ text: `Author created. They can now log in at ${location.origin}/login with ${form.email}.` }); setForm(null); q.refetch() }
+    try { await api.post('/admin/blog/authors', form); setMsg({ text: `Author created. Share the author login link ${LOGIN_URL} with ${form.email} and their password.` }); setForm(null); q.refetch() }
     catch (x) { setMsg({ err: true, text: x.data?.errors ? Object.values(x.data.errors).join(' ') : x.message }) } finally { setBusy('') }
   }
   const remove = async (a) => {
     const live = a.posts?.published || 0
-    if (!confirm(`Delete ${a.name}'s author profile and login?\n\nTheir drafts and unpublished posts will be deleted.${live ? `\n${live} live post(s) will stay on the website under their name.` : ''}`)) return
+    if (!confirm(`Delete ${a.name}'s author profile and login?\n\nTheir drafts and unpublished posts will be deleted.${live ? `\n${live} live post(s) will stay on the website.` : ''}`)) return
     let mode = 'keep'
     if (live && confirm(`Also delete their ${live} live post(s) from the website?\n\nOK = delete them too · Cancel = keep them live`)) mode = 'delete'
     setBusy(a.id); setMsg(null)
@@ -148,19 +151,19 @@ function Authors() {
   return (
     <div className="space-y-4">
       {msg && <p role={msg.err ? 'alert' : 'status'} className={`rounded-xl px-4 py-3 text-sm font-semibold ${msg.err ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-800'}`}>{msg.text}</p>}
+      <LoginLink />
       {form ? (
         <form onSubmit={create} className="card p-5 grid sm:grid-cols-2 gap-3">
           <p className="sm:col-span-2 font-bold">New author</p>
           <label className="block text-sm font-semibold">Name<input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={60} className={input} /></label>
           <label className="block text-sm font-semibold">Email (their login)<input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={input} /></label>
           <label className="block text-sm font-semibold">Password<input required type="text" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={8} className={input} /><span className="text-[11px] text-ink-500 font-normal">8+ characters with a letter and a number. Share it privately.</span></label>
-          <label className="block text-sm font-semibold">Short bio (optional)<input value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} maxLength={300} className={input} /></label>
           <div className="sm:col-span-2 flex gap-2">
             <button disabled={busy === 'create'} className="btn-primary !py-2 text-sm">{busy === 'create' ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />} Create author</button>
             <button type="button" onClick={() => setForm(null)} className="btn-ghost !py-2 text-sm">Cancel</button>
           </div>
         </form>
-      ) : <button onClick={() => setForm({ name: '', email: '', password: '', bio: '' })} className="btn-primary !py-2 text-sm"><UserPlus size={16} /> Add an author</button>}
+      ) : <button onClick={() => setForm({ name: '', email: '', password: '' })} className="btn-primary !py-2 text-sm"><UserPlus size={16} /> Add an author</button>}
 
       <div className="card divide-y divide-ink-100">
         {q.isLoading ? <p className="p-8 text-center"><Loader2 className="mx-auto animate-spin" /></p> : !authors.length ? <p className="p-8 text-center text-ink-500">No authors yet. Add one so they can write for the blog.</p> : authors.map((a) => (
@@ -170,9 +173,68 @@ function Authors() {
               <p className="font-bold">{a.name}</p>
               <p className="text-xs text-ink-500 truncate">{a.email} · {a.posts?.published || 0} live · {a.posts?.pending || 0} waiting · {(a.posts?.draft || 0) + (a.posts?.rejected || 0)} drafts</p>
             </div>
-            {a.slug && <a href={`/blog/author/${a.slug}`} target="_blank" rel="noopener" className="text-xs font-bold text-brand-700">Author page</a>}
             <button onClick={() => resetPw(a)} className="btn-ghost !py-1.5 !px-3 text-xs"><KeyRound size={14} /> Reset password</button>
             <button onClick={() => remove(a)} disabled={busy === a.id} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 px-2.5 py-1.5 rounded-lg hover:bg-red-50">{busy === a.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// The one login page every author uses
+function LoginLink() {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => { try { await navigator.clipboard.writeText(LOGIN_URL); setCopied(true); setTimeout(() => setCopied(false), 1600) } catch { /* ignore */ } }
+  return (
+    <div className="card p-4 flex flex-wrap items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold">Author login link</p>
+        <p className="text-xs text-ink-500">All authors sign in here with the email and password you give them.</p>
+        <p className="mt-1 font-mono text-sm text-ink-900 break-all">{LOGIN_URL}</p>
+      </div>
+      <button onClick={copy} className="btn-ghost !py-2 !px-3 text-sm">{copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copied' : 'Copy link'}</button>
+    </div>
+  )
+}
+
+// Built-in categories plus ones authors added; added ones can be removed when unused
+function Categories() {
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['admin-blog-categories'], queryFn: () => api.get('/admin/blog/categories') })
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState(null)
+  const refresh = () => { q.refetch(); qc.invalidateQueries({ queryKey: ['blog-categories'] }) }
+  const add = async (e) => {
+    e.preventDefault(); if (!name.trim()) return
+    setBusy('add'); setMsg(null)
+    try { const r = await api.post('/admin/blog/categories', { name: name.trim() }); setMsg({ text: `“${r.category.name}” is ready to use.` }); setName(''); refresh() }
+    catch (x) { setMsg({ err: true, text: x.data?.errors?.name || x.message }) } finally { setBusy('') }
+  }
+  const remove = async (c) => {
+    if (!confirm(`Remove the category “${c.name}”?`)) return
+    setBusy(c.slug); setMsg(null)
+    try { await api.del(`/admin/blog/categories/${c.slug}`); refresh() } catch (x) { setMsg({ err: true, text: x.message }) } finally { setBusy('') }
+  }
+  const list = q.data?.categories || []
+  return (
+    <div className="space-y-4">
+      {msg && <p role={msg.err ? 'alert' : 'status'} className={`rounded-xl px-4 py-3 text-sm font-semibold ${msg.err ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-800'}`}>{msg.text}</p>}
+      <form onSubmit={add} className="card p-4 flex flex-wrap items-end gap-3">
+        <label className="flex-1 min-w-[220px] text-sm font-semibold">New category<input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="e.g. Bird care" className={input} /></label>
+        <button disabled={busy === 'add'} className="btn-primary !py-2.5 text-sm">{busy === 'add' ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add category</button>
+      </form>
+      <p className="text-xs text-ink-500">Authors can also add categories while writing. Categories you remove must have no posts.</p>
+      <div className="card divide-y divide-ink-100">
+        {q.isLoading ? <p className="p-8 text-center"><Loader2 className="mx-auto animate-spin" /></p> : list.map((c) => (
+          <div key={c.slug} className="flex items-center gap-3 px-4 py-3">
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-ink-900">{c.name}</p>
+              <p className="text-xs text-ink-500">/blog/category/{c.slug} · {c.posts} post{c.posts === 1 ? '' : 's'}</p>
+            </div>
+            {c.builtIn ? <span className="text-[11px] font-bold uppercase tracking-wider text-ink-500 bg-sand-100 rounded-full px-2.5 py-1">Built-in</span>
+              : <button onClick={() => remove(c)} disabled={busy === c.slug || c.posts > 0} title={c.posts ? 'Move its posts to another category first' : 'Remove'} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 px-2.5 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent">{busy === c.slug ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Remove</button>}
           </div>
         ))}
       </div>

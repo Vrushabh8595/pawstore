@@ -35,7 +35,7 @@ export default function AdminUsers() {
           <Search size={17} className="text-ink-500" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email or phone…" className="w-full bg-transparent py-2.5 px-2.5 outline-none" />
         </div>
-        <select value={sort} onChange={(e) => setSort(e.target.value)} className="bg-white ring-1 ring-ink-200 rounded-full px-4 py-2 text-sm font-semibold">
+        <select value={sort} onChange={(e) => setSort(e.target.value)} className="bg-white border border-ink-200 rounded-full pl-4 py-2.5 text-sm font-semibold outline-none focus:border-brand-400">
           <option value="new">Newest first</option><option value="spent">Top spenders</option><option value="orders">Most orders</option><option value="recent">Recently active</option>
         </select>
       </div>

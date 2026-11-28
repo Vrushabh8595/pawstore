@@ -216,11 +216,11 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
             <div>
               <Label>Category<span className="text-red-500 ml-0.5">*</span></Label>
               <div className="flex gap-2">
-                <select data-field="category" value={f.category} onChange={(e) => { set('category', e.target.value); fe.clear('category') }} className={`${inputCls} ${fe.errors.category ? '!border-red-400 ring-2 ring-red-100' : ''}`} required aria-invalid={fe.errors.category ? true : undefined}>
+                <select data-field="category" value={f.category} onChange={(e) => { set('category', e.target.value); fe.clear('category') }} className={`${inputCls} flex-1 min-w-0 ${fe.errors.category ? '!border-red-400 ring-2 ring-red-100' : ''}`} required aria-invalid={fe.errors.category ? true : undefined}>
                   <option value="">Select…</option>
                   {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
-                <button type="button" onClick={newCategory} className="btn-ghost whitespace-nowrap !py-2 text-sm border border-[#e5e5e0] rounded-lg px-3">+ New</button>
+                <button type="button" onClick={newCategory} className="mt-1 shrink-0 whitespace-nowrap text-sm font-semibold text-ink-700 bg-white border border-ink-200 rounded-xl px-3.5 hover:border-brand-300 hover:text-brand-700">+ New</button>
               </div>
             </div>
           </Row>
@@ -247,7 +247,7 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
             </div>
             <div className="space-y-2 mt-1">
               {f.variants.map((v, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-end bg-ink-50 rounded-lg p-2">
+                <div key={i} className="grid grid-cols-12 gap-x-3 gap-y-2.5 items-end bg-sand-50 ring-1 ring-ink-100 rounded-xl p-3">
                   <Mini className="col-span-6 sm:col-span-4" label="SKU *" value={v.sku} onChange={(x) => setVariant(i, 'sku', x)} />
                   <Mini className="col-span-6 sm:col-span-4" label="Size / Weight *" value={v.size} onChange={(x) => setVariant(i, 'size', x)} />
                   <Mini className="col-span-4 sm:col-span-3" label="Stock" type="number" value={v.stock} onChange={(x) => setVariant(i, 'stock', x)} />
@@ -272,7 +272,7 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
               <label className="block" data-field="courierCharge">
                 <span className="text-[11px] font-semibold text-ink-500 inline-flex items-center gap-1"><Truck size={12} /> Courier partner charge per unit (₹) *</span>
                 <input type="number" min="0" value={f.courierCharge ?? ''} onChange={(e) => { set('courierCharge', e.target.value); fe.clear('courierCharge') }}
-                  className={`w-full border rounded-md px-2 py-1.5 text-sm outline-none focus:border-brand-400 bg-white ${fe.errors.courierCharge ? 'border-red-400 ring-2 ring-red-100' : 'border-[#e5e5e0]'}`} />
+                  className={`w-full mt-0.5 border rounded-lg px-2.5 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 bg-white ${fe.errors.courierCharge ? 'border-red-400 ring-2 ring-red-100' : 'border-ink-200'}`} />
               </label>
               <p className="text-xs text-sky-900/80 leading-relaxed">What you pay the courier to send one unit. A return costs this twice (there and back), which shows as return loss on the Profit &amp; loss page.</p>
             </div>
@@ -284,7 +284,7 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2 pt-2">
             <button disabled={saving} className="btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save product'}</button>
-            <button type="button" onClick={onCancel} className="btn-ghost border border-[#e5e5e0] rounded-lg px-4">Cancel</button>
+            <button type="button" onClick={onCancel} className="btn-ghost">Cancel</button>
           </div>
         </form>
       </div>
@@ -292,7 +292,7 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
   )
 }
 
-const inputCls = 'w-full mt-1 border border-[#e5e5e0] rounded-lg px-3 py-2 outline-none focus:border-brand-400 bg-white'
+const inputCls = 'w-full mt-1 border border-ink-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 bg-white'
 const Th = ({ children }) => <th className="px-4 py-3 font-semibold whitespace-nowrap">{children}</th>
 const Td = ({ children, className = '' }) => <td className={'px-4 py-3 whitespace-nowrap ' + className}>{children}</td>
 const Row = ({ children }) => <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">{children}</div>
@@ -321,7 +321,7 @@ function Mini({ label, value, onChange, type = 'text', className = '', admin }) 
   return (
     <label className={'block ' + className}>
       <span className={`text-[11px] font-semibold ${admin ? 'text-sky-800' : 'text-ink-500'}`}>{label}</span>
-      <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`w-full border rounded-md px-2 py-1.5 text-sm outline-none focus:border-brand-400 ${admin ? 'border-sky-200 bg-sky-50/60' : 'border-[#e5e5e0]'}`} />
+      <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`w-full mt-0.5 border rounded-lg px-2.5 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 ${admin ? 'border-sky-200 bg-sky-50' : 'border-ink-200 bg-white'}`} />
     </label>
   )
 }
