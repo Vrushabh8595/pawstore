@@ -26,7 +26,7 @@ export default function AdminBlog() {
     <div>
       <PageHead title="Blog" sub="Authors write posts; nothing goes live until you approve it."
         right={<Link to="/admin/blog/posts/new" className="btn-primary !py-2 text-sm"><PenLine size={16} /> Write a post</Link>} />
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4" role="tablist">
+      <div className="flex flex-wrap gap-2 mb-4" role="tablist">
         {TABS.map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold ${tab === k ? 'bg-ink-900 text-white' : 'bg-white ring-1 ring-ink-200 text-ink-700'}`}>

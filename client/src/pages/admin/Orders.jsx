@@ -175,6 +175,7 @@ function OrderDrawer({ order: o, onClose, onChanged }) {
             </div>
             <div className="border-t border-ink-100 mt-4 pt-3 space-y-1 text-ink-700">
               <Row l="Subtotal" r={inr(o.subtotal)} />
+              {o.discount ? <Row l={`Coupon ${o.coupon || ''}`} r={<span className="text-green-700">− {inr(o.discount)}</span>} /> : null}
               <Row l="Delivery" r={o.shippingFee ? inr(o.shippingFee) : 'Free'} />
               {o.codFee ? <Row l="COD fee" r={inr(o.codFee)} /> : null}
               <Row l={<b className="text-ink-900">Total</b>} r={<b className="text-ink-900 text-base">{inr(o.total)}</b>} />
