@@ -101,7 +101,7 @@ export default function ProductReviews({ slug, productName }) {
   )
 }
 
-function ReviewForm({ slug, productName, existing, onDone }) {
+export function ReviewForm({ slug, productName, existing, onDone }) {
   const user = useAuth((s) => s.user)
   const loc = useLocation()
   const qc = useQueryClient()
@@ -144,6 +144,7 @@ function ReviewForm({ slug, productName, existing, onDone }) {
     try {
       await api.post('/reviews', { slug, rating, title: title.trim(), comment: comment.trim() })
       qc.invalidateQueries({ queryKey: ['my-review', slug] })
+      qc.invalidateQueries({ queryKey: ['my-reviews'] })
       playSound('success'); haptic([20, 40, 20])
       setDone(true)
     } catch (e2) {

@@ -21,7 +21,7 @@ const catNav = [
   { to: '/category/bedding', label: 'Beds', slug: 'bedding', emoji: '🛏️' },
 ]
 
-const PROMO = ['🏡 Coming soon: vet care & vaccination at your doorstep', '🐾 Free delivery on orders over ₹999', '📸 Can’t find a medicine? Send us a photo', '🎁 Use WAGGY10 for 10% off your first order', '💵 COD & UPI available across India']
+const PROMO = ['🏡 Coming soon: vet care & vaccination at your doorstep', '🐾 Free delivery on orders over ₹999', '📸 Can’t find a medicine? Send us a photo', '🎁 Use NewAnimalVeda for 5% off your first order', '💵 COD & UPI available across India']
 
 export default function Header() {
   const count = useCart((s) => s.count())

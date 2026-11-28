@@ -18,7 +18,7 @@ const SLIDES = [
   },
   {
     eyebrow: 'Treats & rewards', title: ['Good pups', 'deserve', 'more.'], sub: 'Tasty, healthy and tail-wag approved treats.',
-    cta: 'Shop treats', to: '/category/treats', price: 'From ₹99', sticker: ['Use', 'WAGGY10', 'for 10% off'],
+    cta: 'Shop treats', to: '/category/treats', price: 'From ₹99', sticker: ['First', '5% OFF', 'order'],
     theme: { bg: 'bg-brand-500', text: 'text-white', sub: 'text-white/85', hi: 'text-ink-900', arch: 'bg-brand-200', ring: 'border-white/35', chip: 'bg-white/15 text-white ring-white/25', sticker: 'bg-ink-900 text-white', blob: 'bg-brand-400' },
     img: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1000&q=70',
   },
@@ -115,7 +115,7 @@ export default function HeroCarousel() {
             return (
               <div key={i} aria-hidden={!active} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${n}`}
                 className={`hero-slide ${active ? 'is-active' : ''} relative shrink-0 basis-[var(--w)] overflow-hidden rounded-[1.75rem] sm:rounded-[2.25rem] ${t.bg} ${t.text}
-                  h-[420px] sm:h-[400px] lg:h-[460px] transition-[opacity,transform] duration-500 ${active ? 'opacity-100' : 'opacity-0 scale-[.97]'}`}>
+                  h-[280px] min-[400px]:h-[300px] sm:h-[400px] lg:h-[460px] transition-[opacity,transform] duration-500 ${active ? 'opacity-100' : 'opacity-0 scale-[.97]'}`}>
                 {/* Decorations */}
                 <span aria-hidden="true" className={`absolute -left-16 -bottom-24 w-64 h-64 rounded-full ${t.blob} opacity-60`} />
                 <span aria-hidden="true" className={`absolute left-[44%] top-8 w-24 h-24 rounded-full border-2 border-dashed ${t.ring} animate-spin-slow hidden sm:block`} />
@@ -123,7 +123,7 @@ export default function HeroCarousel() {
                 <PawPrint aria-hidden="true" className="absolute right-5 top-5 opacity-15 rotate-12 sm:hidden" size={34} />
 
                 {/* Arch image */}
-                <div className="absolute right-0 bottom-0 w-[64%] h-[54%] sm:w-[48%] sm:h-[92%] sm:right-[4%]">
+                <div className="absolute right-0 bottom-0 w-[46%] h-[78%] sm:w-[48%] sm:h-[92%] sm:right-[4%]">
                   <div className={`absolute inset-0 rounded-t-full ${t.arch}`} />
                   <div className="absolute inset-[6px] bottom-0 rounded-t-full overflow-hidden">
                     <img src={s.img} alt={s.imgAlt || ""} draggable="false" loading={i === 0 ? 'eager' : 'lazy'}
@@ -131,7 +131,7 @@ export default function HeroCarousel() {
                   </div>
                   {/* Sticker */}
                   <div style={{ '--r': '-10deg' }}
-                    className={`reveal reveal-4 animate-float absolute right-0 -top-5 sm:-right-4 sm:top-[10%] w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-full grid place-items-center text-center leading-none shadow-xl ring-4 ring-white/30 ${t.sticker}`}>
+                    className={`reveal reveal-4 animate-float absolute right-1 -top-6 sm:right-auto sm:-right-4 sm:top-[10%] w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-full grid place-items-center text-center leading-none shadow-xl ring-4 ring-white/30 ${t.sticker}`}>
                     <div>
                       <p className="text-[8px] sm:text-[11px] font-bold uppercase tracking-wider opacity-85">{s.sticker[0]}</p>
                       <p className="font-display font-bold text-sm sm:text-2xl my-0.5">{s.sticker[1]}</p>
@@ -141,16 +141,16 @@ export default function HeroCarousel() {
                 </div>
 
                 {/* Copy */}
-                <div className="relative h-full flex flex-col p-5 sm:p-10 lg:p-14 sm:justify-center sm:max-w-[54%]">
-                  <span className={`reveal reveal-1 w-fit inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold uppercase tracking-[.14em] px-3 py-1.5 rounded-full ring-1 ${t.chip}`}>
+                <div className="relative h-full flex flex-col p-5 sm:p-10 lg:p-14 sm:justify-center max-w-[60%] sm:max-w-[54%]">
+                  <span className={`reveal reveal-1 w-fit whitespace-nowrap inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold uppercase tracking-[.14em] px-3 py-1.5 rounded-full ring-1 ${t.chip}`}>
                     <PawPrint size={12} /> {s.eyebrow}
                   </span>
-                  <h2 className="reveal reveal-2 font-display font-semibold leading-[.98] mt-3 sm:mt-5 text-[2.15rem] min-[360px]:text-[2.5rem] sm:text-6xl lg:text-7xl tracking-tight">
+                  <h2 className="reveal reveal-2 font-display font-semibold leading-[.98] mt-3 sm:mt-5 text-[1.75rem] min-[400px]:text-[2rem] sm:text-6xl lg:text-7xl tracking-tight">
                     {s.title[0]}<br />
                     <span className={`italic ${t.hi}`}>{s.title[1]}</span> {s.title[2]}
                   </h2>
-                  <p className={`reveal reveal-3 mt-3 text-sm sm:text-lg max-w-[15rem] sm:max-w-sm hidden min-[360px]:line-clamp-3 sm:line-clamp-none ${t.sub}`}>{s.sub}</p>
-                  <div className="reveal reveal-4 mt-auto sm:mt-7 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-fit">
+                  <p className={`reveal reveal-3 mt-3 text-sm sm:text-lg max-w-[15rem] sm:max-w-sm hidden sm:block ${t.sub}`}>{s.sub}</p>
+                  <div className="reveal reveal-4 mt-auto sm:mt-7 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 w-fit">
                     <Link to={s.to} tabIndex={active ? 0 : -1} draggable="false"
                       className="group inline-flex items-center gap-2 bg-white text-ink-900 font-extrabold text-sm sm:text-base pl-5 pr-2 py-2 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition">
                       {s.cta}
