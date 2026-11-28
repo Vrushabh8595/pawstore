@@ -20,8 +20,12 @@ export default function BottomNav() {
   const activeIdx = items.findIndex((i) => i.active)
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink-100 shadow-[0_-6px_24px_-10px_rgba(17,37,58,.25)]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label="Primary">
+    // viewport-fit=cover (index.html) makes env(safe-area-inset-bottom) real on
+    // iPhones, so the bar sits on the screen edge with white behind the home
+    // indicator. The ::after strip keeps it white below the edge too, so no
+    // page shows through while the browser's toolbar slides in/out.
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink-100 shadow-[0_-6px_24px_-10px_rgba(17,37,58,.25)] after:content-[''] after:absolute after:inset-x-0 after:top-full after:h-24 after:bg-white"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', transform: 'translateZ(0)' }} aria-label="Primary">
       <div className="relative grid grid-cols-5 h-16">
         {/* Sliding active indicator (hidden under the centre button) */}
         <span aria-hidden="true"
