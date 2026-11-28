@@ -52,6 +52,7 @@ export function emailLayout({ heading, intro, order, cta, ctaUrl, badge }) {
       <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f1f1f1;border-bottom:1px solid #f1f1f1;margin:8px 0">${itemsTable(order)}</table>
       <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#4b5563">
         <tr><td>Subtotal</td><td align="right">${inr(order.subtotal)}</td></tr>
+        ${order.discount ? `<tr><td>Coupon ${esc(order.coupon || '')}</td><td align="right" style="color:#15803d">− ${inr(order.discount)}</td></tr>` : ''}
         <tr><td>Delivery</td><td align="right">${order.shippingFee ? inr(order.shippingFee) : 'Free'}</td></tr>
         ${order.codFee ? `<tr><td>COD fee</td><td align="right">${inr(order.codFee)}</td></tr>` : ''}
         <tr><td style="padding-top:6px;font-size:15px;font-weight:700;color:#1a3450">Total</td><td align="right" style="padding-top:6px;font-size:15px;font-weight:700;color:#1a3450">${inr(order.total)}</td></tr>
