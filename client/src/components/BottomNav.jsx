@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, LayoutGrid, BadgePercent, ShoppingCart } from 'lucide-react'
+import { Home, LayoutGrid, Pill, ShoppingCart } from 'lucide-react'
 import { useCart } from '@/store/cart'
 import { LogoMark } from './Logo'
 import { haptic } from '@/lib/feedback'
 
-// Bottom tab bar (phones only). Wishlist & account live in the top bar; the
+// Bottom tab bar (phones only). Offers, wishlist & account live in the top bar; the
 // raised centre button opens "Request a medicine / product".
 export default function BottomNav() {
   const count = useCart((s) => s.count())
@@ -14,7 +14,7 @@ export default function BottomNav() {
     { to: '/', label: 'Home', Icon: Home, active: pathname === '/' },
     { to: '/products', label: 'Categories', Icon: LayoutGrid, active: ['/products', '/search'].includes(pathname) || pathname.startsWith('/category/') || pathname.startsWith('/product/') },
     { to: '/request-medicine', label: 'Request', center: true, active: pathname === '/request-medicine' },
-    { to: '/offers', label: 'Offers', Icon: BadgePercent, active: pathname === '/offers' },
+    { to: '/category/health', label: 'Pharmacy', Icon: Pill, active: pathname === '/category/health' },
     { to: '/cart', label: 'Cart', Icon: ShoppingCart, active: pathname === '/cart' || pathname === '/checkout', badge: count, cartTarget: true },
   ]
   const activeIdx = items.findIndex((i) => i.active)
