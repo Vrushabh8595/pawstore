@@ -4,8 +4,12 @@ const { Schema, model } = mongoose
 
 /* ---------------------------------- User ---------------------------------- */
 const addressSchema = new Schema(
-  { name: String, phone: String, line1: String, landmark: String, city: String, state: String, pincode: String, isDefault: Boolean },
-  { _id: true }
+  {
+    // 'Home' | 'Work' | 'Other' (shown as a chip in the address book)
+    label: String,
+    name: String, phone: String, line1: String, landmark: String, city: String, state: String, pincode: String, isDefault: Boolean,
+  },
+  { _id: true, timestamps: true }
 )
 const userSchema = new Schema(
   {
@@ -14,8 +18,22 @@ const userSchema = new Schema(
     phone: String,
     // Small profile photo, stored as a validated data:image URL (jpeg/png/webp only)
     avatar: String,
+    // Tiny (64px) copy of the photo for lists like the admin Users table
+    avatarThumb: String,
+    // Where the photo came from: 'google' (synced from the Google account),
+    // 'upload' (chosen by the customer) or 'none' (customer removed it, so we
+    // don't pull the Google photo back in).
+    avatarSource: { type: String, enum: ['google', 'upload', 'none'] },
     // 'google' when the account was created with "Continue with Google"
     provider: { type: String, enum: ['password', 'google'], default: 'password' },
+    // Clerk user id for Google sign-in. Lets a Google customer change their
+    // store email and still be recognised on the next Google sign-in.
+    clerkId: { type: String, index: { unique: true, sparse: true } },
+    // Pending email change: the new address must be confirmed with a 6-digit code
+    pendingEmail: String,
+    emailCodeHash: String,
+    emailCodeExpires: Date,
+    emailCodeTries: Number,
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     addresses: [addressSchema],
