@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
-import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail, ShoppingCart, PartyPopper, Plus, Pencil, BookmarkPlus } from 'lucide-react'
+import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail, ShoppingCart, PartyPopper, Plus, Pencil, BookmarkPlus, TicketPercent, X } from 'lucide-react'
 import { AddressCard, MAX_ADDRESSES } from '@/components/AddressBook'
 import { locateAddress } from '@/lib/geolocate'
 import { Field, useFieldErrors, errorFeedback, isEmail } from '@/components/FormField'
@@ -55,6 +55,7 @@ export default function Checkout() {
   const [err, setErr] = useState('')
   const [no] = useState(() => orderNo())
   const [placing, setPlacing] = useState(false)
+  const [coupon, setCoupon] = useState(null) // { code, percent, label } once applied
   const qc = useQueryClient()
   const placed = useRef(false) // set once the order is placed, so emptying the cart doesn't bounce to /cart
   const pin = usePincode(addr.pincode, (d) => setAddr((a) => ({ ...a, city: d.city, state: d.state }))) // stable across re-renders so QR note == order no
@@ -63,9 +64,10 @@ export default function Checkout() {
 
   const shipping = subtotal >= FREE_SHIP_ABOVE ? 0 : SHIPPING_FEE
   const mrpTotal = items.reduce((n, it) => n + Math.max(it.variant.mrp || 0, it.variant.price) * it.qty, 0)
-  const saving = mrpTotal - subtotal + (shipping === 0 ? SHIPPING_FEE : 0) // MRP discount + free delivery
   const codFee = method === 'COD' ? COD_FEE : 0
-  const total = subtotal + shipping + codFee
+  const discount = coupon ? Math.round((subtotal * coupon.percent) / 100) : 0
+  const total = subtotal - discount + shipping + codFee
+  const saving = mrpTotal - subtotal + discount + (shipping === 0 ? SHIPPING_FEE : 0) // MRP discount + coupon + free delivery
 
   const link = upiLink({ amount: total, note: no })
 
@@ -121,6 +123,7 @@ export default function Checkout() {
         items: items.map((it) => ({ slug: it.product.slug, sku: it.sku, qty: it.qty })),
         address: addr, paymentMethod: method, ...(method === 'UPI_MANUAL' ? { utr } : {}),
         ...(user ? {} : { email: email.trim().toLowerCase() }),
+        ...(coupon ? { coupon: coupon.code } : {}),
       })
       if (!user) { try { localStorage.setItem('animalveda-guest-email', email.trim().toLowerCase()) } catch { /* ignore */ } }
       orderNoFinal = res?.order?.orderNo || no
@@ -135,6 +138,7 @@ export default function Checkout() {
     } catch (e2) {
       if (e2.status === 403) { setPlacing(false); setBlocked(true); errorFeedback(); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
       const down = e2 instanceof TypeError || /Route not found|Request failed \(5/.test(e2.message)
+      if (e2.data?.code === 'COUPON') { setPlacing(false); setCoupon(null); return fail(`${e2.message} We removed it, so your total has changed. Please check and place the order again.`) }
       if (!down) { setPlacing(false); return fail(e2.message === 'Validation failed' ? 'Please check your details and try again.' : e2.message) }
     }
     setPlacing(false)
@@ -145,7 +149,7 @@ export default function Checkout() {
       customer: addr.name,
       createdAt: Date.now(),
       items: items.map((it) => ({ name: it.product.name, sku: it.sku, size: it.variant.size, price: it.variant.price, qty: it.qty })),
-      subtotal, shippingFee: shipping, codFee, total,
+      subtotal, shippingFee: shipping, codFee, total, ...(coupon ? { coupon: coupon.code, discount } : {}),
       payment: method === 'UPI_MANUAL'
         ? { method: 'UPI_MANUAL', status: 'pending_verification', utr }
         : { method: 'COD', status: 'cod_pending' },
@@ -182,7 +186,7 @@ export default function Checkout() {
               <span className="font-bold text-sm">Order summary <span className="text-ink-500 font-semibold">({items.length} items)</span></span>
               <span className="flex items-center gap-1 font-extrabold">{inr(total)} <ChevronDown size={16} className="group-open:rotate-180 transition" /></span>
             </summary>
-            <div className="px-4 pb-4"><Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} /></div>
+            <div className="px-4 pb-4"><Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} coupon={coupon} discount={discount} /></div>
           </details>
 
           {/* Address */}
@@ -256,6 +260,9 @@ export default function Checkout() {
             )}
           </section>
 
+          {/* Coupon (mobile; desktop has it in the side panel) */}
+          <div className="lg:hidden"><CouponBox coupon={coupon} setCoupon={setCoupon} subtotal={subtotal} email={user ? undefined : email} phone={/^\d{10}$/.test(addr.phone) ? addr.phone : undefined} discount={discount} /></div>
+
           {/* Payment */}
           <section className="card p-4 sm:p-6">
             <h2 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2"><Step n="2" icon={CreditCard} /> Payment</h2>
@@ -296,7 +303,8 @@ export default function Checkout() {
         {/* Desktop summary */}
         <aside className="hidden lg:block card p-5 lg:sticky lg:top-32 min-w-0">
           <h2 className="font-extrabold text-lg mb-4">Your order</h2>
-          <Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} />
+          <div className="mb-4"><CouponBox coupon={coupon} setCoupon={setCoupon} subtotal={subtotal} email={user ? undefined : email} phone={/^\d{10}$/.test(addr.phone) ? addr.phone : undefined} discount={discount} /></div>
+          <Summary items={items} subtotal={subtotal} shipping={shipping} codFee={codFee} total={total} mrpTotal={mrpTotal} saving={saving} coupon={coupon} discount={discount} />
           {err && <p role="alert" className="text-sm text-red-600 mt-3">{err}</p>}
           <button type="submit" disabled={placing} className="btn-primary w-full mt-4 disabled:opacity-70">
             <Lock size={16} /> {method === 'COD' ? 'Place COD order' : 'I have paid, place order'}
@@ -328,6 +336,56 @@ export default function Checkout() {
   )
 }
 
+// "Have a coupon?" box: checks the code with the server, then the discount shows in the summary
+function CouponBox({ coupon, setCoupon, subtotal, email, phone, discount }) {
+  const [open, setOpen] = useState(false)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const apply = async (value = code) => {
+    const c = value.trim()
+    if (!c) { setErr('Enter a coupon code.'); return }
+    setBusy(true); setErr('')
+    try {
+      const r = await api.post('/store/coupon', { code: c, subtotal, ...(email && isEmail(email) ? { email: email.trim().toLowerCase() } : {}), ...(phone ? { phone } : {}) })
+      setCoupon(r.coupon); setCode(''); setOpen(false); playSound('success'); haptic(15)
+    } catch (e) { setErr(e.message || 'Couldn’t check this code. Please try again.'); errorFeedback() } finally { setBusy(false) }
+  }
+  if (coupon) return (
+    <div className="card p-3.5 flex items-center gap-3 !border-green-200 bg-green-50">
+      <span className="w-9 h-9 rounded-full bg-green-100 text-green-700 grid place-items-center shrink-0"><TicketPercent size={18} /></span>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm text-green-800">{coupon.code} applied</p>
+        <p className="text-xs text-green-700">{coupon.label}: you save {inr(discount)}</p>
+      </div>
+      <button type="button" onClick={() => setCoupon(null)} className="p-1.5 rounded-lg text-green-800 hover:bg-green-100" aria-label="Remove coupon"><X size={16} /></button>
+    </div>
+  )
+  return (
+    <div className="card p-3.5">
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} className="w-full flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-full bg-brand-50 text-brand-700 grid place-items-center shrink-0"><TicketPercent size={18} /></span>
+          <span className="flex-1 min-w-0"><span className="block font-bold text-sm">Apply a coupon</span><span className="block text-xs text-ink-500">First order? Use <b className="text-brand-700">NewAnimalVeda</b> for 5% off</span></span>
+          <span className="text-sm font-bold text-brand-700">Apply</span>
+        </button>
+      ) : (
+        <div>
+          <p className="font-bold text-sm mb-2 flex items-center gap-2"><TicketPercent size={16} className="text-brand-700" /> Coupon code</p>
+          <div className="flex gap-2">
+            <input value={code} onChange={(e) => { setCode(e.target.value); setErr('') }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); apply() } }} autoFocus
+              placeholder="e.g. NewAnimalVeda" aria-label="Coupon code" maxLength={30} autoCapitalize="characters"
+              className="flex-1 min-w-0 border border-ink-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 uppercase placeholder:normal-case" />
+            <button type="button" onClick={() => apply()} disabled={busy} className="btn-primary !py-2 !px-4 text-sm shrink-0">{busy ? <Loader2 size={15} className="animate-spin" /> : 'Apply'}</button>
+          </div>
+          {err && <p role="alert" className="mt-1.5 text-xs font-semibold text-red-600">{err}</p>}
+          <button type="button" onClick={() => apply('NewAnimalVeda')} disabled={busy} className="mt-2 text-xs font-semibold text-brand-700 hover:underline">Use NewAnimalVeda (5% off first order)</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PinStatus({ pin }) {
   if (pin.status === 'idle') return <p className="text-[11px] text-ink-500 mt-1">City & state fill in automatically</p>
   if (pin.status === 'loading') return <p className="text-[11px] text-ink-500 mt-1">Finding your area…</p>
@@ -336,7 +394,7 @@ function PinStatus({ pin }) {
   return <p className="text-[11px] text-ink-500 mt-1">Couldn’t look it up. Please type city & state</p>
 }
 
-function Summary({ items, subtotal, shipping, codFee, total, mrpTotal, saving }) {
+function Summary({ items, subtotal, shipping, codFee, total, mrpTotal, saving, coupon, discount }) {
   return (
     <>
       <div className="space-y-3 max-h-56 overflow-y-auto no-scrollbar mb-3">
@@ -358,6 +416,7 @@ function Summary({ items, subtotal, shipping, codFee, total, mrpTotal, saving })
         {mrpTotal > subtotal && <Row label="MRP total" value={inr(mrpTotal)} />}
         {mrpTotal > subtotal && <Row label="Discount" value={<span className="text-green-700 font-semibold">− {inr(mrpTotal - subtotal)}</span>} />}
         <Row label="Subtotal" value={inr(subtotal)} />
+        {discount > 0 && <Row label={`Coupon ${coupon.code} (${coupon.percent}%)`} value={<span className="text-green-700 font-semibold">− {inr(discount)}</span>} />}
         <Row label="Delivery" value={shipping === 0 ? <span className="text-green-700 font-semibold"><span className="line-through text-ink-500 font-normal mr-1">{inr(SHIPPING_FEE)}</span>FREE</span> : inr(shipping)} />
         {codFee > 0 && <Row label="COD fee" value={inr(codFee)} />}
       </div>

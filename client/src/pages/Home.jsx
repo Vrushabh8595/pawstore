@@ -30,8 +30,11 @@ const PROMOS = [
 export default function Home() {
   const picked = products.filter((p) => p.tags?.includes('bestseller'))
   const bestsellers = (picked.length ? picked : products).slice(0, 8)
-  const under300 = products.filter((p) => p.variants[0].price <= 300).slice(0, 6)
-  const fresh = products.slice(0, 8)
+  const under300 = products.filter((p) => p.variants[0].price <= 300).slice(0, 9)
+  const fresh = products.slice(0, 12)
+  // More products on the home page: everything not already in Bestsellers
+  const shown = new Set(bestsellers.map((p) => p.id))
+  const more = products.filter((p) => !shown.has(p.id)).slice(0, 12)
 
 
   return (
@@ -99,7 +102,9 @@ export default function Home() {
           </div>
           <Link to="/products" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
         </div>
-        <ProductRail products={bestsellers} scroll />
+        {/* Phones: 2-column grid so more products show at once; desktop: scroll row */}
+        <div className="grid grid-cols-2 gap-3 sm:hidden">{bestsellers.map((p) => <ProductCard key={p.id} product={p} />)}</div>
+        <div className="hidden sm:block"><ProductRail products={bestsellers} scroll /></div>
       </section>
 
       {/* ---------- Under ₹300: 3-up compact grid on phones ---------- */}
@@ -113,9 +118,25 @@ export default function Home() {
               </div>
               <Link to="/products?sort=price-asc" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">See all <ArrowRight size={16} /></Link>
             </div>
-            <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 lg:[&>*:nth-child(n+7)]:hidden">
               {under300.map((p) => <ProductCard key={p.id} product={p} size="compact" />)}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ---------- More products ---------- */}
+      {more.length > 0 && (
+        <section className="container-x pt-8 sm:pt-12">
+          <div className="flex items-end justify-between mb-3 sm:mb-7">
+            <div>
+              <p className="eyebrow mb-1">Shop more</p>
+              <h2 className="text-xl sm:text-3xl font-semibold">Picked for your pets</h2>
+            </div>
+            <Link to="/products" className="text-brand-600 font-bold text-sm flex items-center gap-1 shrink-0">View all <ArrowRight size={16} /></Link>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            {more.slice(0, 8).map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
         </section>
       )}
@@ -183,8 +204,8 @@ export default function Home() {
         <div className="rounded-[2rem] bg-brand-500 text-white p-6 sm:p-12 grid lg:grid-cols-2 gap-6 items-center">
           <div>
             <p className="eyebrow !text-white/80 mb-2">Join the pack</p>
-            <h3 className="font-display text-2xl sm:text-4xl font-semibold leading-tight">Get 10% off your first order.</h3>
-            <p className="text-white/85 mt-2">Use code <b className="bg-white/20 px-2 py-0.5 rounded">WAGGY10</b> at checkout. New pet parents only.</p>
+            <h3 className="font-display text-2xl sm:text-4xl font-semibold leading-tight">Get 5% off your first order.</h3>
+            <p className="text-white/85 mt-2">Use code <b className="bg-white/20 px-2 py-0.5 rounded">NewAnimalVeda</b> at checkout. New customers only.</p>
           </div>
           <div className="lg:text-right">
             <Link to="/products" className="inline-flex items-center gap-2 bg-white text-brand-600 font-bold px-6 py-3 rounded-full hover:bg-sand-50 transition">
