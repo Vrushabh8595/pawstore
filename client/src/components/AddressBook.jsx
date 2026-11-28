@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { Home, Briefcase, MapPin, Plus, Pencil, Trash2, Star, Check, Loader2, X, Phone } from 'lucide-react'
+import { Home, Briefcase, MapPin, Plus, Pencil, Trash2, Star, Check, Loader2, X, Phone, LocateFixed } from 'lucide-react'
+import { locateAddress } from '@/lib/geolocate'
 import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
 import { usePincode } from '@/lib/usePincode'
@@ -38,6 +39,8 @@ export function AddressForm({ initial, onSaved, onCancel, submitLabel }) {
   }))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [geo, setGeo] = useState({ status: 'idle', msg: '' })
+  const lineRef = useRef(null)
   const startPin = useRef(initial?.pincode || '')
   const set = (k) => (v) => { setF((s) => ({ ...s, [k]: v })); fe.clear(k) }
   const pin = usePincode(f.pincode, (d) => {
@@ -45,6 +48,21 @@ export function AddressForm({ initial, onSaved, onCancel, submitLabel }) {
     setF((s) => ({ ...s, city: d.city, state: d.state }))
     fe.clear('city'); fe.clear('state')
   })
+
+  // "Use my current location": GPS → area, city, state and pincode
+  const fillFromLocation = async () => {
+    setGeo({ status: 'busy', msg: '' })
+    try {
+      const g = await locateAddress()
+      setF((s) => ({ ...s, line1: g.line1 || s.line1, city: g.city || s.city, state: g.state || s.state, pincode: g.pincode || s.pincode }))
+      ;['line1', 'city', 'state', 'pincode'].forEach((k) => fe.clear(k))
+      setGeo({ status: 'done', msg: `Filled from your location${g.accuracy ? ` (±${g.accuracy > 999 ? (g.accuracy / 1000).toFixed(1) + ' km' : g.accuracy + ' m'})` : ''}. Add your house / flat number so the delivery reaches your door.` })
+      haptic(15)
+      requestAnimationFrame(() => { const el = lineRef.current?.querySelector('input'); if (el) { el.focus({ preventScroll: true }); el.setSelectionRange?.(0, 0); el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } })
+    } catch (x) {
+      setGeo({ status: 'error', msg: x.message || 'Couldn’t get your location. Please type your address.' })
+    }
+  }
 
   const submit = async (e) => {
     e?.preventDefault?.()
@@ -88,11 +106,22 @@ export function AddressForm({ initial, onSaved, onCancel, submitLabel }) {
           </button>
         ))}
       </div>
+      <button type="button" onClick={fillFromLocation} disabled={geo.status === 'busy'}
+        className="w-full mb-3 flex items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-brand-300 bg-white hover:bg-brand-50 px-4 py-3 text-left transition active:scale-[.99] disabled:opacity-80">
+        <span className="w-10 h-10 rounded-xl bg-brand-500 text-white grid place-items-center shrink-0">
+          {geo.status === 'busy' ? <Loader2 size={19} className="animate-spin" /> : <LocateFixed size={19} />}
+        </span>
+        <span className="min-w-0">
+          <span className="block font-bold text-ink-900">{geo.status === 'busy' ? 'Finding your location…' : geo.status === 'done' ? 'Update from my current location' : 'Use my current location'}</span>
+          <span className="block text-xs text-ink-500">Fills in your area, city, state and pincode automatically</span>
+        </span>
+      </button>
+      {geo.msg && <p className={`-mt-1 mb-3 text-xs font-semibold rounded-lg px-3 py-2 ${geo.status === 'error' ? 'text-red-600 bg-red-50' : 'text-green-700 bg-green-50'}`} role={geo.status === 'error' ? 'alert' : 'status'}>{geo.msg}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field name="name" required error={E.name} label="Receiver’s name" value={f.name} onChange={set('name')} autoComplete="name" maxLength={60} />
         <Field name="phone" required error={E.phone} label="Phone" hint="10 digit" value={f.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
           prefix="+91" onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
-        <div className="sm:col-span-2"><Field name="line1" required error={E.line1} label="Address" hint="House no, street, area" value={f.line1} onChange={set('line1')} autoComplete="street-address" maxLength={160} /></div>
+        <div className="sm:col-span-2" ref={lineRef}><Field name="line1" required error={E.line1} label="Address" hint="House no, street, area" value={f.line1} onChange={set('line1')} autoComplete="street-address" maxLength={160} /></div>
         <Field name="landmark" optional error={E.landmark} label="Landmark" value={f.landmark} onChange={set('landmark')} maxLength={80} />
         <div>
           <Field name="pincode" required error={E.pincode} label="Pincode" value={f.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
