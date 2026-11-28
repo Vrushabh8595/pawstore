@@ -6,6 +6,7 @@ import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyNewOrder } from '../utils/notify.js'
 import { orderLimiter, trackLimiter } from '../middleware/security.js'
 import { recordOrderCost } from '../utils/costs.js'
+import { evaluateCoupon } from '../utils/coupons.js'
 
 export const BLOCKED_MSG = 'Your account has been blocked, so you can’t place orders right now. Please contact our support team to get unblocked and keep shopping with AnimalVeda.'
 
@@ -30,6 +31,7 @@ const orderSchema = z.object({
   paymentMethod: z.enum(['UPI_MANUAL', 'COD']),
   utr: z.string().regex(/^\d{12}$/).optional(),
   email: z.string().trim().toLowerCase().email().max(120).optional(),
+  coupon: z.string().trim().max(30).optional(),
 })
 
 router.post(
@@ -37,7 +39,7 @@ router.post(
   orderLimiter,
   validate(orderSchema),
   asyncHandler(async (req, res) => {
-    const { items, address, paymentMethod, utr, email } = req.body
+    const { items, address, paymentMethod, utr, email, coupon: couponCode } = req.body
     if (!req.user && !email) return res.status(400).json({ message: 'Enter your email so we can send your order updates.' })
     // Blocked customers can't order — also when they check out as a guest with the same email/phone
     const blockedUser = req.user?.blocked ? req.user : await User.findOne({ blocked: true, $or: [...(email ? [{ email }] : []), { phone: address.phone }] }).select('_id').lean()
@@ -51,6 +53,13 @@ router.post(
     if (Object.values(perProduct).some((n) => n > MAX_PER_PRODUCT))
       return res.status(400).json({ message: `You can order at most ${MAX_PER_PRODUCT} of the same product per order.` })
 
+    // Check the coupon before touching stock, so a bad code can't hold items
+    let couponInfo = null
+    if (couponCode) {
+      const r = await evaluateCoupon({ code: couponCode, subtotal: 0, user: req.user, email, phone: address.phone })
+      if (r.error) return res.status(400).json({ code: 'COUPON', message: r.error })
+      couponInfo = r.coupon
+    }
     const settings = (await Settings.findOne({ key: 'global' })) || {}
     // Prices always come from the database, never from the client.
     const lines = []
@@ -69,6 +78,7 @@ router.post(
     }
     const shippingFee = subtotal >= (settings.freeShipAbove ?? 999) ? 0 : (settings.shippingFee ?? 59)
     const codFee = paymentMethod === 'COD' ? (settings.codFee ?? 49) : 0
+    const discount = couponInfo ? Math.round((subtotal * couponInfo.percent) / 100) : 0
     const order = await Order.create({
       orderNo: genOrderNo(),
       user: req.user?._id,
@@ -76,7 +86,8 @@ router.post(
       customerName: address.name,
       items: lines,
       shippingAddress: address,
-      subtotal, shippingFee, codFee, total: subtotal + shippingFee + codFee,
+      subtotal, shippingFee, codFee, total: subtotal - discount + shippingFee + codFee,
+      ...(couponInfo ? { coupon: couponInfo.code, discount } : {}),
       payment: { method: paymentMethod, status: paymentMethod === 'UPI_MANUAL' ? 'pending_verification' : 'cod_pending', utr },
       status: 'Pending Verification',
       statusHistory: [{ status: 'Pending Verification' }],
@@ -84,6 +95,18 @@ router.post(
     notifyNewOrder(order) // in-app alert + emails, in the background
     recordOrderCost(order) // admin-only cost snapshot for profit & loss
     res.status(201).json({ order })
+  })
+)
+
+// Preview a coupon at checkout (the order itself re-checks it)
+router.post(
+  '/coupon',
+  orderLimiter,
+  validate(z.object({ code: z.string().trim().min(1).max(30), subtotal: z.number().min(0).max(10_000_000), email: z.string().trim().toLowerCase().email().max(120).optional(), phone: z.string().regex(/^\d{10}$/).optional() })),
+  asyncHandler(async (req, res) => {
+    const r = await evaluateCoupon({ ...req.body, user: req.user })
+    if (r.error) return res.status(400).json({ message: r.error })
+    res.json(r)
   })
 )
 

@@ -36,6 +36,11 @@ router.get('/product/:slug', asyncHandler(async (req, res) => {
   res.json({ reviews, summary: summary[slug] || { avg: 0, count: 0, breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } } })
 }))
 
+// GET /reviews/mine → all of the signed-in customer's reviews (for "My reviews" in the account)
+router.get('/mine', authenticate, asyncHandler(async (req, res) => {
+  res.json({ reviews: await Review.find({ user: req.user._id }).sort('-updatedAt').limit(200).select('productSlug productName productImage rating title comment status updatedAt').lean() })
+}))
+
 // GET /reviews/mine/:slug → the signed-in customer's own review (any status)
 router.get('/mine/:slug', authenticate, asyncHandler(async (req, res) => {
   const slug = String(req.params.slug)

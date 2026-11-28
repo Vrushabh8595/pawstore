@@ -411,7 +411,7 @@ router.get(
     const r = plRange(req.query)
     const since = istMidnight(r.start), until = new Date(istMidnight(r.end).getTime() + DAY)
     const orders = await Order.find({ createdAt: { $gte: since, $lt: until } })
-      .select('orderNo createdAt status payment.status subtotal shippingFee codFee total items customerName shippingAddress.name')
+      .select('orderNo createdAt status payment.status subtotal discount shippingFee codFee total items customerName shippingAddress.name')
       .sort('-createdAt').lean()
     // Cost snapshots taken at checkout; older orders fall back to today's costs
     const snaps = new Map((await OrderCost.find({ order: { $in: orders.map((o) => o._id) } }).lean()).map((c) => [String(c.order), c]))
@@ -446,7 +446,7 @@ router.get(
       for (const t of [totals, b]) {
         if (kind === 'success') {
           t.orders++
-          t.sales += o.subtotal || 0
+          t.sales += (o.subtotal || 0) - (o.discount || 0) // after coupon discounts
           t.fees += (o.shippingFee || 0) + (o.codFee || 0)
           t.goodsCost += c.goodsCost || 0
           t.courierCost += c.courierCost || 0
