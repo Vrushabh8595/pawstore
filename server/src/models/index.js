@@ -35,7 +35,11 @@ const userSchema = new Schema(
     emailCodeExpires: Date,
     emailCodeTries: Number,
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    // 'author' can write blog posts (published only after admin approval)
+    role: { type: String, enum: ['user', 'admin', 'author'], default: 'user' },
+    // Public author profile for /blog/author/:authorSlug
+    authorSlug: { type: String, index: { unique: true, sparse: true } },
+    bio: String,
     addresses: [addressSchema],
     // Admin can block a customer from placing orders
     blocked: { type: Boolean, default: false, index: true },
@@ -221,7 +225,7 @@ const notificationSchema = new Schema(
   {
     audience: { type: String, enum: ['admin', 'user'], required: true, index: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // for audience 'user'
-    type: { type: String, enum: ['new_order', 'status', 'account', 'review'], required: true },
+    type: { type: String, enum: ['new_order', 'status', 'account', 'review', 'blog'], required: true },
     link: String, // where clicking the notification goes (when not an order)
     title: String,
     body: String,
@@ -264,6 +268,40 @@ const orderCostSchema = new Schema(
   { versionKey: false }
 )
 
+/* ----------------------------------- Blog ---------------------------------- */
+// Written by authors (or the admin). Only status 'published' is ever public, and
+// only the admin can set it.
+const blogPostSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    excerpt: String,
+    content: String, // Markdown (rendered safely, no raw HTML)
+    cover: String,
+    coverAlt: String,
+    category: String,
+    tags: [String],
+    metaTitle: String,
+    metaDescription: String,
+    author: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+    authorName: String, // kept if the author profile is deleted
+    status: { type: String, enum: ['draft', 'pending', 'published', 'rejected'], default: 'draft', index: true },
+    reviewNote: String,
+    submittedAt: Date,
+    publishedAt: { type: Date, index: true },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    readMinutes: Number,
+    views: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+)
+blogPostSchema.index({ status: 1, publishedAt: -1 })
+// Images uploaded for blog posts (served by /api/blog/images/:id)
+const blogImageSchema = new Schema(
+  { data: Buffer, type: String, size: Number, uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' } },
+  { timestamps: true }
+)
+
 /* -------------------------------- Settings -------------------------------- */
 const settingsSchema = new Schema(
   {
@@ -291,5 +329,7 @@ export const PageView = model('PageView', pageViewSchema)
 export const Presence = model('Presence', presenceSchema)
 export const Notification = model('Notification', notificationSchema)
 export const Review = model('Review', reviewSchema)
+export const BlogPost = model('BlogPost', blogPostSchema)
+export const BlogImage = model('BlogImage', blogImageSchema)
 export const ProductCost = model('ProductCost', productCostSchema)
 export const OrderCost = model('OrderCost', orderCostSchema)
