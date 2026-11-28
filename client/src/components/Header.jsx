@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
-import { ShoppingCart, Heart, User, Search, Menu, X, Phone, ChevronRight, Package, LogIn, Camera, Volume2, VolumeX } from 'lucide-react'
+import { ShoppingCart, Heart, User, Search, BadgePercent, Menu, X, Phone, ChevronRight, Package, LogIn, Camera, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useCart } from '@/store/cart'
 import { useWishlist } from '@/store/wishlist'
@@ -114,7 +114,11 @@ export default function Header() {
             </form>
 
             <div className="flex items-center ml-auto">
-              {/* Cart lives in the bottom bar on phones; account stays up here */}
+              {/* Cart & pharmacy live in the bottom bar on phones; offers, wishlist and account stay up here */}
+              <Link to="/offers" className={`relative p-2 sm:p-2.5 rounded-xl hover:bg-sand-100 ${pathname === '/offers' ? 'text-brand-600' : ''}`} aria-label="Offers">
+                <BadgePercent size={21} />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-white animate-pulse" aria-hidden="true" />
+              </Link>
               <Link to="/wishlist" className="relative p-2 sm:p-2.5 rounded-xl hover:bg-sand-100" aria-label="Wishlist">
                 <Heart size={21} />
                 {wish > 0 && <Badge>{wish}</Badge>}
