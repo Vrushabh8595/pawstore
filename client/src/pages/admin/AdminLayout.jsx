@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, BarChart3, Menu, X, Star } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, BarChart3, Menu, X, Star, Wallet } from 'lucide-react'
 import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
 import Logo from '@/components/Logo'
@@ -11,6 +11,7 @@ import EmailStatus from './EmailStatus'
 const NAV = [
   ['/admin', 'Dashboard', LayoutDashboard, true],
   ['/admin/orders', 'Orders', ShoppingBag],
+  ['/admin/profit', 'Profit & loss', Wallet],
   ['/admin/users', 'Users', Users],
   ['/admin/traffic', 'Traffic', BarChart3],
   ['/admin/products', 'Products', Package],
