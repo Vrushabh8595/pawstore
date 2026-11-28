@@ -121,6 +121,8 @@ const orderSchema = new Schema(
     ],
     shippingAddress: addressSchema,
     subtotal: Number,
+    coupon: String, // coupon code used, if any
+    discount: { type: Number, default: 0 }, // coupon discount (₹)
     shippingFee: Number,
     codFee: Number,
     total: Number,
