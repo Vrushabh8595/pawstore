@@ -100,12 +100,10 @@ export default function HeroCarousel() {
       onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(false)}>
       <div className="container-x">
         <div
-          className="flex gap-3 sm:gap-5 touch-pan-y select-none [--w:88%] sm:[--w:100%] [--g:.75rem] sm:[--g:1.25rem]"
+          className="flex gap-3 sm:gap-5 touch-pan-y select-none [--w:100%] [--g:.75rem] sm:[--g:1.25rem]"
           style={{
-            // Last slide is right-aligned so the peek gap doesn't leave empty space on phones
-            transform: slide === n - 1
-              ? `translateX(calc(100% - ${n} * var(--w) - ${n - 1} * var(--g) + ${drag}px))`
-              : `translateX(calc(${-slide} * (var(--w) + var(--g)) + ${drag}px))`,
+            // One full-width slide at a time on every screen size
+            transform: `translateX(calc(${-slide} * (var(--w) + var(--g)) + ${drag}px))`,
             transition: dragging ? 'none' : 'transform .55s cubic-bezier(.22,1,.36,1)',
           }}
           onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
@@ -117,7 +115,7 @@ export default function HeroCarousel() {
             return (
               <div key={i} aria-hidden={!active} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${n}`}
                 className={`hero-slide ${active ? 'is-active' : ''} relative shrink-0 basis-[var(--w)] overflow-hidden rounded-[1.75rem] sm:rounded-[2.25rem] ${t.bg} ${t.text}
-                  h-[420px] sm:h-[400px] lg:h-[460px] transition-[opacity,transform] duration-500 ${active ? 'opacity-100' : 'opacity-60 sm:opacity-0 scale-[.97]'}`}>
+                  h-[420px] sm:h-[400px] lg:h-[460px] transition-[opacity,transform] duration-500 ${active ? 'opacity-100' : 'opacity-0 scale-[.97]'}`}>
                 {/* Decorations */}
                 <span aria-hidden="true" className={`absolute -left-16 -bottom-24 w-64 h-64 rounded-full ${t.blob} opacity-60`} />
                 <span aria-hidden="true" className={`absolute left-[44%] top-8 w-24 h-24 rounded-full border-2 border-dashed ${t.ring} animate-spin-slow hidden sm:block`} />
@@ -168,10 +166,10 @@ export default function HeroCarousel() {
 
         {/* Controls */}
         <div className="flex items-center gap-3 mt-3 sm:mt-4">
-          <div className="flex-1 flex gap-1.5 sm:max-w-xs">
+          <div className="flex-1 flex gap-1.5 sm:max-w-sm">
             {SLIDES.map((_, i) => (
               <button key={i} onClick={() => go(i)} aria-label={`Go to slide ${i + 1}`} aria-current={i === slide}
-                className="relative h-1.5 flex-1 rounded-full bg-ink-200 overflow-hidden">
+                className="relative h-1.5 flex-1 rounded-full bg-ink-200 overflow-hidden before:absolute before:-inset-y-3 before:inset-x-0 before:content-['']">
                 {i < slide && <span className="absolute inset-0 bg-brand-500" />}
                 {i === slide && (
                   <span key={`${slide}-${cycle}`} className="hero-progress absolute inset-0 bg-brand-500"
@@ -180,8 +178,7 @@ export default function HeroCarousel() {
               </button>
             ))}
           </div>
-          <span className="text-xs font-bold text-ink-500 tabular-nums">{String(slide + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
-          <div className="hidden sm:flex gap-2">
+          <div className="hidden sm:flex gap-2 ml-auto">
             <button onClick={() => go(slide - 1)} aria-label="Previous slide"
               className="w-10 h-10 grid place-items-center rounded-full bg-white ring-1 ring-ink-200 hover:ring-brand-400 hover:text-brand-600 active:scale-90 transition"><ChevronLeft size={20} /></button>
             <button onClick={() => go(slide + 1)} aria-label="Next slide"
