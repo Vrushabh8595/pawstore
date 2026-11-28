@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
-import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail, ShoppingCart, PartyPopper } from 'lucide-react'
+import { Smartphone, Banknote, Copy, Check, MapPin, CreditCard, Lock, ChevronDown, LocateFixed, Loader2, Mail, ShoppingCart, PartyPopper, Plus, Pencil, BookmarkPlus } from 'lucide-react'
+import { AddressCard, MAX_ADDRESSES } from '@/components/AddressBook'
 import { locateAddress } from '@/lib/geolocate'
 import { Field, useFieldErrors, errorFeedback, isEmail } from '@/components/FormField'
 import BlockedNotice from '@/components/BlockedNotice'
@@ -23,15 +24,27 @@ export default function Checkout() {
   const user = useAuth((s) => s.user)
   const nav = useNavigate()
 
-  // Logged-in customers start with their saved profile address
+  // Logged-in customers pick from their saved addresses (default selected)
+  const saved = savedAddresses(user)
+  const [sel, setSel] = useState(() => (saved.find((a) => a.isDefault) || saved[0])?.id || 'new')
+  const [editing, setEditing] = useState(false) // tweak the chosen saved address for this order only
+  const [saveNew, setSaveNew] = useState(true)
+  const touched = useRef(false)
   const [addr, setAddr] = useState(() => {
-    const a = user?.address || {}
-    return {
-      name: user?.name || '', phone: user?.phone || '',
-      line1: [a.line1, a.landmark].filter(Boolean).join(', '), city: a.city || '', state: a.state || '', pincode: a.pincode || '',
-    }
+    const a = saved.find((x) => x.id === sel)
+    return a ? fromSaved(a) : blankAddress(user)
   })
+  // The saved list can arrive a moment after the page opens (account refresh):
+  // pick the default then, unless the customer has already typed something.
+  const savedKey = saved.map((a) => a.id).join(',')
+  useEffect(() => {
+    if (touched.current || sel !== 'new' || !saved.length) return
+    const a = saved.find((x) => x.isDefault) || saved[0]
+    setSel(a.id); setAddr(fromSaved(a))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedKey])
   const fe = useFieldErrors()
+  const updateUser = useAuth((s) => s.updateUser)
   const [blocked, setBlocked] = useState(false)
   const [email, setEmail] = useState(() => { try { return localStorage.getItem('animalveda-guest-email') || '' } catch { return '' } })
   const [geo, setGeo] = useState({ status: 'idle', msg: '' }) // idle | busy | done | error
@@ -56,6 +69,11 @@ export default function Checkout() {
 
   const link = upiLink({ amount: total, note: no })
 
+  const showFields = sel === 'new' || editing
+  const ADDR_FIELDS = ['name', 'phone', 'line1', 'pincode', 'city', 'state']
+  const chooseSaved = (a) => { touched.current = true; setSel(a.id); setEditing(false); setAddr(fromSaved(a)); ADDR_FIELDS.forEach((k) => fe.clear(k)); haptic(8) }
+  const chooseNew = () => { touched.current = true; setSel('new'); setEditing(false); setAddr(blankAddress(user)); ADDR_FIELDS.forEach((k) => fe.clear(k)); haptic(8) }
+
   const fillFromLocation = async () => {
     setGeo({ status: 'busy', msg: '' })
     try {
@@ -79,7 +97,7 @@ export default function Checkout() {
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
-    const ok = fe.validate({
+    const checks = {
       email: user ? null : !email.trim() ? 'Enter your email. We send order updates there.' : !isEmail(email) ? 'This email doesn’t look right (e.g. name@gmail.com).' : null,
       name: addr.name.trim().length < 2 ? 'Enter the name of the person receiving the order.' : null,
       phone: !addr.phone ? 'Enter a phone number for the delivery partner.' : !/^[6-9]\d{9}$/.test(addr.phone) ? 'Enter a valid 10-digit mobile number.' : null,
@@ -88,7 +106,10 @@ export default function Checkout() {
       city: !addr.city.trim() ? 'Enter your city.' : null,
       state: !addr.state.trim() ? 'Enter your state.' : null,
       utr: method === 'UPI_MANUAL' && !/^\d{12}$/.test(utr) ? (utr ? 'UTR should be exactly 12 digits.' : 'After paying, enter the 12-digit UPI reference (UTR).') : null,
-    })
+    }
+    // A saved address with something missing: open its fields so the error shows
+    if (!showFields && ADDR_FIELDS.some((k) => checks[k])) setEditing(true)
+    const ok = fe.validate(checks)
     if (!ok) return
 
     // Send the order to the server (prices are re-checked there). If the
@@ -104,6 +125,13 @@ export default function Checkout() {
       if (!user) { try { localStorage.setItem('animalveda-guest-email', email.trim().toLowerCase()) } catch { /* ignore */ } }
       orderNoFinal = res?.order?.orderNo || no
       qc.invalidateQueries({ queryKey: ['my-orders'] })
+      // "Save this address" for next time (never blocks the order)
+      if (user && sel === 'new' && saveNew && saved.length < MAX_ADDRESSES) {
+        api.post('/auth/me/addresses', {
+          label: 'Home', name: addr.name.trim(), phone: addr.phone, line1: addr.line1.trim(),
+          city: addr.city.trim(), state: addr.state.trim(), pincode: addr.pincode, ...(saved.length ? {} : { isDefault: true }),
+        }).then((r) => updateUser(r.user)).catch(() => {})
+      }
     } catch (e2) {
       if (e2.status === 403) { setPlacing(false); setBlocked(true); errorFeedback(); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
       const down = e2 instanceof TypeError || /Route not found|Request failed \(5/.test(e2.message)
@@ -135,7 +163,7 @@ export default function Checkout() {
     nav(`/order/${orderNoFinal}`, { state: { animal: forCat ? 'cat' : 'dog' } })
   }
 
-  const set = (k) => (v) => { setAddr((a) => ({ ...a, [k]: v })); fe.clear(k) }
+  const set = (k) => (v) => { touched.current = true; setAddr((a) => ({ ...a, [k]: v })); fe.clear(k) }
   const E = fe.errors
 
   if (user?.blocked || blocked) return <div className="container-x py-10 sm:py-16"><BlockedNotice /></div>
@@ -161,7 +189,24 @@ export default function Checkout() {
           <section className="card p-4 sm:p-6">
             <h2 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2"><Step n="1" icon={MapPin} /> Delivery address
               <span className="ml-auto font-sans text-[11px] font-semibold text-ink-500"><span className="text-red-500">*</span> required</span></h2>
-            <button type="button" onClick={fillFromLocation} disabled={geo.status === 'busy'}
+            {saved.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-bold text-ink-900 mb-2">Deliver to</p>
+                <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Saved addresses">
+                  {saved.map((a) => <AddressCard key={a.id} a={a} selected={sel === a.id} onSelect={() => chooseSaved(a)} />)}
+                  <button type="button" onClick={chooseNew} aria-pressed={sel === 'new'}
+                    className={`rounded-2xl border-[1.5px] border-dashed p-4 flex items-center gap-3 text-left transition active:scale-[.99] ${sel === 'new' ? 'border-brand-500 bg-brand-50/60' : 'border-ink-200 hover:border-brand-300'}`}>
+                    <span className="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 grid place-items-center shrink-0"><Plus size={18} /></span>
+                    <span><span className="block font-bold text-ink-900">Add a new address</span><span className="block text-xs text-ink-500">Deliver somewhere else</span></span>
+                  </button>
+                </div>
+                {sel !== 'new' && !editing && (
+                  <button type="button" onClick={() => setEditing(true)} className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-brand-700 hover:underline"><Pencil size={13} /> Change details for this order</button>
+                )}
+              </div>
+            )}
+            {showFields && (<>
+            {sel === 'new' && <button type="button" onClick={fillFromLocation} disabled={geo.status === 'busy'}
               className="w-full mb-4 flex items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-brand-300 bg-brand-50/60 hover:bg-brand-50 px-4 py-3 text-left transition active:scale-[.99] disabled:opacity-80">
               <span className="w-10 h-10 rounded-xl bg-brand-500 text-white grid place-items-center shrink-0">
                 {geo.status === 'busy' ? <Loader2 size={19} className="animate-spin" /> : <LocateFixed size={19} />}
@@ -170,7 +215,7 @@ export default function Checkout() {
                 <span className="block font-bold text-ink-900">{geo.status === 'busy' ? 'Finding your location…' : geo.status === 'done' ? 'Update from my current location' : 'Use my current location'}</span>
                 <span className="block text-xs text-ink-500">Fills in your area, city, state and pincode automatically</span>
               </span>
-            </button>
+            </button>}
             {geo.msg && <p className={`-mt-2 mb-4 text-xs font-semibold rounded-lg px-3 py-2 ${geo.status === 'error' ? 'text-red-600 bg-red-50' : 'text-green-700 bg-green-50'}`} role={geo.status === 'error' ? 'alert' : 'status'}>{geo.msg}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {user ? (
@@ -198,6 +243,17 @@ export default function Checkout() {
               <Field name="city" required error={E.city} label="City" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.city} onChange={set('city')} autoComplete="address-level2" />
               <div className="sm:col-span-2"><Field name="state" required error={E.state} label="State" hint={pin.status === 'found' ? 'auto-filled' : undefined} value={addr.state} onChange={set('state')} autoComplete="address-level1" /></div>
             </div>
+            {user && sel === 'new' && saved.length < MAX_ADDRESSES && (
+              <label className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-ink-700 cursor-pointer select-none">
+                <input type="checkbox" checked={saveNew} onChange={(e) => setSaveNew(e.target.checked)} className="w-4 h-4 accent-[var(--color-brand-500)]" />
+                <BookmarkPlus size={16} className="text-brand-600" /> Save this address for next time
+              </label>
+            )}
+            {sel !== 'new' && editing && <p className="mt-3 text-xs text-ink-500">These changes are for this order only. Edit your saved addresses in <Link to="/account/profile" className="font-bold text-brand-700 hover:underline">My profile</Link>.</p>}
+            </>)}
+            {!showFields && user && (
+              <p className="flex items-center gap-2 text-xs text-ink-500 bg-sand-50 rounded-lg px-3 py-2 min-w-0"><Mail size={14} className="shrink-0 text-brand-600" /><span className="truncate">Order updates go to <b className="text-ink-700">{user.email}</b></span></p>
+            )}
           </section>
 
           {/* Payment */}
@@ -250,8 +306,8 @@ export default function Checkout() {
       </form>
 
       {/* Mobile sticky place-order bar */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink-100 shadow-[0_-8px_24px_-12px_rgba(26,26,23,.25)] px-4 pt-3"
-        style={{ paddingBottom: 'calc(.75rem + env(safe-area-inset-bottom))' }}>
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink-100 shadow-[0_-8px_24px_-12px_rgba(26,26,23,.25)] px-4 pt-3 after:content-[''] after:absolute after:inset-x-0 after:top-full after:h-24 after:bg-white"
+        style={{ paddingBottom: 'calc(.75rem + env(safe-area-inset-bottom))', transform: 'translateZ(0)' }}>
         {saving > 0 && (
           <p className="max-w-xl mx-auto -mt-0.5 mb-2 flex items-center justify-center gap-1.5 rounded-full bg-green-50 text-green-700 text-[11.5px] font-bold py-1 ring-1 ring-green-100">
             🎉 You’re saving {inr(saving)} on this order
@@ -369,3 +425,15 @@ function Method({ active, onClick, icon: Icon, title, sub }) {
 function Row({ label, value }) {
   return <div className="flex justify-between text-ink-700"><span>{label}</span><span>{value}</span></div>
 }
+
+// Saved addresses from the account (older cached accounts only have one "address")
+function savedAddresses(user) {
+  if (!user) return []
+  if (Array.isArray(user.addresses)) return user.addresses
+  return user.address ? [{ ...user.address, id: 'saved', label: 'Home', name: user.name, phone: user.phone || '', isDefault: true }] : []
+}
+const fromSaved = (a) => ({
+  name: a.name || '', phone: a.phone || '',
+  line1: [a.line1, a.landmark].filter(Boolean).join(', '), city: a.city || '', state: a.state || '', pincode: a.pincode || '',
+})
+const blankAddress = (user) => ({ name: user?.name || '', phone: user?.phone || '', line1: '', city: '', state: '', pincode: '' })
