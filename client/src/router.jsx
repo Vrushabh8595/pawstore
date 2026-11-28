@@ -40,6 +40,7 @@ import AuthorLayout from './pages/author/AuthorLayout'
 import AuthorHome from './pages/author/AuthorHome'
 import AuthorPost from './pages/author/AuthorPost'
 import AuthorLogin from './pages/author/AuthorLogin'
+import MyReviews from './pages/account/MyReviews'
 
 function Protected({ children, role, loginPath = '/login' }) {
   const user = useAuth((s) => s.user)
@@ -104,6 +105,7 @@ export const router = createBrowserRouter([
           { path: 'orders/:orderNo', element: <OrderDetail /> },
           { path: 'profile', element: <Profile /> },
           { path: 'notifications', element: <AccountNotifications /> },
+          { path: 'reviews', element: <MyReviews /> },
         ],
       },
       { path: '*', element: <NotFound /> },
