@@ -19,6 +19,9 @@ import storeRoutes from './routes/store.js'
 import notificationRoutes from './routes/notifications.js'
 import reviewRoutes from './routes/reviews.js'
 import { seedDummyCosts } from './utils/costs.js'
+import blogRoutes from './routes/blog.js'
+import authorRoutes from './routes/author.js'
+import adminBlogRoutes from './routes/adminBlog.js'
 
 const app = express()
 app.set('trust proxy', 1) // behind Render's proxy — needed for correct rate-limit IPs
@@ -38,7 +41,9 @@ if ((process.env.JWT_SECRET || '').length < 32) {
 // Product requests carry up to 3 compressed photos, so they get a bigger body limit.
 const jsonSmall = express.json({ limit: '1mb' })
 const jsonLarge = express.json({ limit: '3mb' })
-app.use((req, res, next) => (req.path.startsWith('/api/requests') ? jsonLarge : jsonSmall)(req, res, next))
+// Blog picture uploads also need the larger limit.
+const LARGE = /^\/api\/(requests|author\/images|admin\/blog\/images)/
+app.use((req, res, next) => (LARGE.test(req.path) ? jsonLarge : jsonSmall)(req, res, next))
 app.use(cookieParser())
 app.use(sanitize)
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'tiny' : 'dev'))
@@ -58,6 +63,9 @@ app.use('/api/products', productRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/wishlist', wishlistRoutes)
 app.use('/api/orders', orderRoutes)
+app.use('/api/blog', blogRoutes)
+app.use('/api/author', authorRoutes)
+app.use('/api/admin/blog', adminBlogRoutes) // before /api/admin
 app.use('/api/admin', adminRoutes)
 app.use('/api/requests', requestRoutes)
 app.use('/api/store', storeRoutes)
@@ -70,7 +78,12 @@ app.use(errorHandler)
 const PORT = process.env.PORT || 5000
 
 connectDB(process.env.MONGO_URI)
-  .then(() => app.listen(PORT, () => console.log(`✓ API running on http://localhost:${PORT}`)))
+  .then(() => {
+    const server = app.listen(PORT, () => console.log(`✓ API running on http://localhost:${PORT}`))
+    // Drop connections that send a request too slowly (slow-drip bot attacks)
+    server.requestTimeout = 30_000
+    server.headersTimeout = 20_000
+  })
   .then(() => seedDummyCosts()) // one-time sample costs for older products
   .catch((err) => {
     console.error('Failed to start:', err.message)
