@@ -25,7 +25,7 @@ export default function AuthorLayout() {
             <a href="/blog" target="_blank" rel="noopener" className="p-2 rounded-xl hover:bg-sand-100" title="View blog"><Globe size={20} /></a>
             {user?.role !== 'admin' && <NotificationBell />}
             <Avatar user={user} size={32} />
-            <button onClick={() => { logout(); nav('/') }} className="p-2 rounded-xl hover:bg-sand-100" title="Log out" aria-label="Log out"><LogOut size={19} /></button>
+            <button onClick={async () => { await logout(); nav('/author/login') }} className="p-2 rounded-xl hover:bg-sand-100" title="Log out" aria-label="Log out"><LogOut size={19} /></button>
           </div>
         </div>
         <nav className="sm:hidden flex gap-1 px-4 pb-2">

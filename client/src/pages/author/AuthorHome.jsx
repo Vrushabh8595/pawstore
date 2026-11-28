@@ -1,16 +1,15 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { PenLine, Loader2, Check, Eye } from 'lucide-react'
+import { PenLine, Loader2, Eye } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuth } from '@/store/auth'
-import { blogDate, categoryName } from '@/lib/blog'
+import { blogDate, categoryName, useBlogCategories } from '@/lib/blog'
 import { StatusPill } from '@/components/blog/PostEditor'
 
 export default function AuthorHome() {
   const user = useAuth((s) => s.user)
   const q = useQuery({ queryKey: ['author-posts'], queryFn: () => api.get('/author/posts') })
-  const me = useQuery({ queryKey: ['author-me'], queryFn: () => api.get('/author/me') })
+  const cats = useBlogCategories()
   const posts = q.data?.posts || []
   const count = (s) => posts.filter((p) => p.status === s).length
   return (
@@ -27,7 +26,7 @@ export default function AuthorHome() {
           <div key={s} className="card p-4"><p className="text-xs font-semibold text-ink-500">{l}</p><p className="text-2xl font-extrabold">{count(s)}</p></div>
         ))}
       </div>
-      <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
+      <div>
         <section className="card overflow-hidden">
           {q.isLoading ? <p className="p-8 text-center text-ink-500"><Loader2 className="mx-auto animate-spin" /></p> : !posts.length ? (
             <div className="p-10 text-center"><p className="font-display text-xl">No posts yet</p><p className="text-ink-500 text-sm mt-1">Your first article is one click away.</p><Link to="/author/posts/new" className="btn-primary mt-4 inline-flex"><PenLine size={16} /> Start writing</Link></div>
@@ -38,7 +37,7 @@ export default function AuthorHome() {
                   <div className="w-24 aspect-[16/10] rounded-lg bg-sand-100 overflow-hidden shrink-0">{p.cover && <img src={p.cover} alt="" className="w-full h-full object-cover" loading="lazy" />}</div>
                   <div className="flex-1 min-w-0">
                     <Link to={`/author/posts/${p._id}`} className="font-bold text-ink-900 hover:text-brand-700 line-clamp-2">{p.title}</Link>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-ink-500"><StatusPill status={p.status} />{categoryName(p.category)}<span>· Updated {blogDate(p.updatedAt)}</span>{p.status === 'published' && <span className="inline-flex items-center gap-1">· <Eye size={12} /> {p.views || 0}</span>}</div>
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-ink-500"><StatusPill status={p.status} />{categoryName(p.category, cats)}<span>· Updated {blogDate(p.updatedAt)}</span>{p.status === 'published' && <span className="inline-flex items-center gap-1">· <Eye size={12} /> {p.views || 0}</span>}</div>
                     {p.status === 'rejected' && p.reviewNote && <p className="mt-1.5 text-xs text-red-700 bg-red-50 rounded-lg px-2 py-1">Admin: {p.reviewNote}</p>}
                   </div>
                   {p.status === 'published' && <a href={`/blog/${p.slug}`} target="_blank" rel="noopener" className="text-xs font-bold text-brand-700 shrink-0">View</a>}
@@ -47,27 +46,8 @@ export default function AuthorHome() {
             </ul>
           )}
         </section>
-        <AuthorProfile me={me.data} />
       </div>
     </div>
   )
 }
 
-function AuthorProfile({ me }) {
-  const [bio, setBio] = useState(null)
-  const [state, setState] = useState('')
-  const value = bio ?? me?.bio ?? ''
-  const save = async () => { setState('busy'); try { await api.patch('/author/me', { bio: value.trim() }); setState('done'); setTimeout(() => setState(''), 1800) } catch (x) { setState(x.message) } }
-  return (
-    <section className="card p-4">
-      <p className="font-bold">Your author bio</p>
-      <p className="text-xs text-ink-500 mb-2">Shown under every article you write{me?.slug ? <> and on <a href={`/blog/author/${me.slug}`} target="_blank" rel="noopener" className="text-brand-700 font-semibold">your author page</a></> : ''}. Change your name and photo in <Link to="/account/profile" className="text-brand-700 font-semibold">My profile</Link>.</p>
-      <textarea value={value} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={4} placeholder="e.g. Veterinary assistant with 6 years of experience caring for dogs and cattle in Pune." className="w-full border border-ink-200 rounded-xl px-3 py-2 outline-none focus:border-brand-400" />
-      <div className="flex items-center justify-between mt-2">
-        <span className="text-[11px] text-ink-500">{value.length}/300</span>
-        <button onClick={save} disabled={state === 'busy'} className="btn-primary !py-2 !px-4 text-sm">{state === 'busy' ? <Loader2 size={15} className="animate-spin" /> : state === 'done' ? <Check size={15} /> : null} {state === 'done' ? 'Saved' : 'Save bio'}</button>
-      </div>
-      {state && !['busy', 'done'].includes(state) && <p className="text-xs text-red-600 mt-1">{state}</p>}
-    </section>
-  )
-}
