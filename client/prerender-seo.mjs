@@ -48,5 +48,5 @@ writeFileSync(join(dist, 'sitemap.xml'),
   paths.map((p) => `  <url><loc>${SITE_URL}${p === '/' ? '/' : p}</loc><lastmod>${today}</lastmod><priority>${prio(p)}</priority></url>`).join('\n') +
   `\n</urlset>\n`)
 writeFileSync(join(dist, 'robots.txt'),
-  `User-agent: *\nAllow: /\nDisallow: /cart\nDisallow: /checkout\nDisallow: /account\nDisallow: /admin\nDisallow: /login\nDisallow: /register\nDisallow: /search\nDisallow: /wishlist\nDisallow: /order/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`)
+  `User-agent: *\nAllow: /\nDisallow: /cart\nDisallow: /checkout\nDisallow: /account\nDisallow: /admin\nDisallow: /login\nDisallow: /register\nDisallow: /search\nDisallow: /wishlist\nDisallow: /order/\nDisallow: /author\nDisallow: /api/\n\nSitemap: ${SITE_URL}/sitemap.xml\nSitemap: ${SITE_URL}/blog-sitemap.xml\n`)
 console.log(`✓ SEO: prerendered ${paths.length} routes + sitemap.xml + robots.txt`)
