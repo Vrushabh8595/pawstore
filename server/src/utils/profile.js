@@ -32,51 +32,92 @@ export const addressSchema = z.object({
   pincode: z.string().trim().regex(/^[1-9]\d{5}$/, 'Enter a valid 6-digit pincode'),
 }).strict()
 
+// A saved address in the customer's address book: the address itself plus a
+// label and who receives the parcel there (defaults to the account's name/phone).
+export const LABELS = ['Home', 'Work', 'Other']
+export const MAX_ADDRESSES = 10
+export const savedAddressSchema = addressSchema.extend({
+  label: z.enum(LABELS).optional(),
+  name: nameField,
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+  isDefault: z.boolean().optional(),
+}).strict()
+
 // Photo: only real JPEG / PNG / WebP bytes, max ~200 KB. SVG and anything
 // else is refused (SVG can carry scripts). The file's first bytes must match
 // the type it claims to be.
 const MAX_AVATAR_BYTES = 200 * 1024
+const MAX_THUMB_BYTES = 24 * 1024
 const MAGIC = {
   jpeg: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
   png: (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
   webp: (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP',
 }
-export function checkAvatar(value) {
+export function checkAvatar(value, maxBytes = MAX_AVATAR_BYTES) {
   if (value === '') return { ok: true, value: '' } // remove photo
   const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value)
   if (!m) return { ok: false, message: 'Please choose a JPG, PNG or WebP photo' }
   const bytes = Buffer.from(m[2], 'base64')
-  if (bytes.length > MAX_AVATAR_BYTES) return { ok: false, message: 'Photo is too large (max 200 KB)' }
+  if (bytes.length > maxBytes) return { ok: false, message: `Photo is too large (max ${Math.round(maxBytes / 1024)} KB)` }
   if (bytes.length < 100 || !MAGIC[m[1]](bytes)) return { ok: false, message: 'That file isn’t a valid image' }
   return { ok: true, value }
 }
-export const avatarField = z.string().max(300_000, 'Photo is too large (max 200 KB)').superRefine((v, ctx) => {
-  const r = checkAvatar(v)
+const imageField = (maxBytes) => z.string().max(Math.ceil(maxBytes * 1.4) + 40, `Photo is too large (max ${Math.round(maxBytes / 1024)} KB)`).superRefine((v, ctx) => {
+  const r = checkAvatar(v, maxBytes)
   if (!r.ok) ctx.addIssue({ code: 'custom', message: r.message })
 })
+export const avatarField = imageField(MAX_AVATAR_BYTES)
+export const avatarThumbField = imageField(MAX_THUMB_BYTES)
+
+// Raw image bytes (e.g. downloaded from Google) → data URL, if they're a real
+// JPEG / PNG / WebP within the size limit.
+export function bytesToDataUrl(bytes, maxBytes = MAX_AVATAR_BYTES) {
+  if (!bytes || bytes.length < 100 || bytes.length > maxBytes) return null
+  const type = Object.keys(MAGIC).find((t) => MAGIC[t](bytes))
+  return type ? `data:image/${type};base64,${bytes.toString('base64')}` : null
+}
+export { MAX_THUMB_BYTES }
 
 // Only these keys may be changed; role, blocked, email, password… are refused (strict).
 export const profileSchema = z.object({
   name: nameField.optional(),
   phone: phoneField.optional(),
   avatar: avatarField.optional(),
+  avatarThumb: avatarThumbField.optional(),
+  // Older app versions send one "address": it updates the default address only
   address: addressSchema.nullable().optional(),
 }).strict()
 
-export const publicUser = (u) => ({
-  id: u._id,
-  _id: u._id,
-  name: u.name,
-  email: u.email,
-  phone: u.phone || '',
-  role: u.role,
-  avatar: u.avatar || '',
-  provider: u.provider || 'password',
-  address: u.addresses?.[0] ? {
-    line1: u.addresses[0].line1 || '', landmark: u.addresses[0].landmark || '',
-    city: u.addresses[0].city || '', state: u.addresses[0].state || '', pincode: u.addresses[0].pincode || '',
-  } : null,
-  blocked: !!u.blocked,
-  blockedReason: u.blocked ? u.blockedReason || '' : '',
-  createdAt: u.createdAt,
+const pubAddress = (a) => ({
+  id: String(a._id),
+  label: a.label || '',
+  name: a.name || '', phone: a.phone || '',
+  line1: a.line1 || '', landmark: a.landmark || '',
+  city: a.city || '', state: a.state || '', pincode: a.pincode || '',
+  isDefault: !!a.isDefault,
 })
+export const defaultAddress = (u) => (u.addresses || []).find((a) => a.isDefault) || u.addresses?.[0] || null
+
+export const publicUser = (u) => {
+  const list = (u.addresses || []).map(pubAddress)
+  const def = list.find((a) => a.isDefault) || list[0] || null
+  return {
+    id: u._id,
+    _id: u._id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone || '',
+    role: u.role,
+    avatar: u.avatar || '',
+    avatarSource: u.avatarSource || (u.avatar ? 'upload' : ''),
+    provider: u.provider || 'password',
+    // Default address first, then the rest in the order they were added
+    addresses: def ? [def, ...list.filter((a) => a !== def)] : [],
+    // Kept for older app versions: the default address
+    address: def,
+    pendingEmail: u.pendingEmail && u.emailCodeExpires > new Date() ? u.pendingEmail : '',
+    blocked: !!u.blocked,
+    blockedReason: u.blocked ? u.blockedReason || '' : '',
+    createdAt: u.createdAt,
+  }
+}
