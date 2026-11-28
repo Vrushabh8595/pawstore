@@ -9,14 +9,12 @@ import { blogDate, brand } from '@/lib/blog'
 import { parse, headings } from '@/lib/markdown'
 import Markdown from '@/components/blog/Markdown'
 import PostCard from '@/components/blog/PostCard'
-import Avatar from '@/components/Avatar'
 
 // /blog/:slug
 export default function BlogPost() {
   const { slug } = useParams()
   const q = useQuery({ queryKey: ['blog-post', slug], queryFn: () => api.get(`/blog/post/${encodeURIComponent(slug)}`), retry: (n, e) => e?.status !== 404 && n < 2 })
   const post = q.data?.post
-  const author = q.data?.author
   const blocks = useMemo(() => parse(post?.content || ''), [post?.content])
   const toc = headings(blocks)
   const [copied, setCopied] = useState(false)
@@ -31,14 +29,14 @@ export default function BlogPost() {
         {
           '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title.slice(0, 110), description: post.metaDescription || post.excerpt,
           image: post.cover ? [post.cover] : undefined, datePublished: post.publishedAt, dateModified: post.updatedAt || post.publishedAt,
-          author: { '@type': 'Person', name: author?.name || SITE_NAME, ...(author?.slug ? { url: `${SITE_URL}/blog/author/${author.slug}` } : {}) },
+          author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
           publisher: { '@type': 'Organization', name: SITE_NAME, logo: { '@type': 'ImageObject', url: `${SITE_URL}/apple-touch-icon.png` } },
           mainEntityOfPage: { '@type': 'WebPage', '@id': url }, articleSection: post.categoryName || undefined, keywords: post.tags?.join(', ') || undefined,
         },
         { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', SITE_URL], ['Blog', `${SITE_URL}/blog`], ...(post.category ? [[post.categoryName, `${SITE_URL}/blog/category/${post.category}`]] : []), [post.title, url]].map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })) },
       ],
     })
-  }, [post, author, q.error, slug])
+  }, [post, q.error, slug])
 
   if (q.isLoading) return <div className="container-x max-w-3xl py-10"><div className="h-8 w-2/3 bg-sand-100 rounded animate-pulse" /><div className="mt-6 aspect-[16/9] bg-sand-100 rounded-3xl animate-pulse" /></div>
   if (q.error?.status === 404) return (
@@ -67,10 +65,6 @@ export default function BlogPost() {
         <h1 className="text-3xl sm:text-5xl leading-tight mt-2">{post.title}</h1>
         {post.excerpt && <p className="text-lg text-ink-700 mt-4 leading-relaxed">{post.excerpt}</p>}
         <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-ink-500">
-          <span className="inline-flex items-center gap-2 font-semibold text-ink-900">
-            <Avatar user={{ name: author?.name, avatar: author?.avatar }} size={36} />
-            {author?.slug ? <Link to={`/blog/author/${author.slug}`} className="hover:text-brand-700">{author.name}</Link> : author?.name}
-          </span>
           <span className="inline-flex items-center gap-1"><CalendarDays size={14} /><time dateTime={post.publishedAt}>{blogDate(post.publishedAt)}</time></span>
           <span className="inline-flex items-center gap-1"><Clock size={14} /> {post.readMinutes} min read</span>
           <button onClick={share} className="ml-auto inline-flex items-center gap-1.5 font-bold text-brand-700 hover:underline">{copied ? <><Check size={15} /> Link copied</> : <><Share2 size={15} /> Share</>}</button>
@@ -104,16 +98,6 @@ export default function BlogPost() {
           <Link to="/products" className="inline-flex items-center gap-2 bg-white text-brand-700 font-extrabold text-sm px-5 py-2.5 rounded-full w-fit">Shop now <ArrowRight size={16} /></Link>
         </aside>
 
-        {author && (
-          <section aria-label="About the author" className="mt-8 card p-5 sm:p-6 flex gap-4 items-start">
-            <Avatar user={{ name: author.name, avatar: author.avatar }} size={64} />
-            <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-ink-500">Written by</p>
-              <p className="font-display text-xl font-semibold text-ink-900">{author.slug ? <Link to={`/blog/author/${author.slug}`} className="hover:text-brand-700">{author.name}</Link> : author.name}</p>
-              {author.bio && <p className="text-sm text-ink-700 mt-1">{author.bio}</p>}
-            </div>
-          </section>
-        )}
         <p className="mt-6 text-xs text-ink-500">This article is for general information. For a diagnosis, dose or treatment plan for your animal, please talk to a qualified veterinarian.</p>
       </div>
 
