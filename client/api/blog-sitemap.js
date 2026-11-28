@@ -1,11 +1,10 @@
-// /blog-sitemap.xml: every published article, category and author page
+// /blog-sitemap.xml: every published article and category page
 const SITE = 'https://animalveda.com'
 // VITE_API_URL is the API origin (same as the app uses), without /api
 const API = (process.env.VITE_API_URL || 'https://pawstore-awtw.onrender.com').replace(/\/+$/, '').replace(/\/api$/, '') + '/api'
-const CATS = ['dog-care', 'cat-care', 'nutrition', 'health', 'grooming', 'training', 'livestock', 'news']
 
 export default async function handler(req, res) {
-  let d = { posts: [], authors: [] }
+  let d = { posts: [] }
   try {
     const r = await fetch(`${API}/blog/sitemap`, { signal: AbortSignal.timeout(8000) })
     if (r.ok) d = await r.json()
@@ -13,8 +12,7 @@ export default async function handler(req, res) {
   const used = new Set(d.posts.map((p) => p.category))
   const urls = [
     [`${SITE}/blog`, d.posts[0]?.updatedAt, '0.8'],
-    ...CATS.filter((c) => used.has(c)).map((c) => [`${SITE}/blog/category/${c}`, null, '0.6']),
-    ...d.authors.map((a) => [`${SITE}/blog/author/${a}`, null, '0.4']),
+    ...[...used].filter((c) => /^[a-z0-9-]+$/.test(c || '')).map((c) => [`${SITE}/blog/category/${c}`, null, '0.6']),
     ...d.posts.map((p) => [`${SITE}/blog/${p.slug}`, p.updatedAt, '0.7']),
   ]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
