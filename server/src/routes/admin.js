@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import mongoose from 'mongoose'
-import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence, Notification, Review } from '../models/index.js'
+import { Product, Category, Order, Settings, ProductRequest, User, PageView, Presence, Notification, Review, OrderCost } from '../models/index.js'
+import { splitCosts, saveCosts, withCosts, costMap, costOfItems } from '../utils/costs.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyStatus } from '../utils/notify.js'
@@ -343,13 +344,144 @@ router.post(
 )
 
 /* -------------------------------- Products -------------------------------- */
-router.post('/products', asyncHandler(async (req, res) => res.status(201).json(await Product.create(req.body))))
+// Admin list: includes buying cost + courier charge (never sent to customers)
+router.get(
+  '/products',
+  asyncHandler(async (req, res) => {
+    const items = await Product.find({ isActive: { $ne: false } }).sort({ reviews: -1 }).limit(500).lean()
+    res.json({ items: await withCosts(items) })
+  })
+)
+router.post(
+  '/products',
+  asyncHandler(async (req, res) => {
+    const { product, costs } = splitCosts(req.body)
+    const p = await Product.create(product)
+    await saveCosts(p._id, costs)
+    res.status(201).json((await withCosts([p.toObject()]))[0])
+  })
+)
 router.patch(
   '/products/:id',
   asyncHandler(async (req, res) => {
-    const p = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Product not found' })
+    const { product, costs } = splitCosts(req.body)
+    const p = await Product.findByIdAndUpdate(req.params.id, product, { new: true }).lean()
     if (!p) return res.status(404).json({ message: 'Product not found' })
-    res.json(p)
+    await saveCosts(p._id, costs)
+    res.json((await withCosts([p]))[0])
+  })
+)
+
+/* ------------------------------ Profit & loss ------------------------------ */
+// Successful orders: what the customer paid minus what we paid (stock + courier).
+// Returned orders: the courier was paid twice (there and back) for nothing, the
+// stock comes back. Pending orders are shown separately until they complete.
+const ymd = (t) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+const istMidnight = (s) => new Date(`${s}T00:00:00+05:30`)
+const addDays = (s, n) => ymd(istMidnight(s).getTime() + n * DAY + 6 * 60 * 60 * 1000)
+const ISO = /^\d{4}-\d{2}-\d{2}$/
+function plRange({ period = 'month', date, from, to }) {
+  const today = ymd(Date.now())
+  const d = ISO.test(date || '') ? date : today
+  if (period === 'day') return { start: d, end: d, by: 'day' }
+  if (period === 'week') return { start: addDays(d, -6), end: d, by: 'day' }
+  if (period === 'year') return { start: `${d.slice(0, 4)}-01-01`, end: `${d.slice(0, 4)}-12-31`, by: 'month' }
+  if (period === 'custom') {
+    let a = ISO.test(from || '') ? from : d, b = ISO.test(to || '') ? to : a
+    if (a > b) [a, b] = [b, a]
+    if (istMidnight(b) - istMidnight(a) > 366 * DAY) a = addDays(b, -365)
+    return { start: a, end: b, by: istMidnight(b) - istMidnight(a) > 92 * DAY ? 'month' : 'day' }
+  }
+  const [y, m] = d.split('-').map(Number)
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  return { start: `${d.slice(0, 7)}-01`, end: `${d.slice(0, 7)}-${String(last).padStart(2, '0')}`, by: 'day' }
+}
+const plOutcome = (o) => {
+  if (o.status === 'Returned') return 'returned'
+  if (['Cancelled', 'Payment Rejected'].includes(o.status) || o.payment?.status === 'rejected') return 'cancelled'
+  if (['paid', 'cod_collected'].includes(o.payment?.status) || o.status === 'Delivered') return 'success'
+  return 'pending'
+}
+const blank = () => ({ sales: 0, fees: 0, goodsCost: 0, courierCost: 0, gross: 0, returnsLoss: 0, net: 0, orders: 0, returns: 0 })
+
+router.get(
+  '/profit',
+  asyncHandler(async (req, res) => {
+    const r = plRange(req.query)
+    const since = istMidnight(r.start), until = new Date(istMidnight(r.end).getTime() + DAY)
+    const orders = await Order.find({ createdAt: { $gte: since, $lt: until } })
+      .select('orderNo createdAt status payment.status subtotal shippingFee codFee total items customerName shippingAddress.name')
+      .sort('-createdAt').lean()
+    // Cost snapshots taken at checkout; older orders fall back to today's costs
+    const snaps = new Map((await OrderCost.find({ order: { $in: orders.map((o) => o._id) } }).lean()).map((c) => [String(c.order), c]))
+    const need = orders.filter((o) => !snaps.has(String(o._id)))
+    const map = need.length ? await costMap(need.flatMap((o) => o.items.map((i) => i.product))) : new Map()
+
+    const totals = blank()
+    const pending = { orders: 0, value: 0 }
+    const cancelled = { orders: 0 }
+    const buckets = new Map()
+    const products = new Map()
+    const returnsList = []
+    let missingOrders = 0, estimated = 0
+    // Every day/month in range, so the chart has no gaps
+    if (r.by === 'month') {
+      for (let y = +r.start.slice(0, 4), m = +r.start.slice(5, 7); `${y}-${String(m).padStart(2, '0')}` <= r.end.slice(0, 7); m === 12 ? (y++, m = 1) : m++)
+        buckets.set(`${y}-${String(m).padStart(2, '0')}`, blank())
+    } else {
+      for (let k = r.start; k <= r.end; k = addDays(k, 1)) buckets.set(k, blank())
+    }
+    const lineCost = (c, it) => c?.lines?.find((l) => l.sku === it.variantSku && String(l.product) === String(it.product))
+
+    for (const o of orders) {
+      const kind = plOutcome(o)
+      if (kind === 'cancelled') { cancelled.orders++; continue }
+      if (kind === 'pending') { pending.orders++; pending.value += o.total || 0; continue }
+      let c = snaps.get(String(o._id))
+      if (!c) { c = costOfItems(o.items, map); estimated++ }
+      if (c.missing) missingOrders++
+      const key = r.by === 'month' ? ymd(o.createdAt).slice(0, 7) : ymd(o.createdAt)
+      const b = buckets.get(key) || blank()
+      for (const t of [totals, b]) {
+        if (kind === 'success') {
+          t.orders++
+          t.sales += o.subtotal || 0
+          t.fees += (o.shippingFee || 0) + (o.codFee || 0)
+          t.goodsCost += c.goodsCost || 0
+          t.courierCost += c.courierCost || 0
+        } else {
+          t.returns++
+          t.returnsLoss += 2 * (c.courierCost || 0)
+        }
+      }
+      buckets.set(key, b)
+      for (const it of o.items) {
+        const lc = lineCost(c, it) || { costPrice: 0, courierCharge: 0 }
+        const p = products.get(it.name) || { name: it.name, product: it.product, image: it.image, qty: 0, sales: 0, goodsCost: 0, courierCost: 0, returned: 0, returnsLoss: 0 }
+        if (kind === 'success') {
+          p.qty += it.qty; p.sales += it.price * it.qty
+          p.goodsCost += (lc.costPrice || 0) * it.qty; p.courierCost += (lc.courierCharge || 0) * it.qty
+        } else {
+          p.returned += it.qty; p.returnsLoss += 2 * (lc.courierCharge || 0) * it.qty
+        }
+        products.set(it.name, p)
+      }
+      if (kind === 'returned') returnsList.push({ orderNo: o.orderNo, createdAt: o.createdAt, customer: o.customerName || o.shippingAddress?.name || '', total: o.total, loss: 2 * (c.courierCost || 0), items: o.items.map((i) => `${i.name} × ${i.qty}`).join(', ') })
+    }
+    const finish = (t) => { t.gross = t.sales + t.fees - t.goodsCost - t.courierCost; t.net = t.gross - t.returnsLoss; return t }
+    finish(totals)
+    const productRows = [...products.values()].map((p) => ({ ...p, profit: p.sales - p.goodsCost - p.courierCost - p.returnsLoss }))
+      .sort((a, b) => a.profit - b.profit)
+    await withImages([{ items: productRows }])
+    res.json({
+      period: req.query.period || 'month', start: r.start, end: r.end, by: r.by,
+      totals, pending, cancelled,
+      margin: totals.sales + totals.fees ? +((totals.net / (totals.sales + totals.fees)) * 100).toFixed(1) : 0,
+      series: [...buckets.entries()].map(([date, b]) => ({ date, ...finish(b) })),
+      products: productRows, returns: returnsList.slice(0, 100),
+      missingOrders, estimated,
+    })
   })
 )
 router.delete(
