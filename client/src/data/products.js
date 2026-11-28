@@ -20,10 +20,6 @@ export const filterOptions = {
   diet: ['chicken', 'egg', 'veg', 'milk'],
 }
 
-// Branded placeholder image. text = label, bg/fg = hex (no #).
-const ph = (text, bg = 'FDB022', fg = '1a1a1a') =>
-  `https://placehold.co/800x800/${bg}/${fg}/png?text=${encodeURIComponent(text)}`
-
 export const products = [
   /* ----------------------------- DROOLS (food) ---------------------------- */
   {
