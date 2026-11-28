@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, LayoutGrid, Pill, ShoppingCart } from 'lucide-react'
+import { Home, LayoutGrid, BriefcaseMedical, ShoppingCart } from 'lucide-react'
 import { useCart } from '@/store/cart'
 import { LogoMark } from './Logo'
 import { haptic } from '@/lib/feedback'
@@ -14,7 +14,7 @@ export default function BottomNav() {
     { to: '/', label: 'Home', Icon: Home, active: pathname === '/' },
     { to: '/products', label: 'Categories', Icon: LayoutGrid, active: ['/products', '/search'].includes(pathname) || pathname.startsWith('/category/') || pathname.startsWith('/product/') },
     { to: '/request-medicine', label: 'Request', center: true, active: pathname === '/request-medicine' },
-    { to: '/category/health', label: 'Pharmacy', Icon: Pill, active: pathname === '/category/health' },
+    { to: '/category/health', label: 'Pharmacy', Icon: BriefcaseMedical, active: pathname === '/category/health' },
     { to: '/cart', label: 'Cart', Icon: ShoppingCart, active: pathname === '/cart' || pathname === '/checkout', badge: count, cartTarget: true },
   ]
   const activeIdx = items.findIndex((i) => i.active)

@@ -122,10 +122,10 @@ function Toast({ t }) {
     <div role="status" className="pointer-events-auto animate-toast-in card bg-white p-3 pr-2 flex gap-3 items-start shadow-[0_18px_40px_-16px_rgba(26,52,80,.45)] ring-1 ring-brand-100">
       <Thumb src={t.image} admin={t.admin} />
       <button type="button" onClick={open} className="flex-1 min-w-0 text-left">
-        <p className={`text-[11px] font-extrabold uppercase tracking-wider ${t.type === 'account' && t.status === 'Blocked' ? 'text-red-600' : 'text-brand-600'}`}>{t.type === 'review' ? (t.admin ? '⭐ New review' : '⭐ Review update') : t.admin ? '🛒 New order' : t.type === 'account' ? '🔒 Account update' : '🐾 Order update'}</p>
+        <p className={`text-[11px] font-extrabold uppercase tracking-wider ${t.type === 'account' && t.status === 'Blocked' ? 'text-red-600' : 'text-brand-600'}`}>{t.type === 'blog' ? (t.admin ? '📝 Blog post to review' : '📝 Blog update') : t.type === 'review' ? (t.admin ? '⭐ New review' : '⭐ Review update') : t.admin ? '🛒 New order' : t.type === 'account' ? '🔒 Account update' : '🐾 Order update'}</p>
         <p className="font-bold text-sm text-ink-900 leading-snug">{t.title}</p>
         <p className="text-xs text-ink-500 mt-0.5 line-clamp-2">{t.body}</p>
-        <span className="inline-block mt-1.5 text-xs font-bold text-brand-600">{t.type === 'review' ? (t.admin ? 'Review it →' : 'See it →') : t.admin ? 'Open order →' : t.type === 'account' ? 'View details →' : 'View order →'}</span>
+        <span className="inline-block mt-1.5 text-xs font-bold text-brand-600">{t.type === 'blog' ? (t.admin ? 'Review it →' : 'Open post →') : t.type === 'review' ? (t.admin ? 'Review it →' : 'See it →') : t.admin ? 'Open order →' : t.type === 'account' ? 'View details →' : 'View order →'}</span>
       </button>
       <button type="button" onClick={() => drop(t._id)} aria-label="Dismiss" className="p-1 text-ink-500 hover:text-ink-900"><X size={16} /></button>
     </div>

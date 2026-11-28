@@ -34,7 +34,7 @@ export default function Header() {
   const { pathname } = useLocation()
   const [params] = useSearchParams()
   const activeCat = pathname.startsWith('/category/') ? pathname.split('/')[2] : pathname === '/products' ? '' : null
-  const accountTo = user ? (user.role === 'admin' ? '/admin' : '/account') : '/login'
+  const accountTo = user ? (user.role === 'admin' ? '/admin' : user.role === 'author' ? '/author' : '/account') : '/login'
 
   useEffect(() => { setOpen(false) }, [pathname, params])
   useEffect(() => {
@@ -186,6 +186,7 @@ export default function Header() {
                   </Link>
                 )
               })}
+              <NavLink to="/blog" className={({ isActive }) => `relative px-3 py-1.5 text-sm font-semibold transition ${isActive ? 'text-brand-600' : 'text-ink-700 hover:text-brand-600'}`}>Blog</NavLink>
               <Link to="/request-medicine" className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-bold bg-pine-800 text-white hover:bg-pine-700 transition">
                 <Camera size={15} /> Request a medicine
               </Link>
@@ -215,6 +216,7 @@ export default function Header() {
                 <span className="min-w-0"><span className="block font-bold text-sm text-ink-900">Request a medicine / product</span>
                   <span className="block text-xs text-ink-500">Not on the site? Send a photo, we’ll source it.</span></span>
               </Link>
+              <Link to="/blog" className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-xl font-semibold text-ink-700 hover:bg-sand-100"><span className="w-9 h-9 rounded-full bg-sand-100 grid place-items-center">📝</span><span className="flex-1">Pet care blog</span><ChevronRight size={16} className="text-ink-500" /></Link>
               <p className="px-3 pt-2 pb-1.5 text-[11px] font-extrabold tracking-widest text-ink-500 uppercase">Shop by category</p>
               {catNav.map((l, i) => (
                 <Link key={l.label} to={l.to} style={{ animation: `fade-up .4s ${0.04 * i + 0.1}s both` }}

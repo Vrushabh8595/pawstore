@@ -10,7 +10,7 @@ const CAT_EMOJI = { 'dry-food': '🦴', 'wet-food': '🍲', treats: '🍪', 'col
 const COLS = [
   { h: 'Quick links', links: [['All products', '/products'], ['Today’s offers', '/offers'], ['Request a medicine', '/request-medicine'], ['Under ₹300', '/products?sort=price-asc'], ['My orders', '/account'], ['Wishlist', '/wishlist']] },
   { h: 'Help', links: [['Track order', '/account'], ['Shipping policy', '/shipping-policy'], ['Refund & returns', '/refund-policy'], ['Contact us', '/contact-us']] },
-  { h: 'Company', links: [['About AnimalVeda', '/about-us'], ['Privacy policy', '/privacy-policy'], ['Terms & conditions', '/terms-and-conditions']] },
+  { h: 'Company', links: [['About AnimalVeda', '/about-us'], ['Pet care blog', '/blog'], ['Privacy policy', '/privacy-policy'], ['Terms & conditions', '/terms-and-conditions']] },
 ]
 const ANIMALS = [['🐕', 'Dogs'], ['🐈', 'Cats'], ['🐄', 'Cattle'], ['🐐', 'Goats'], ['🐓', 'Poultry'], ['🐎', 'Horses'], ['🦜', 'Birds']]
 
