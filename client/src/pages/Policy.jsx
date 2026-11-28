@@ -21,7 +21,7 @@ const content = {
         '- Reviews: ratings and reviews you write, shown with your first name.',
         '- Location (only if you choose it): when you tap “Use my current location”, your browser shares your location once so we can fill in your address. It is sent to OpenStreetMap (Nominatim) or BigDataCloud to look up the address and is not stored by us apart from the address you save.',
         '- Usage data: pages you visit, the website that sent you, device type (mobile, tablet or desktop) and a random visitor ID kept in your browser. We use this only to understand how the store is used. Page-view records are deleted automatically after 120 days.',
-        '- Blog authors: if you write for our blog, your name, short bio and photo are shown publicly with your articles.',
+        '- Blog authors: if you write for our blog, we keep your name, email and login details to manage your author account. Articles are published under the AnimalVeda name, and your details are not shown on the website.',
       ]],
       ['2. Why we use it', [
         '- To create and secure your account, and keep you signed in.',
