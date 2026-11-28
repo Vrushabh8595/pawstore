@@ -28,6 +28,27 @@ async function clerkSessionToken() {
   try { return await session.getToken({ skipCache: true }) } catch { return null }
 }
 
+// The Google profile photo Clerk knows about ('' when the Google account has none)
+export function googleImageUrl() {
+  const u = window.Clerk?.user
+  return u?.hasImage && typeof u.imageUrl === 'string' ? u.imageUrl : ''
+}
+
+// Signed-in Google customers who haven't chosen their own photo get their
+// Google photo (once per browser session; the server skips it if unchanged).
+async function syncGooglePhoto(user, set) {
+  if (user?.provider !== 'google' || ['upload', 'none'].includes(user.avatarSource)) return
+  try { if (sessionStorage.getItem('animalveda-gphoto')) return } catch { /* ignore */ }
+  for (let i = 0; i < 40 && !window.Clerk?.loaded; i++) await sleep(250)
+  const imageUrl = googleImageUrl()
+  if (!imageUrl) return
+  try {
+    const res = await api.post('/auth/me/google-photo', { imageUrl })
+    try { sessionStorage.setItem('animalveda-gphoto', '1') } catch { /* ignore */ }
+    if (res?.user) { cache.set(res.user); set({ user: res.user }) }
+  } catch { /* not important */ }
+}
+
 const cachedUser = authToken.get() ? cache.get() : null
 
 export const useAuth = create((set, get) => {
@@ -53,7 +74,7 @@ export const useAuth = create((set, get) => {
       for (let attempt = 0; attempt < 6; attempt++) {
         try {
           const { user } = await api.get('/auth/me')
-          if (mine === seq) { cache.set(user); set({ user, ready: true }) }
+          if (mine === seq) { cache.set(user); set({ user, ready: true }); syncGooglePhoto(user, set) }
           return
         } catch (e) {
           if (mine !== seq) return
@@ -61,7 +82,7 @@ export const useAuth = create((set, get) => {
             // Our session is gone — if Google is still signed in, swap it for a new one.
             const ct = await clerkSessionToken()
             if (ct && mine === seq) {
-              try { const res = await api.post('/auth/clerk', { token: ct }); if (mine === seq) signedIn(res.user, res.token); return } catch { /* fall through */ }
+              try { const img = googleImageUrl(); const res = await api.post('/auth/clerk', { token: ct, ...(img ? { imageUrl: img } : {}) }); if (mine === seq) signedIn(res.user, res.token); return } catch { /* fall through */ }
             }
             if (mine === seq) signedOut()
             return
@@ -86,7 +107,8 @@ export const useAuth = create((set, get) => {
 
     // Exchange a Clerk (Google) session token for our own session
     async loginWithClerk(token) {
-      const res = await api.post('/auth/clerk', { token })
+      const imageUrl = googleImageUrl()
+      const res = await api.post('/auth/clerk', { token, ...(imageUrl ? { imageUrl } : {}) })
       return signedIn(res.user, res.token)
     },
 
