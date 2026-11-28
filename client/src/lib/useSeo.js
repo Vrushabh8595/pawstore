@@ -9,30 +9,36 @@ function meta(attr, key, content) {
   el.setAttribute('content', content)
 }
 
-// Keeps <title>, description, canonical, Open Graph and JSON-LD in sync on SPA navigation.
+// Writes <title>, description, canonical, Open Graph and JSON-LD into <head>.
+export function applySeo(s) {
+  document.title = s.title
+  meta('name', 'description', s.description)
+  meta('name', 'robots', s.robots || 'index, follow, max-image-preview:large')
+  meta('property', 'og:title', s.title)
+  meta('property', 'og:description', s.description)
+  meta('property', 'og:url', s.canonical)
+  meta('property', 'og:type', s.type || 'website')
+  meta('property', 'og:image', s.image)
+  meta('name', 'twitter:card', 'summary_large_image')
+  let link = document.head.querySelector('link[rel="canonical"]')
+  if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link) }
+  link.href = s.canonical
+  document.head.querySelectorAll('script[data-seo-ld]').forEach((n) => n.remove())
+  for (const ld of s.jsonLd || []) {
+    const sc = document.createElement('script')
+    sc.type = 'application/ld+json'
+    sc.dataset.seoLd = ''
+    sc.textContent = JSON.stringify(ld)
+    document.head.appendChild(sc)
+  }
+}
+
+// Keeps the <head> in sync on SPA navigation. Blog pages load their data from
+// the API and set their own tags (applySeo) once it arrives.
 export function useSeo() {
   const { pathname } = useLocation()
   useEffect(() => {
-    const s = seoFor(pathname)
-    document.title = s.title
-    meta('name', 'description', s.description)
-    meta('name', 'robots', s.robots || 'index, follow, max-image-preview:large')
-    meta('property', 'og:title', s.title)
-    meta('property', 'og:description', s.description)
-    meta('property', 'og:url', s.canonical)
-    meta('property', 'og:type', s.type || 'website')
-    meta('property', 'og:image', s.image)
-    meta('name', 'twitter:card', 'summary_large_image')
-    let link = document.head.querySelector('link[rel="canonical"]')
-    if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link) }
-    link.href = s.canonical
-    document.head.querySelectorAll('script[data-seo-ld]').forEach((n) => n.remove())
-    for (const ld of s.jsonLd) {
-      const sc = document.createElement('script')
-      sc.type = 'application/ld+json'
-      sc.dataset.seoLd = ''
-      sc.textContent = JSON.stringify(ld)
-      document.head.appendChild(sc)
-    }
+    if (pathname === '/blog' || pathname.startsWith('/blog/')) return
+    applySeo(seoFor(pathname))
   }, [pathname])
 }

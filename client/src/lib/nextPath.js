@@ -8,6 +8,7 @@ export function rememberNext(search) {
 }
 export function afterLoginPath(user) {
   if (user?.role === 'admin') return '/admin'
+  if (user?.role === 'author') return '/author'
   try { const p = safe(sessionStorage.getItem(KEY)); sessionStorage.removeItem(KEY); if (p) return p } catch { /* ignore */ }
   return '/account'
 }
