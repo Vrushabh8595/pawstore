@@ -32,7 +32,7 @@ export const STATIC_PAGES = {
 }
 
 // Pages that should never be indexed
-export const NOINDEX = ['/cart', '/checkout', '/wishlist', '/login', '/register', '/search', '/account', '/admin', '/order', '/sso-callback', '/auth']
+export const NOINDEX = ['/author', '/cart', '/checkout', '/wishlist', '/login', '/register', '/search', '/account', '/admin', '/order', '/sso-callback', '/auth']
 
 const abs = (p) => SITE_URL + (p === '/' ? '' : p)
 const clip = (s, n = 158) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s)
