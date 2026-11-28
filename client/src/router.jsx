@@ -32,6 +32,13 @@ import AdminUsers from './pages/admin/Users'
 import AdminUserDetail from './pages/admin/UserDetail'
 import AdminTraffic from './pages/admin/Traffic'
 import AdminProfit from './pages/admin/Profit'
+import AdminBlog from './pages/admin/Blog'
+import AdminBlogPost from './pages/admin/BlogPost'
+import BlogList from './pages/blog/BlogList'
+import BlogPost from './pages/blog/BlogPost'
+import AuthorLayout from './pages/author/AuthorLayout'
+import AuthorHome from './pages/author/AuthorHome'
+import AuthorPost from './pages/author/AuthorPost'
 
 function Protected({ children, role }) {
   const user = useAuth((s) => s.user)
@@ -42,7 +49,7 @@ function Protected({ children, role }) {
     </div>
   )
   if (!user) return <Navigate to="/login" replace />
-  if (role && user.role !== role) return <Navigate to="/" replace />
+  if (role && ![].concat(role).includes(user.role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -84,6 +91,10 @@ export const router = createBrowserRouter([
       { path: '/policy/:slug', element: <LegacyPolicy /> },
       { path: '/request', element: <Navigate to="/request-medicine" replace /> },
       { path: '/request-medicine', element: <Request /> },
+      { path: '/blog', element: <BlogList /> },
+      { path: '/blog/category/:category', element: <BlogList /> },
+      { path: '/blog/author/:author', element: <BlogList /> },
+      { path: '/blog/:slug', element: <BlogPost /> },
       {
         path: '/account',
         element: <Protected><AccountLayout /></Protected>,
@@ -110,6 +121,16 @@ export const router = createBrowserRouter([
       { path: 'users/:id', element: <AdminUserDetail /> },
       { path: 'traffic', element: <AdminTraffic /> },
       { path: 'profit', element: <AdminProfit /> },
+      { path: 'blog', element: <AdminBlog /> },
+      { path: 'blog/posts/:id', element: <AdminBlogPost /> },
+    ],
+  },
+  {
+    path: '/author',
+    element: <Protected role={['author', 'admin']}><AuthorLayout /></Protected>,
+    children: [
+      { index: true, element: <AuthorHome /> },
+      { path: 'posts/:id', element: <AuthorPost /> },
     ],
   },
 ])
