@@ -15,9 +15,8 @@ export default function PostCard({ p, big = false }) {
         </h2>
         {p.excerpt && <p className={`mt-2 text-ink-700 text-sm leading-relaxed ${big ? 'sm:text-base line-clamp-4' : 'line-clamp-3'}`}>{p.excerpt}</p>}
         <p className="mt-auto pt-4 text-xs text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-1">
-          {p.authorName && <span className="font-semibold text-ink-700">{p.authorName}</span>}
-          {p.publishedAt && <><span aria-hidden="true">·</span><time dateTime={p.publishedAt}>{blogDate(p.publishedAt)}</time></>}
-          <span aria-hidden="true">·</span><span className="inline-flex items-center gap-1"><Clock size={12} /> {p.readMinutes} min read</span>
+          {p.publishedAt && <><time dateTime={p.publishedAt}>{blogDate(p.publishedAt)}</time><span aria-hidden="true">·</span></>}
+          <span className="inline-flex items-center gap-1"><Clock size={12} /> {p.readMinutes} min read</span>
         </p>
       </div>
     </article>

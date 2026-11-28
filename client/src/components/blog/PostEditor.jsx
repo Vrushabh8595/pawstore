@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Link2, ImagePlus, Eye, PenLine, Loader2, Send, Save, Trash2, Undo2, Upload, X, Globe, Check, AlertCircle } from 'lucide-react'
+import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Link2, ImagePlus, Eye, PenLine, Loader2, Send, Save, Trash2, Undo2, Upload, X, Globe, Check, AlertCircle, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
-import { BLOG_CATEGORIES } from '@/lib/blog'
+import { useBlogCategories } from '@/lib/blog'
 import { SITE_URL } from '@/lib/seo'
 import { compressImage } from '@/lib/blog'
 import { playSound, haptic } from '@/lib/feedback'
@@ -37,6 +37,7 @@ export default function PostEditor({ mode, id, back }) {
   const [slugTouched, setSlugTouched] = useState(false)
   const area = useRef(null)
   const coverInput = useRef(null)
+  const cats = useBlogCategories()
   const imgInput = useRef(null)
 
   useEffect(() => {
@@ -247,9 +248,10 @@ export default function PostEditor({ mode, id, back }) {
             <label className="block"><span className="text-sm font-bold">Category <span className="text-red-500">*</span></span>
               <select value={f.category} onChange={(e) => set('category')(e.target.value)} disabled={locked} className={input}>
                 <option value="">Choose…</option>
-                {BLOG_CATEGORIES.map(([s, n]) => <option key={s} value={s}>{n}</option>)}
+                {cats.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
               </select></label>
             <E k="category" />
+            {!locked && <NewCategory apiBase={apiBase} onAdded={(c) => set('category')(c.slug)} />}
             <label className="block"><span className="text-sm font-bold">Tags</span>
               <input value={f.tags} onChange={(e) => set('tags')(e.target.value)} disabled={locked} placeholder="puppy, deworming, vaccination" className={input} /></label>
             <p className="text-[11px] text-ink-500">Separate with commas. Up to 10.</p>
@@ -263,6 +265,36 @@ export default function PostEditor({ mode, id, back }) {
           </div>
         </aside>
       </div>
+    </div>
+  )
+}
+
+// "+ New category": adds it for everyone and selects it
+function NewCategory({ apiBase, onAdded }) {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const add = async () => {
+    if (name.trim().length < 2) { setErr('Use at least 2 characters.'); return }
+    setBusy(true); setErr('')
+    try {
+      const r = await api.post(`${apiBase === '/author' ? '/author' : '/admin/blog'}/categories`, { name: name.trim() })
+      await qc.invalidateQueries({ queryKey: ['blog-categories'] })
+      onAdded(r.category); setName(''); setOpen(false)
+    } catch (x) { setErr(x.data?.errors?.name || x.message) } finally { setBusy(false) }
+  }
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 hover:underline"><Plus size={14} /> New category</button>
+  return (
+    <div className="rounded-xl bg-sand-50 ring-1 ring-ink-100 p-2.5">
+      <div className="flex gap-2">
+        <input autoFocus value={name} onChange={(e) => { setName(e.target.value); setErr('') }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') setOpen(false) }}
+          maxLength={40} placeholder="e.g. Bird care" aria-label="New category name" className="flex-1 min-w-0 border border-ink-200 rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 bg-white" />
+        <button type="button" onClick={add} disabled={busy} className="btn-primary !py-1.5 !px-3 text-xs">{busy ? <Loader2 size={14} className="animate-spin" /> : 'Add'}</button>
+        <button type="button" onClick={() => { setOpen(false); setErr('') }} aria-label="Cancel" className="p-1.5 rounded-lg text-ink-500 hover:bg-ink-100"><X size={15} /></button>
+      </div>
+      {err && <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{err}</p>}
     </div>
   )
 }
