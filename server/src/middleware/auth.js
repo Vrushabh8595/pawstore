@@ -22,3 +22,9 @@ export function requireAdmin(req, res, next) {
   if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Admin access required' })
   next()
 }
+
+// Blog authors (and the admin) — checked on the backend for every author route
+export function requireAuthor(req, res, next) {
+  if (!['author', 'admin'].includes(req.user?.role)) return res.status(403).json({ message: 'Author access required' })
+  next()
+}

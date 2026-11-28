@@ -40,3 +40,6 @@ export const reviewLimiter = limiter(60 * 60 * 1000, 20, 'Too many reviews. Plea
 export const profileLimiter = limiter(15 * 60 * 1000, 30, 'Too many profile changes. Please wait a few minutes.')
 // Email change needs the password, so treat failures like login attempts
 export const emailChangeLimiter = limiter(15 * 60 * 1000, 8, 'Too many attempts. Please wait 15 minutes and try again.', { skipSuccessfulRequests: true })
+// Blog authors: saving drafts and uploading pictures
+export const blogWriteLimiter = limiter(15 * 60 * 1000, 120, 'Too many saves in a short time. Please wait a few minutes.')
+export const blogImageLimiter = limiter(60 * 60 * 1000, 60, 'Too many picture uploads. Please try again later.')
