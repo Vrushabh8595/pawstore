@@ -31,6 +31,7 @@ import AdminReviews from './pages/admin/Reviews'
 import AdminUsers from './pages/admin/Users'
 import AdminUserDetail from './pages/admin/UserDetail'
 import AdminTraffic from './pages/admin/Traffic'
+import AdminProfit from './pages/admin/Profit'
 
 function Protected({ children, role }) {
   const user = useAuth((s) => s.user)
@@ -108,6 +109,7 @@ export const router = createBrowserRouter([
       { path: 'users', element: <AdminUsers /> },
       { path: 'users/:id', element: <AdminUserDetail /> },
       { path: 'traffic', element: <AdminTraffic /> },
+      { path: 'profit', element: <AdminProfit /> },
     ],
   },
 ])
