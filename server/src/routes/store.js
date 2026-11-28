@@ -5,6 +5,7 @@ import { optionalAuth } from '../middleware/optionalAuth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { notifyNewOrder } from '../utils/notify.js'
 import { orderLimiter, trackLimiter } from '../middleware/security.js'
+import { recordOrderCost } from '../utils/costs.js'
 
 export const BLOCKED_MSG = 'Your account has been blocked, so you can’t place orders right now. Please contact our support team to get unblocked and keep shopping with AnimalVeda.'
 
@@ -81,6 +82,7 @@ router.post(
       statusHistory: [{ status: 'Pending Verification' }],
     })
     notifyNewOrder(order) // in-app alert + emails, in the background
+    recordOrderCost(order) // admin-only cost snapshot for profit & loss
     res.status(201).json({ order })
   })
 )
