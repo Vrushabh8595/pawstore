@@ -18,6 +18,7 @@ import requestRoutes from './routes/requests.js'
 import storeRoutes from './routes/store.js'
 import notificationRoutes from './routes/notifications.js'
 import reviewRoutes from './routes/reviews.js'
+import { seedDummyCosts } from './utils/costs.js'
 
 const app = express()
 app.set('trust proxy', 1) // behind Render's proxy — needed for correct rate-limit IPs
@@ -70,6 +71,7 @@ const PORT = process.env.PORT || 5000
 
 connectDB(process.env.MONGO_URI)
   .then(() => app.listen(PORT, () => console.log(`✓ API running on http://localhost:${PORT}`)))
+  .then(() => seedDummyCosts()) // one-time sample costs for older products
   .catch((err) => {
     console.error('Failed to start:', err.message)
     process.exit(1)
