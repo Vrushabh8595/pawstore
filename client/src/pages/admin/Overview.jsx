@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { IndianRupee, ShoppingBag, Users, Radio, Eye, Clock, XCircle, Inbox, TrendingUp, Percent, RefreshCw } from 'lucide-react'
+import { IndianRupee, ShoppingBag, Users, Radio, Eye, Clock, XCircle, Inbox, TrendingUp, TrendingDown, Percent, RefreshCw, Undo2, Wallet } from 'lucide-react'
 import { api } from '@/lib/api'
 import { inr } from '@/lib/format'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
@@ -29,6 +29,8 @@ export default function Overview() {
         <Stat icon={XCircle} tone="red" label="Failed / cancelled" value={fmtNum(d.orders.failed)} hint="Rejected, cancelled, returned" />
         <Stat icon={Inbox} tone="violet" label="New product requests" value={fmtNum(d.openRequests)} hint="Waiting for a call back" />
       </div>
+
+      <ProfitSummary />
 
       <div className="grid lg:grid-cols-3 gap-4 mt-4">
         <Panel title="Orders & revenue (last 14 days)" className="lg:col-span-2">
@@ -97,5 +99,31 @@ export default function Overview() {
         </Panel>
       )}
     </div>
+  )
+}
+
+// Today / this month profit and the loss from returns, linking to the full page
+function ProfitSummary() {
+  const day = useQuery({ queryKey: ['admin-profit', 'period=day'], queryFn: () => api.get('/admin/profit?period=day'), refetchInterval: 60_000 })
+  const month = useQuery({ queryKey: ['admin-profit', 'period=month'], queryFn: () => api.get('/admin/profit?period=month'), refetchInterval: 60_000 })
+  if (!day.data || !month.data) return null
+  const signed = (n) => (n < 0 ? '−' + inr(-n) : inr(n))
+  const Box = ({ title, value, hint, tone, Icon }) => (
+    <div className="rounded-xl bg-sand-50 p-3 sm:p-4 min-w-0">
+      <p className="text-xs font-semibold text-ink-500 flex items-center gap-1"><Icon size={13} /> {title}</p>
+      <p className={`text-xl font-extrabold truncate ${tone}`}>{value}</p>
+      <p className="text-xs text-ink-500 truncate">{hint}</p>
+    </div>
+  )
+  const t = day.data.totals, m = month.data.totals
+  return (
+    <Panel title="Profit & loss" className="mt-4" right={<Link to="/admin/profit" className="text-sm font-bold text-brand-600">Details →</Link>}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Box title="Today" Icon={t.net < 0 ? TrendingDown : TrendingUp} value={signed(t.net)} tone={t.net < 0 ? 'text-red-600' : 'text-green-700'} hint={`${t.orders} completed orders`} />
+        <Box title="This month" Icon={m.net < 0 ? TrendingDown : Wallet} value={signed(m.net)} tone={m.net < 0 ? 'text-red-600' : 'text-green-700'} hint={`${month.data.margin}% margin`} />
+        <Box title="Loss from returns (month)" Icon={Undo2} value={inr(m.returnsLoss)} tone="text-red-600" hint={`${m.returns} returned order${m.returns === 1 ? '' : 's'}`} />
+        <Box title="Stock + courier (month)" Icon={IndianRupee} value={inr(m.goodsCost + m.courierCost)} tone="text-ink-900" hint={`on ${inr(m.sales + m.fees)} sales`} />
+      </div>
+    </Panel>
   )
 }
