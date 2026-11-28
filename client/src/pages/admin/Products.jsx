@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, AlertTriangle, Lock, Truck } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useFieldErrors } from '@/components/FormField'
 import { ItemImg } from './ui'
@@ -18,11 +18,15 @@ const LIFE = ['puppy', 'adult', 'senior', 'all']
 const SIZES = ['small', 'medium', 'large']
 const TYPES = ['dry', 'wet', 'treats', 'accessory']
 
-const blankVariant = () => ({ sku: '', size: '', flavour: '', price: '', mrp: '', stock: 0 })
+const blankVariant = () => ({ sku: '', size: '', flavour: '', price: '', mrp: '', stock: 0, costPrice: '' })
+// Profit per unit after buying cost and courier (one way)
+const unitProfit = (v, courier) => (Number(v.price) || 0) - (Number(v.costPrice) || 0) - (Number(courier) || 0)
+const marginPct = (v, courier) => (Number(v.price) > 0 ? Math.round((unitProfit(v, courier) / Number(v.price)) * 100) : 0)
+const hasCost = (v) => v.costPrice !== '' && v.costPrice != null
 const blankProduct = () => ({
   name: '', slug: '', brand: '', category: '', images: [''], short: '', description: '',
   lifeStage: 'adult', breedSize: 'medium', foodType: 'dry', diet: '', tags: '',
-  rating: 0, reviews: 0, variants: [blankVariant()],
+  rating: 0, reviews: 0, variants: [blankVariant()], courierCharge: '',
 })
 
 export default function AdminProducts() {
@@ -31,13 +35,14 @@ export default function AdminProducts() {
 
   const productsQ = useQuery({
     queryKey: ['admin-products'],
-    queryFn: () => api.get('/products?limit=200&sort=popular'),
+    queryFn: () => api.get('/admin/products'), // includes cost price + courier charge (admin only)
   })
   const categoriesQ = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/products/categories') })
 
   const products = productsQ.data?.items || []
   const categories = categoriesQ.data || []
   const lowStock = useMemo(() => products.filter((p) => totalStock(p) < LOW_STOCK), [products])
+  const noCost = useMemo(() => products.filter((p) => p.costDummy || p.courierCharge === '' || (p.variants || []).some((v) => !hasCost(v))), [products])
 
   const save = useMutation({
     mutationFn: (payload) =>
@@ -47,6 +52,7 @@ export default function AdminProducts() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-products'] })
       qc.invalidateQueries({ queryKey: ['catalog'] })
+      qc.invalidateQueries({ queryKey: ['admin-profit'] })
       setEditing(null)
     },
   })
@@ -76,15 +82,22 @@ export default function AdminProducts() {
         </div>
       )}
 
+      {noCost.length > 0 && (
+        <div className="mb-5 rounded-xl border border-sky-200 bg-sky-50 p-4 flex gap-3">
+          <Lock className="text-sky-600 shrink-0 mt-0.5" size={18} />
+          <p className="text-sm text-sky-800"><b>{noCost.length} product{noCost.length > 1 ? 's use' : ' uses'} sample or missing costs.</b> Open each one and enter your real buying price and courier charge, so the Profit &amp; loss page is accurate.</p>
+        </div>
+      )}
+
       {productsQ.isLoading ? (
         <div className="card p-10 text-center text-ink-500">Loading products…</div>
       ) : productsQ.isError ? (
         <div className="card p-10 text-center text-red-600">Couldn’t load products. Is the API awake? ({String(productsQ.error.message)})</div>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-sm min-w-[760px]">
+          <table className="w-full text-sm min-w-[860px]">
             <thead className="bg-ink-50 text-left text-ink-500">
-              <tr><Th>Product</Th><Th>Category</Th><Th>Variants</Th><Th>Price from</Th><Th>Total stock</Th><Th>Actions</Th></tr>
+              <tr><Th>Product</Th><Th>Category</Th><Th>Variants</Th><Th>Price from</Th><Th>Margin</Th><Th>Total stock</Th><Th>Actions</Th></tr>
             </thead>
             <tbody>
               {products.map((p) => {
@@ -100,6 +113,7 @@ export default function AdminProducts() {
                     <Td className="capitalize">{(p.category || '').replace(/-/g, ' ')}</Td>
                     <Td>{(p.variants || []).map((v) => v.size).filter(Boolean).join(', ') || 'None'}</Td>
                     <Td className="font-semibold">{inr(minPrice(p))}</Td>
+                    <Td><MarginCell p={p} /></Td>
                     <Td>
                       <span className={cx('font-bold', stock >= 30 ? 'text-green-600' : stock >= LOW_STOCK ? 'text-amber-600' : 'text-red-600')}>{stock}</span>
                     </Td>
@@ -158,13 +172,15 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
       name: !f.name?.trim() ? 'Enter the product name.' : null,
       category: !f.category ? 'Choose a category.' : null,
       variants: !(f.variants || []).length ? 'Add at least one size / variant.' : null,
+      courierCharge: f.courierCharge === '' || f.courierCharge == null || !(Number(f.courierCharge) >= 0) ? 'Enter the courier partner charge per unit (₹0 if free).' : null,
     }
     ;(f.variants || []).forEach((v, i) => {
-      rules[`v${i}`] = !String(v.sku || '').trim() ? `Variant ${i + 1}: enter a SKU.` : !String(v.size || '').trim() ? `Variant ${i + 1}: enter the size / weight.` : !(Number(v.price) > 0) ? `Variant ${i + 1}: enter a price above 0.` : v.mrp && Number(v.mrp) < Number(v.price) ? `Variant ${i + 1}: MRP can’t be lower than the price.` : null
+      rules[`v${i}`] = !String(v.sku || '').trim() ? `Variant ${i + 1}: enter a SKU.` : !String(v.size || '').trim() ? `Variant ${i + 1}: enter the size / weight.` : !(Number(v.price) > 0) ? `Variant ${i + 1}: enter a price above 0.` : v.mrp && Number(v.mrp) < Number(v.price) ? `Variant ${i + 1}: MRP can’t be lower than the price.` : !(Number(v.costPrice) > 0) ? `Variant ${i + 1}: enter your buying (cost) price.` : null
     })
     if (!fe.validate(rules)) return
+    const { costDummy, ...rest } = f
     const payload = {
-      ...f,
+      ...rest,
       slug: f.slug || slugify(f.name),
       images: (f.images || []).map((s) => s.trim()).filter(Boolean),
       diet: String(f.diet || '').split(',').map((s) => s.trim()).filter(Boolean),
@@ -174,7 +190,9 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
       variants: (f.variants || []).map((v) => ({
         sku: v.sku, size: v.size, flavour: v.flavour,
         price: Number(v.price) || 0, mrp: Number(v.mrp) || 0, stock: Number(v.stock) || 0,
+        costPrice: Number(v.costPrice) || 0,
       })),
+      courierCharge: Number(f.courierCharge) || 0,
     }
     onSave(payload)
   }
@@ -230,18 +248,37 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
             <div className="space-y-2 mt-1">
               {f.variants.map((v, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-end bg-ink-50 rounded-lg p-2">
-                  <Mini className="col-span-3" label="SKU *" value={v.sku} onChange={(x) => setVariant(i, 'sku', x)} />
-                  <Mini className="col-span-3" label="Size / Weight *" value={v.size} onChange={(x) => setVariant(i, 'size', x)} />
-                  <Mini className="col-span-2" label="Price *" type="number" value={v.price} onChange={(x) => setVariant(i, 'price', x)} />
-                  <Mini className="col-span-2" label="MRP" type="number" value={v.mrp} onChange={(x) => setVariant(i, 'mrp', x)} />
-                  <Mini className="col-span-1" label="Stock" type="number" value={v.stock} onChange={(x) => setVariant(i, 'stock', x)} />
-                  <button type="button" onClick={() => delVariant(i)} className="col-span-1 p-2 text-red-500 hover:bg-red-50 rounded-lg justify-self-center"><Trash2 size={15} /></button>
+                  <Mini className="col-span-6 sm:col-span-4" label="SKU *" value={v.sku} onChange={(x) => setVariant(i, 'sku', x)} />
+                  <Mini className="col-span-6 sm:col-span-4" label="Size / Weight *" value={v.size} onChange={(x) => setVariant(i, 'size', x)} />
+                  <Mini className="col-span-4 sm:col-span-3" label="Stock" type="number" value={v.stock} onChange={(x) => setVariant(i, 'stock', x)} />
+                  <button type="button" onClick={() => delVariant(i)} title="Remove variation" className="col-span-2 sm:col-span-1 p-2 text-red-500 hover:bg-red-50 rounded-lg justify-self-center"><Trash2 size={15} /></button>
+                  <Mini className="col-span-4" label="Selling price *" type="number" value={v.price} onChange={(x) => setVariant(i, 'price', x)} />
+                  <Mini className="col-span-4" label="MRP" type="number" value={v.mrp} onChange={(x) => setVariant(i, 'mrp', x)} />
+                  <Mini className="col-span-4" label="Your cost price * 🔒" type="number" value={v.costPrice} onChange={(x) => setVariant(i, 'costPrice', x)} admin />
+                  {Number(v.price) > 0 && hasCost(v) && (
+                    <p className={`col-span-12 text-[11px] font-semibold ${unitProfit(v, f.courierCharge) < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                      {unitProfit(v, f.courierCharge) < 0 ? 'Loss' : 'Profit'} per unit after courier: {inr(unitProfit(v, f.courierCharge))} ({marginPct(v, f.courierCharge)}%)
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
           </div>
 
-          {Object.entries(fe.errors).filter(([k, m]) => m && (k === 'category' || k === 'variants' || /^v\d/.test(k))).map(([k, m]) => (
+          <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3">
+            <p className="text-sm font-bold text-sky-900 flex items-center gap-1.5"><Lock size={14} /> Admin only: never shown to customers</p>
+            {f.costDummy && <p className="mt-1 text-xs font-semibold text-amber-700">These cost numbers are samples. Replace them with your real figures and save.</p>}
+            <div className="grid sm:grid-cols-2 gap-3 mt-2 items-start">
+              <label className="block" data-field="courierCharge">
+                <span className="text-[11px] font-semibold text-ink-500 inline-flex items-center gap-1"><Truck size={12} /> Courier partner charge per unit (₹) *</span>
+                <input type="number" min="0" value={f.courierCharge ?? ''} onChange={(e) => { set('courierCharge', e.target.value); fe.clear('courierCharge') }}
+                  className={`w-full border rounded-md px-2 py-1.5 text-sm outline-none focus:border-brand-400 bg-white ${fe.errors.courierCharge ? 'border-red-400 ring-2 ring-red-100' : 'border-[#e5e5e0]'}`} />
+              </label>
+              <p className="text-xs text-sky-900/80 leading-relaxed">What you pay the courier to send one unit. A return costs this twice (there and back), which shows as return loss on the Profit &amp; loss page.</p>
+            </div>
+          </div>
+
+          {Object.entries(fe.errors).filter(([k, m]) => m && (k === 'category' || k === 'variants' || k === 'courierCharge' || /^v\d/.test(k))).map(([k, m]) => (
             <p key={k} data-field={k} role="alert" className="text-sm font-semibold text-red-600 bg-red-50 rounded-lg px-3 py-2">{m}</p>
           ))}
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
@@ -280,11 +317,25 @@ function Select({ label, value, onChange, options }) {
     </label>
   )
 }
-function Mini({ label, value, onChange, type = 'text', className = '' }) {
+function Mini({ label, value, onChange, type = 'text', className = '', admin }) {
   return (
     <label className={'block ' + className}>
-      <span className="text-[11px] font-semibold text-ink-500">{label}</span>
-      <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="w-full border border-[#e5e5e0] rounded-md px-2 py-1.5 text-sm outline-none focus:border-brand-400" />
+      <span className={`text-[11px] font-semibold ${admin ? 'text-sky-800' : 'text-ink-500'}`}>{label}</span>
+      <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`w-full border rounded-md px-2 py-1.5 text-sm outline-none focus:border-brand-400 ${admin ? 'border-sky-200 bg-sky-50/60' : 'border-[#e5e5e0]'}`} />
     </label>
+  )
+}
+
+// Lowest margin across a product's sizes (after courier)
+function MarginCell({ p }) {
+  const vs = (p.variants || []).filter((v) => Number(v.price) > 0 && hasCost(v))
+  if (!vs.length || p.courierCharge === '') return <span className="text-xs font-semibold text-ink-500">No cost yet</span>
+  const worst = vs.reduce((a, v) => (marginPct(v, p.courierCharge) < marginPct(a, p.courierCharge) ? v : a))
+  const m = marginPct(worst, p.courierCharge)
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <b className={m < 0 ? 'text-red-600' : m < 10 ? 'text-amber-600' : 'text-green-700'}>{m}%</b>
+      {p.costDummy && <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 rounded px-1.5 py-0.5">sample</span>}
+    </span>
   )
 }
