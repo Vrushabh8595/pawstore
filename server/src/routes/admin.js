@@ -157,6 +157,9 @@ const userStatsPipeline = [
   { $lookup: { from: 'presences', localField: '_id', foreignField: 'user', as: 'presence' } },
   { $project: {
     name: 1, email: 1, phone: 1, role: 1, createdAt: 1, blocked: 1, blockedReason: 1, blockedAt: 1,
+    provider: 1,
+    // Small thumbnail for lists (falls back to the full photo for older uploads)
+    avatar: { $ifNull: ['$avatarThumb', '$avatar'] },
     orderCount: { $size: '$orders' },
     spent: { $sum: { $map: { input: { $filter: { input: '$orders', cond: { $eq: ['$$this.outcome', 'success'] } } }, in: '$$this.total' } } },
     success: { $size: { $filter: { input: '$orders', cond: { $eq: ['$$this.outcome', 'success'] } } } },
@@ -189,6 +192,14 @@ router.get(
     const _id = new mongoose.Types.ObjectId(req.params.id)
     const [stats] = await User.aggregate([{ $match: { _id } }, ...userStatsPipeline])
     if (!stats) return res.status(404).json({ message: 'User not found' })
+    // Full-size photo and saved addresses for the customer page
+    const extra = await User.findById(_id).select('avatar avatarSource addresses').lean()
+    if (extra?.avatar) stats.avatar = extra.avatar
+    stats.avatarSource = extra?.avatarSource || (extra?.avatar ? 'upload' : '')
+    const addresses = (extra?.addresses || []).map((a) => ({
+      id: String(a._id), label: a.label || '', name: a.name || '', phone: a.phone || '', line1: a.line1 || '', landmark: a.landmark || '',
+      city: a.city || '', state: a.state || '', pincode: a.pincode || '', isDefault: !!a.isDefault,
+    })).sort((x, y) => Number(y.isDefault) - Number(x.isDefault))
     const orders = await withImages(await Order.find({ user: _id }).sort('-createdAt').limit(100).lean())
     const phones = [...new Set([stats.phone, ...orders.map((o) => o.shippingAddress?.phone)].filter(Boolean))]
     const [requests, views, favourite] = await Promise.all([
@@ -197,7 +208,7 @@ router.get(
       Order.aggregate([{ $match: { user: _id } }, { $unwind: '$items' }, { $group: { _id: '$items.name', qty: { $sum: '$items.qty' }, product: { $first: '$items.product' }, image: { $max: '$items.image' } } }, { $sort: { qty: -1 } }, { $limit: 5 }]).then(async (f) => { await withImages([{ items: f }]); return f }),
     ])
     res.json({
-      user: stats, orders, requests, views, favourite,
+      user: { ...stats, addresses }, orders, requests, views, favourite,
       live: stats.lastSeen ? Date.now() - new Date(stats.lastSeen).getTime() < LIVE_MS : false,
       avgOrderValue: stats.success ? Math.round(stats.spent / stats.success) : 0,
     })
