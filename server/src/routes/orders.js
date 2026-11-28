@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
 import { withImages } from '../utils/orderImages.js'
 import { claimLimiter } from '../middleware/security.js'
+import { recordOrderCost } from '../utils/costs.js'
 
 const router = Router()
 router.use(authenticate)
@@ -86,6 +87,7 @@ router.post(
       status: 'Pending Verification',
       statusHistory: [{ status: 'Pending Verification' }],
     })
+    recordOrderCost(order) // admin-only cost snapshot for profit & loss
     res.status(201).json(order)
   })
 )
