@@ -1,7 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Ban, ShieldCheck, Loader2, ArrowLeft, IndianRupee, ShoppingBag, CheckCircle2, Clock, XCircle, TrendingUp, Phone, Mail, CalendarDays, Eye } from 'lucide-react'
+import { Ban, ShieldCheck, Loader2, ArrowLeft, IndianRupee, ShoppingBag, CheckCircle2, Clock, XCircle, TrendingUp, Phone, Mail, CalendarDays, Eye, MapPin, Star } from 'lucide-react'
+import { LabelIcon, addressLine } from '@/components/AddressBook'
 import { api } from '@/lib/api'
 import { inr } from '@/lib/format'
 import StatusBadge, { PaymentBadge } from '@/components/StatusBadge'
@@ -20,13 +21,17 @@ export default function UserDetail() {
       <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm font-bold text-ink-500 hover:text-brand-600 mb-4"><ArrowLeft size={16} /> All users</Link>
 
       <div className="card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-        <Avatar name={u.name} live={live} size="w-16 h-16 text-xl" />
+        <Avatar name={u.name} src={u.avatar} live={live} size="w-20 h-20 text-2xl" />
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl sm:text-3xl truncate flex items-center gap-2">{u.name}{u.blocked && <span className="shrink-0 font-sans text-xs font-extrabold uppercase tracking-wider text-white bg-red-500 rounded-full px-2 py-1">Blocked</span>}</h1>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-500 mt-1">
             <span className="inline-flex items-center gap-1.5"><Mail size={14} />{u.email}</span>
             {u.phone && <a href={`tel:${u.phone}`} className="inline-flex items-center gap-1.5 hover:text-brand-600"><Phone size={14} />{u.phone}</a>}
             <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} />Member since {fmtDate(u.createdAt)}</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <span className="text-[11px] font-bold rounded-full px-2 py-0.5 bg-sand-100 text-ink-700">{u.provider === 'google' ? 'Signs in with Google' : 'Email & password'}</span>
+            {u.avatar && <span className="text-[11px] font-bold rounded-full px-2 py-0.5 bg-sand-100 text-ink-700">{u.avatarSource === 'google' ? 'Photo from Google' : 'Photo uploaded by customer'}</span>}
           </div>
         </div>
         <span className={`self-start sm:self-center text-xs font-extrabold px-3 py-1.5 rounded-full ${live ? 'bg-green-100 text-green-700' : 'bg-ink-100 text-ink-700'}`}>
@@ -72,6 +77,24 @@ export default function UserDetail() {
           <Panel title="Favourite products"><HBars rows={favourite} valueKey="qty" format={(n) => `× ${n}`} empty="No purchases yet" /></Panel>
         </div>
       </div>
+
+      <Panel title={`Saved addresses (${u.addresses?.length || 0})`} right={<MapPin size={16} className="text-ink-500" />} className="mt-4">
+        {!u.addresses?.length ? <p className="text-sm text-ink-500 py-6 text-center">No saved addresses.</p> : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {u.addresses.map((a) => (
+              <div key={a.id} className={`rounded-xl border p-3 text-sm ${a.isDefault ? 'border-brand-300 bg-brand-50/50' : 'border-ink-100'}`}>
+                <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                  <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider bg-sand-100 text-ink-700 rounded-full px-2 py-0.5"><LabelIcon label={a.label} size={11} /> {a.label || 'Other'}</span>
+                  {a.isDefault && <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider bg-brand-100 text-brand-700 rounded-full px-2 py-0.5"><Star size={10} className="fill-current" /> Default</span>}
+                </div>
+                <p className="font-bold">{a.name}</p>
+                <p className="text-ink-700 leading-snug break-words">{addressLine(a)}</p>
+                {a.phone && <a href={`tel:${a.phone}`} className="mt-1 inline-flex items-center gap-1 text-xs text-ink-500 hover:text-brand-600"><Phone size={12} /> {a.phone}</a>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
 
       <div className="grid lg:grid-cols-2 gap-4 mt-4">
         <Panel title="Recent activity on site" right={<Eye size={16} className="text-ink-500" />}>
