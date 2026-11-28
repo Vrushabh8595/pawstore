@@ -296,6 +296,11 @@ const blogPostSchema = new Schema(
   { timestamps: true }
 )
 blogPostSchema.index({ status: 1, publishedAt: -1 })
+// Blog categories added by authors or the admin (the built-in ones live in utils/blog.js)
+const blogCategorySchema = new Schema(
+  { slug: { type: String, required: true, unique: true }, name: { type: String, required: true }, createdBy: { type: Schema.Types.ObjectId, ref: 'User' } },
+  { timestamps: true }
+)
 // Images uploaded for blog posts (served by /api/blog/images/:id)
 const blogImageSchema = new Schema(
   { data: Buffer, type: String, size: Number, uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' } },
@@ -331,5 +336,6 @@ export const Notification = model('Notification', notificationSchema)
 export const Review = model('Review', reviewSchema)
 export const BlogPost = model('BlogPost', blogPostSchema)
 export const BlogImage = model('BlogImage', blogImageSchema)
+export const BlogCategory = model('BlogCategory', blogCategorySchema)
 export const ProductCost = model('ProductCost', productCostSchema)
 export const OrderCost = model('OrderCost', orderCostSchema)
