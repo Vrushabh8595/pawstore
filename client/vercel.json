@@ -4,6 +4,11 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/blog/author/:slug*",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
       "source": "/shop",
       "has": [
         {
@@ -89,7 +94,7 @@
       "destination": "/api/blog-page"
     },
     {
-      "source": "/blog/:kind(category|author)/:slug",
+      "source": "/blog/:kind(category)/:slug",
       "destination": "/api/blog-page?kind=:kind&slug=:slug"
     },
     {
