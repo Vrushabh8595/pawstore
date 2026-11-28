@@ -2,15 +2,37 @@ import { Router } from 'express'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import { BlogPost, User, Notification } from '../models/index.js'
+import { BlogPost, BlogCategory, User, Notification } from '../models/index.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
-import { postSchema, readyErrors, applyFields, uniqueSlug, CARD, saveImage, ensureAuthorSlug } from '../utils/blog.js'
+import { postSchema, readyErrors, applyFields, uniqueSlug, CARD, saveImage, ensureAuthorSlug, getCategories, addCategory, checkCategory, clearCategoryCache } from '../utils/blog.js'
 
 // Admin: blog authors and post approval. Nothing goes live without this.
 const router = Router()
 router.use(authenticate, requireAdmin)
 const oid = (id) => mongoose.isValidObjectId(id)
+
+/* -------------------------------- Categories ------------------------------- */
+router.get('/categories', asyncHandler(async (req, res) => {
+  const [cats, counts] = await Promise.all([getCategories(), BlogPost.aggregate([{ $group: { _id: '$category', n: { $sum: 1 } } }])])
+  res.json({ categories: cats.map((c) => ({ ...c, posts: counts.find((x) => x._id === c.slug)?.n || 0 })) })
+}))
+router.post('/categories', validate(z.object({ name: z.string().max(60) }).strict()), asyncHandler(async (req, res) => {
+  const r = await addCategory(req.body.name, req.user._id)
+  if (r.error) return res.status(400).json({ message: r.error, errors: { name: r.error } })
+  res.status(r.existed ? 200 : 201).json({ category: r.category })
+}))
+// Remove an added category (built-in ones stay); only when no post uses it
+router.delete('/categories/:slug', asyncHandler(async (req, res) => {
+  const slug = String(req.params.slug).slice(0, 40)
+  const cat = await BlogCategory.findOne({ slug })
+  if (!cat) return res.status(404).json({ message: 'Only categories added by authors can be removed.' })
+  const used = await BlogPost.countDocuments({ category: slug })
+  if (used) return res.status(409).json({ message: `${used} post(s) use this category. Move them to another category first.` })
+  await cat.deleteOne()
+  clearCategoryCache()
+  res.json({ ok: true })
+}))
 
 /* --------------------------------- Authors --------------------------------- */
 router.get('/authors', asyncHandler(async (req, res) => {
@@ -88,7 +110,7 @@ router.get('/posts/:id', asyncHandler(async (req, res) => {
 
 const publish = (post, admin) => { post.status = 'published'; post.publishedAt = post.publishedAt || new Date(); post.reviewedBy = admin._id; post.reviewNote = undefined }
 
-router.post('/posts', validate(postSchema), asyncHandler(async (req, res) => {
+router.post('/posts', validate(postSchema), checkCategory, asyncHandler(async (req, res) => {
   const b = req.body
   await ensureAuthorSlug(req.user)
   const post = new BlogPost({ author: req.user._id, authorName: req.user.name, status: 'draft' })
@@ -103,7 +125,7 @@ router.post('/posts', validate(postSchema), asyncHandler(async (req, res) => {
   res.status(201).json({ post })
 }))
 
-router.patch('/posts/:id', validate(postSchema), asyncHandler(async (req, res) => {
+router.patch('/posts/:id', validate(postSchema), checkCategory, asyncHandler(async (req, res) => {
   const post = oid(req.params.id) && await BlogPost.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post not found' })
   const b = req.body

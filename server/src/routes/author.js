@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { BlogPost, Notification } from '../models/index.js'
 import { authenticate, requireAuthor } from '../middleware/auth.js'
 import { asyncHandler, validate } from '../middleware/error.js'
-import { postSchema, readyErrors, applyFields, uniqueSlug, CARD, saveImage, ensureAuthorSlug } from '../utils/blog.js'
+import { postSchema, readyErrors, applyFields, uniqueSlug, CARD, saveImage, ensureAuthorSlug, getCategories, addCategory, checkCategory } from '../utils/blog.js'
 import { blogWriteLimiter, blogImageLimiter } from '../middleware/security.js'
 
 // Author dashboard API. Authors only see and change their own posts, and can
@@ -25,6 +25,14 @@ router.patch('/me', validate(z.object({ bio: z.string().trim().max(300) }).stric
   res.json({ bio: req.user.bio })
 }))
 
+// Categories: authors can add new ones
+router.get('/categories', asyncHandler(async (req, res) => res.json({ categories: await getCategories() })))
+router.post('/categories', blogWriteLimiter, validate(z.object({ name: z.string().max(60) }).strict()), asyncHandler(async (req, res) => {
+  const r = await addCategory(req.body.name, req.user._id)
+  if (r.error) return res.status(400).json({ message: r.error, errors: { name: r.error } })
+  res.status(r.existed ? 200 : 201).json({ category: r.category, categories: await getCategories() })
+}))
+
 router.get('/posts', asyncHandler(async (req, res) => {
   const posts = await BlogPost.find({ author: req.user._id }).select(CARD).sort({ updatedAt: -1 }).limit(500).lean()
   res.json({ posts })
@@ -39,7 +47,7 @@ async function notifyAdmin(post, name) {
   await Notification.create({ audience: 'admin', type: 'blog', link: `/admin/blog?review=${post._id}`, image: post.cover, title: 'New blog post to review', body: `${name} sent “${post.title}” for approval.` }).catch(() => {})
 }
 
-router.post('/posts', blogWriteLimiter, validate(postSchema), asyncHandler(async (req, res) => {
+router.post('/posts', blogWriteLimiter, validate(postSchema), checkCategory, asyncHandler(async (req, res) => {
   const b = req.body
   await ensureAuthorSlug(req.user)
   const post = new BlogPost({ author: req.user._id, authorName: req.user.name, status: 'draft' })
@@ -55,7 +63,7 @@ router.post('/posts', blogWriteLimiter, validate(postSchema), asyncHandler(async
   res.status(201).json({ post })
 }))
 
-router.patch('/posts/:id', blogWriteLimiter, validate(postSchema), asyncHandler(async (req, res) => {
+router.patch('/posts/:id', blogWriteLimiter, validate(postSchema), checkCategory, asyncHandler(async (req, res) => {
   const post = await mine(req, req.params.id)
   if (!post) return res.status(404).json({ message: 'Post not found' })
   if (!EDITABLE.includes(post.status)) return res.status(409).json({ message: 'This post is live. Ask the admin to make changes to published posts.' })
