@@ -1,10 +1,18 @@
+import { useQuery } from '@tanstack/react-query'
+import { api } from './api'
 import { SITE_NAME } from './seo'
 
+// Built-in categories, used until the live list (which includes ones authors add) loads
 export const BLOG_CATEGORIES = [
   ['dog-care', 'Dog care'], ['cat-care', 'Cat care'], ['nutrition', 'Nutrition & food'], ['health', 'Health & medicines'],
   ['grooming', 'Grooming'], ['training', 'Training & behaviour'], ['livestock', 'Cattle & livestock'], ['news', 'AnimalVeda news'],
-]
-export const categoryName = (slug) => BLOG_CATEGORIES.find(([s]) => s === slug)?.[1] || ''
+].map(([slug, name]) => ({ slug, name }))
+
+export function useBlogCategories() {
+  const q = useQuery({ queryKey: ['blog-categories'], queryFn: () => api.get('/blog/categories'), staleTime: 60_000 })
+  return Array.isArray(q.data) && q.data.length ? q.data : BLOG_CATEGORIES
+}
+export const categoryName = (slug, list = BLOG_CATEGORIES) => list.find((c) => c.slug === slug)?.name || ''
 export const blogDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '')
 export const brand = (t) => (t.includes(SITE_NAME) ? t : `${t} | ${SITE_NAME} Blog`)
 
