@@ -1,31 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Trash2, Loader2, Check, Mail, Lock, ShieldCheck, MapPin, Pencil } from 'lucide-react'
+import { Camera, Trash2, Loader2, Check, Mail, Lock, ShieldCheck, Pencil, KeyRound, Send } from 'lucide-react'
 import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
-import { usePincode } from '@/lib/usePincode'
 import { playSound, haptic } from '@/lib/feedback'
 import { Field, useFieldErrors, isEmail, errorFeedback } from '@/components/FormField'
 import Avatar from '@/components/Avatar'
-
-// Same allow-lists the server enforces. The server is the real guard; these
-// just give instant, friendly messages.
-const BAD = /(javascript:|vbscript:|data:|on\w+\s*=|<|>|\{\{|\$\{|`)/i
-const RX = {
-  name: /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u,
-  line: /^[\p{L}\p{M}\p{N} ,./#()&'’:-]+$/u,
-  place: /^[\p{L}\p{M} .&'-]+$/u,
-}
-const textError = (v, label, re, min, max, msg) => {
-  const s = v.replace(/\s+/g, ' ').trim()
-  if (s.length < min) return min > 1 ? `Enter your ${label.toLowerCase()}.` : null
-  if (s.length > max) return `${label} is too long.`
-  if (BAD.test(s) || /[\u0000-\u001f\u007f]/.test(s)) return `${label} contains characters that aren’t allowed.`
-  if (!re.test(s)) return msg
-  return null
-}
-
-// Server field keys ("address.pincode") → our field names
-const fromServer = (errors = {}) => Object.fromEntries(Object.entries(errors).map(([k, v]) => [k.replace('address.', ''), v]))
+import AddressBook from '@/components/AddressBook'
+import { RX, textError, phoneError } from '@/lib/validate'
 
 export default function Profile() {
   const user = useAuth((s) => s.user)
@@ -35,6 +16,7 @@ export default function Profile() {
       <div className="grid gap-4 max-w-2xl">
         <PhotoCard user={user} />
         <DetailsCard user={user} />
+        <AddressBook />
         <EmailCard user={user} />
         <p className="flex items-start gap-2 text-xs text-ink-500 px-1">
           <ShieldCheck size={15} className="shrink-0 text-green-600 mt-px" />
@@ -51,9 +33,10 @@ function Saved({ show, text = 'Saved' }) {
 }
 
 /* --------------------------------- Photo --------------------------------- */
-// The picked photo is redrawn on a canvas as a fresh 256×256 JPEG. That throws
-// away everything in the original file except the pixels (metadata, hidden
-// payloads…) and keeps it small. The server re-checks the bytes anyway.
+// The picked photo is redrawn on a canvas as a fresh JPEG (256px, plus a 64px
+// thumbnail for lists). That throws away everything in the original file
+// except the pixels (metadata, hidden payloads…) and keeps it small. The
+// server re-checks the bytes anyway.
 function toAvatar(file) {
   return new Promise((resolve, reject) => {
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return reject(new Error('Please choose a JPG, PNG or WebP photo.'))
@@ -61,17 +44,21 @@ function toAvatar(file) {
     const url = URL.createObjectURL(file)
     const img = new Image()
     img.onload = () => {
-      const S = 256
-      const c = document.createElement('canvas')
-      c.width = S; c.height = S
       const side = Math.min(img.naturalWidth, img.naturalHeight)
       const sx = (img.naturalWidth - side) / 2
       const sy = (img.naturalHeight - side) / 2
-      const ctx = c.getContext('2d')
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, S, S)
-      ctx.drawImage(img, sx, sy, side, side, 0, 0, S, S)
+      const draw = (S, q) => {
+        const c = document.createElement('canvas')
+        c.width = S; c.height = S
+        const ctx = c.getContext('2d')
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, S, S)
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, S, S)
+        return c.toDataURL('image/jpeg', q)
+      }
+      const avatar = draw(256, 0.85)
+      const avatarThumb = draw(64, 0.8)
       URL.revokeObjectURL(url)
-      resolve(c.toDataURL('image/jpeg', 0.85))
+      resolve({ avatar, avatarThumb })
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file isn’t a photo we can read.')) }
     img.src = url
@@ -84,13 +71,14 @@ function PhotoCard({ user }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [ok, setOk] = useState('')
+  const fromGoogle = user?.avatar && user?.avatarSource === 'google'
 
-  const save = async (avatar) => {
+  const save = async (photo) => {
     setBusy(true); setErr(''); setOk('')
     try {
-      const res = await api.patch('/auth/me', { avatar })
+      const res = await api.patch('/auth/me', photo ? { avatar: photo.avatar, avatarThumb: photo.avatarThumb } : { avatar: '' })
       updateUser(res.user)
-      setOk(avatar ? 'Photo updated' : 'Photo removed')
+      setOk(photo ? 'Photo updated' : 'Photo removed')
       playSound('success'); haptic(20)
       setTimeout(() => setOk(''), 2500)
     } catch (e) {
@@ -113,11 +101,11 @@ function PhotoCard({ user }) {
       </div>
       <div className="min-w-0">
         <p className="font-extrabold text-lg truncate">{user?.name}</p>
-        <p className="text-sm text-ink-500 mb-3">JPG, PNG or WebP. We crop it to a square.</p>
+        <p className="text-sm text-ink-500 mb-3">{fromGoogle ? 'Photo from your Google account. You can change it anytime.' : 'JPG, PNG or WebP. We crop it to a square.'}</p>
         <div className="flex flex-wrap items-center gap-2">
           <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={pick} />
           <button type="button" disabled={busy} onClick={() => input.current?.click()} className="btn-primary !py-2 !px-4 text-sm"><Camera size={16} /> {user?.avatar ? 'Change photo' : 'Add photo'}</button>
-          {user?.avatar && <button type="button" disabled={busy} onClick={() => save('')} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50"><Trash2 size={15} /> Remove</button>}
+          {user?.avatar && <button type="button" disabled={busy} onClick={() => save(null)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50"><Trash2 size={15} /> Remove</button>}
           <Saved show={!!ok} text={ok} />
         </div>
         {err && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{err}</p>}
@@ -126,66 +114,44 @@ function PhotoCard({ user }) {
   )
 }
 
-/* ------------------------------ Name / phone / address ------------------------------ */
+/* ------------------------------ Name / phone ------------------------------ */
 function DetailsCard({ user }) {
   const updateUser = useAuth((s) => s.updateUser)
   const fe = useFieldErrors()
   const E = fe.errors
-  const a = user?.address || {}
-  const [f, setF] = useState({
-    name: user?.name || '', phone: user?.phone || '',
-    line1: a.line1 || '', landmark: a.landmark || '', city: a.city || '', state: a.state || '', pincode: a.pincode || '',
-  })
+  const [f, setF] = useState({ name: user?.name || '', phone: user?.phone || '' })
   const [busy, setBusy] = useState(false)
   const [ok, setOk] = useState(false)
   const [err, setErr] = useState('')
-  const startPin = useRef(a.pincode || '')
   const dirty = useRef(false)
   // The signed-in user may refresh from the server after this page opens:
   // pick up those values unless the customer has already started editing.
-  const snapshot = JSON.stringify([user?.name, user?.phone, user?.address])
+  const snapshot = JSON.stringify([user?.name, user?.phone])
   useEffect(() => {
     if (dirty.current || !user) return
-    const ad = user.address || {}
-    startPin.current = ad.pincode || ''
-    setF({ name: user.name || '', phone: user.phone || '', line1: ad.line1 || '', landmark: ad.landmark || '', city: ad.city || '', state: ad.state || '', pincode: ad.pincode || '' })
+    setF({ name: user.name || '', phone: user.phone || '' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshot])
   const set = (k) => (v) => { dirty.current = true; setF((s) => ({ ...s, [k]: v })); fe.clear(k); setOk(false) }
-  const pin = usePincode(f.pincode, (d) => {
-    if (f.pincode === startPin.current) return // don't overwrite a saved city/state on load
-    setF((s) => ({ ...s, city: d.city, state: d.state }))
-    fe.clear('city'); fe.clear('state')
-  })
-
-  const anyAddress = ['line1', 'landmark', 'city', 'state', 'pincode'].some((k) => f[k].trim())
 
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
     const valid = fe.validate({
       name: textError(f.name, 'Name', RX.name, 2, 60, 'Use letters only for your name.'),
-      phone: f.phone && !/^[6-9]\d{9}$/.test(f.phone) ? 'Enter a valid 10-digit mobile number.' : null,
-      line1: anyAddress ? textError(f.line1, 'Address', RX.line, 5, 160, 'Use letters, numbers and , . / # - only.') : null,
-      landmark: anyAddress && f.landmark.trim() ? textError(f.landmark, 'Landmark', RX.line, 2, 80, 'Use letters, numbers and , . / # - only.') : null,
-      pincode: anyAddress ? (!/^[1-9]\d{5}$/.test(f.pincode) || pin.status === 'notfound' ? 'Enter a valid 6-digit pincode.' : null) : null,
-      city: anyAddress ? textError(f.city, 'City', RX.place, 2, 60, 'Use letters only for the city.') : null,
-      state: anyAddress ? textError(f.state, 'State', RX.place, 2, 60, 'Use letters only for the state.') : null,
+      phone: phoneError(f.phone, false),
     })
     if (!valid) return
     setBusy(true)
     try {
-      const res = await api.patch('/auth/me', {
-        name: f.name, phone: f.phone,
-        address: anyAddress ? { line1: f.line1, landmark: f.landmark, city: f.city, state: f.state, pincode: f.pincode } : null,
-      })
+      const res = await api.patch('/auth/me', { name: f.name, phone: f.phone })
       dirty.current = false
       updateUser(res.user)
       setOk(true); playSound('success'); haptic(20)
       setTimeout(() => setOk(false), 3000)
     } catch (x) {
-      const errs = fromServer(x.data?.errors)
-      if (Object.keys(errs).length) fe.validate(errs)
+      const errs = x.data?.errors
+      if (errs && Object.keys(errs).length) fe.validate(errs)
       else { setErr(x.message); errorFeedback() }
     } finally { setBusy(false) }
   }
@@ -198,22 +164,6 @@ function DetailsCard({ user }) {
         <Field name="phone" optional error={E.phone} label="Mobile" value={f.phone} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
           prefix="+91" onChange={(v) => set('phone')(v.replace(/\D/g, '').slice(0, 10))} />
       </div>
-
-      <h3 className="font-extrabold mt-6 mb-1 flex items-center gap-2"><MapPin size={17} className="text-brand-600" /> Saved delivery address</h3>
-      <p className="text-xs text-ink-500 mb-3">We fill this in for you at checkout. Leave it all empty to remove it.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="sm:col-span-2"><Field name="line1" required={anyAddress} error={E.line1} label="Address" hint="House no, street, area" value={f.line1} onChange={set('line1')} autoComplete="street-address" maxLength={160} /></div>
-        <Field name="landmark" optional error={E.landmark} label="Landmark" value={f.landmark} onChange={set('landmark')} maxLength={80} />
-        <div>
-          <Field name="pincode" required={anyAddress} error={E.pincode} label="Pincode" value={f.pincode} inputMode="numeric" autoComplete="postal-code" maxLength={6}
-            onChange={(v) => set('pincode')(v.replace(/\D/g, '').slice(0, 6))} />
-          {!E.pincode && pin.status === 'loading' && <p className="text-[11px] text-ink-500 mt-1">Finding your city…</p>}
-          {!E.pincode && pin.status === 'notfound' && <p className="text-[11px] font-semibold text-red-600 mt-1">We couldn’t find this pincode. Please check it.</p>}
-        </div>
-        <Field name="city" required={anyAddress} error={E.city} label="City" value={f.city} onChange={set('city')} autoComplete="address-level2" maxLength={60} />
-        <Field name="state" required={anyAddress} error={E.state} label="State" value={f.state} onChange={set('state')} autoComplete="address-level1" maxLength={60} />
-      </div>
-
       {err && <p role="alert" className="mt-4 text-sm font-semibold text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
       <div className="mt-5 flex items-center gap-3">
         <button type="submit" disabled={busy} className="btn-primary">{busy ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />} Save changes</button>
@@ -224,59 +174,114 @@ function DetailsCard({ user }) {
 }
 
 /* ---------------------------------- Email --------------------------------- */
+// Email/password accounts confirm with their current password. Google accounts
+// have no password, so we email a 6-digit code to the new address instead.
 function EmailCard({ user }) {
   const updateUser = useAuth((s) => s.updateUser)
   const fe = useFieldErrors()
   const E = fe.errors
+  const google = user?.provider === 'google'
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [ok, setOk] = useState(false)
-  const google = user?.provider === 'google'
+  const [info, setInfo] = useState('')
+  const pending = google ? user?.pendingEmail || '' : ''
 
-  const submit = async (e) => {
+  const done = (u) => {
+    updateUser(u)
+    setOpen(false); setEmail(''); setPassword(''); setCode(''); setInfo('')
+    setOk(true); playSound('success'); haptic(20)
+    setTimeout(() => setOk(false), 3500)
+  }
+  const fail = (x, field) => {
+    const errs = x.data?.errors
+    fe.validate(errs && Object.keys(errs).length ? errs : { [field]: x.message })
+  }
+  const checkEmail = (v) => !v ? 'Enter your new email.' : !isEmail(v) ? 'This email doesn’t look right (e.g. name@gmail.com).' : v === user?.email ? 'This is already your email.' : null
+
+  // Email + password accounts
+  const submitPassword = async (e) => {
     e.preventDefault()
     const v = email.trim().toLowerCase()
-    const valid = fe.validate({
-      email: !v ? 'Enter your new email.' : !isEmail(v) ? 'This email doesn’t look right (e.g. name@gmail.com).' : v === user?.email ? 'This is already your email.' : null,
-      password: !password ? 'Enter your current password to confirm it’s you.' : null,
-    })
-    if (!valid) return
+    if (!fe.validate({ email: checkEmail(v), password: !password ? 'Enter your current password to confirm it’s you.' : null })) return
     setBusy(true)
-    try {
-      const res = await api.patch('/auth/me/email', { email: v, password })
-      updateUser(res.user)
-      setOpen(false); setEmail(''); setPassword('')
-      setOk(true); playSound('success'); haptic(20)
-      setTimeout(() => setOk(false), 3500)
-    } catch (x) {
-      const errs = x.data?.errors
-      fe.validate(errs && Object.keys(errs).length ? errs : { password: x.message })
-    } finally { setBusy(false); setPassword('') }
+    try { done((await api.patch('/auth/me/email', { email: v, password })).user) } catch (x) { fail(x, 'password') } finally { setBusy(false); setPassword('') }
   }
 
+  // Google accounts: step 1, send a code to the new email
+  const sendCode = async (e) => {
+    e?.preventDefault?.()
+    const v = (pending && !email ? pending : email).trim().toLowerCase()
+    if (!fe.validate({ email: checkEmail(v) })) return
+    setBusy(true)
+    try {
+      const res = await api.post('/auth/me/email/code', { email: v })
+      updateUser(res.user); setEmail(v); setCode(''); setInfo(res.message)
+    } catch (x) { fail(x, 'email') } finally { setBusy(false) }
+  }
+  // step 2, enter the code
+  const verify = async (e) => {
+    e.preventDefault()
+    if (!fe.validate({ code: /^\d{6}$/.test(code) ? null : 'Enter the 6-digit code from the email.' })) return
+    setBusy(true)
+    try { done((await api.post('/auth/me/email/verify', { code })).user) } catch (x) { fail(x, 'code') } finally { setBusy(false) }
+  }
+  const cancel = async () => {
+    setOpen(false); setEmail(''); setPassword(''); setCode(''); setInfo(''); fe.validate({})
+    if (pending) { try { updateUser((await api.del('/auth/me/email/code')).user) } catch { /* ignore */ } }
+  }
+
+  const showForm = open || !!pending
   return (
     <section className="card p-5 sm:p-6">
       <h2 className="font-extrabold text-lg mb-1 flex items-center gap-2"><Mail size={18} className="text-brand-600" /> Email</h2>
       <p className="text-xs text-ink-500 mb-3">Order confirmations and delivery updates are sent here.</p>
       <div className="flex flex-wrap items-center justify-between gap-3 bg-sand-50 rounded-xl px-4 py-3">
-        <span className="font-bold break-all">{user?.email}</span>
-        {google
-          ? <span className="text-xs font-semibold text-ink-500">Managed by your Google account</span>
-          : !open && <button type="button" onClick={() => setOpen(true)} className="text-sm font-bold text-brand-700 hover:underline">Change email</button>}
+        <span className="min-w-0">
+          <span className="block font-bold break-all">{user?.email}</span>
+          {google && <span className="block text-xs text-ink-500">You sign in with Google. Changing this doesn’t change your Google account.</span>}
+        </span>
+        {!showForm && <button type="button" onClick={() => setOpen(true)} className="text-sm font-bold text-brand-700 hover:underline">Change email</button>}
       </div>
       <Saved show={ok} text="Email updated" />
-      {open && !google && (
-        <form onSubmit={submit} noValidate className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+      {showForm && !google && (
+        <form onSubmit={submitPassword} noValidate className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field name="email" required error={E.email} label="New email" type="email" inputMode="email" autoComplete="email" value={email} maxLength={120}
             onChange={(v) => { setEmail(v); fe.clear('email') }} />
           <Field name="password" required error={E.password} label="Current password" type="password" autoComplete="current-password" value={password} maxLength={128}
             onChange={(v) => { setPassword(v); fe.clear('password') }} />
           <div className="sm:col-span-2 flex items-center gap-3">
             <button type="submit" disabled={busy} className="btn-primary !py-2 text-sm">{busy ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />} Update email</button>
-            <button type="button" onClick={() => { setOpen(false); setEmail(''); setPassword(''); fe.validate({}) }} className="text-sm font-bold text-ink-500 hover:text-ink-900">Cancel</button>
+            <button type="button" onClick={cancel} className="text-sm font-bold text-ink-500 hover:text-ink-900">Cancel</button>
           </div>
+        </form>
+      )}
+
+      {showForm && google && !pending && (
+        <form onSubmit={sendCode} noValidate className="mt-4 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
+          <Field name="email" required error={E.email} label="New email" type="email" inputMode="email" autoComplete="email" value={email} maxLength={120}
+            onChange={(v) => { setEmail(v); fe.clear('email') }} />
+          <button type="submit" disabled={busy} className="btn-primary !py-2.5 text-sm">{busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Send code</button>
+          <p className="sm:col-span-2 text-xs text-ink-500">We’ll email a 6-digit code to the new address to make sure it’s yours. <button type="button" onClick={cancel} className="font-bold text-ink-700 hover:underline">Cancel</button></p>
+        </form>
+      )}
+
+      {google && pending && (
+        <form onSubmit={verify} noValidate className="mt-4 rounded-xl border border-brand-200 bg-brand-50/50 p-4">
+          <p className="text-sm text-ink-700 mb-3">{info || <>We sent a 6-digit code to <b className="break-all">{pending}</b>.</>} Check the inbox (and spam folder).</p>
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,220px)_auto] gap-3 items-end">
+            <Field name="code" required error={E.code} label="Code" value={code} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456"
+              onChange={(v) => { setCode(v.replace(/\D/g, '').slice(0, 6)); fe.clear('code') }} />
+            <button type="submit" disabled={busy} className="btn-primary !py-2.5 text-sm">{busy ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />} Confirm new email</button>
+          </div>
+          <p className="mt-3 text-xs text-ink-500">
+            Didn’t get it? <button type="button" disabled={busy} onClick={() => sendCode()} className="font-bold text-brand-700 hover:underline">Send again</button>
+            {' · '}<button type="button" onClick={cancel} className="font-bold text-ink-700 hover:underline">Cancel</button>
+          </p>
         </form>
       )}
     </section>
