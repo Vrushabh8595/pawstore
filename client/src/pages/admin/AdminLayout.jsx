@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, BarChart3, Menu, X, Star, Wallet } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, LogOut, Store, Inbox, Users, BarChart3, Menu, X, Star, Wallet, PenLine } from 'lucide-react'
 import { useAuth } from '@/store/auth'
 import { api } from '@/lib/api'
 import Logo from '@/components/Logo'
@@ -15,6 +15,7 @@ const NAV = [
   ['/admin/users', 'Users', Users],
   ['/admin/traffic', 'Traffic', BarChart3],
   ['/admin/products', 'Products', Package],
+  ['/admin/blog', 'Blog', PenLine],
   ['/admin/reviews', 'Reviews', Star],
   ['/admin/requests', 'Requests', Inbox],
 ]
@@ -27,6 +28,7 @@ export default function AdminLayout() {
   const [open, setOpen] = useState(false)
   useEffect(() => { setOpen(false) }, [pathname])
   const live = useQuery({ queryKey: ['admin-live'], queryFn: () => api.get('/admin/live'), refetchInterval: 10_000 })
+  const pendingPosts = useQuery({ queryKey: ['admin-blog'], queryFn: () => api.get('/admin/blog/posts'), refetchInterval: 60_000 }).data?.counts?.pending || 0
   const pendingReviews = useQuery({ queryKey: ['admin-reviews', 'pending'], queryFn: () => api.get('/admin/reviews?status=pending'), refetchInterval: 60_000 }).data?.counts?.pending || 0
 
   const item = ({ isActive }) =>
@@ -48,6 +50,7 @@ export default function AdminLayout() {
         {NAV.map(([to, label, Icon, end]) => (
           <NavLink key={to} to={to} end={end} className={item}>
             <Icon size={18} /> {label}
+            {to === '/admin/blog' && pendingPosts > 0 && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-pine-900 text-[11px] font-extrabold grid place-items-center">{pendingPosts}</span>}
             {to === '/admin/reviews' && pendingReviews > 0 && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-pine-900 text-[11px] font-extrabold grid place-items-center">{pendingReviews}</span>}
           </NavLink>
         ))}

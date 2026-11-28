@@ -178,7 +178,7 @@ function ProductForm({ initial, categories, saving, error, onCancel, onSave, onC
       rules[`v${i}`] = !String(v.sku || '').trim() ? `Variant ${i + 1}: enter a SKU.` : !String(v.size || '').trim() ? `Variant ${i + 1}: enter the size / weight.` : !(Number(v.price) > 0) ? `Variant ${i + 1}: enter a price above 0.` : v.mrp && Number(v.mrp) < Number(v.price) ? `Variant ${i + 1}: MRP can’t be lower than the price.` : !(Number(v.costPrice) > 0) ? `Variant ${i + 1}: enter your buying (cost) price.` : null
     })
     if (!fe.validate(rules)) return
-    const { costDummy, ...rest } = f
+    const { costDummy: _sample, ...rest } = f // not sent to the server
     const payload = {
       ...rest,
       slug: f.slug || slugify(f.name),
