@@ -6,7 +6,8 @@
 import { toHtml } from '../src/lib/markdown.js'
 
 const SITE = 'https://animalveda.com'
-const API = (process.env.VITE_API_URL || 'https://pawstore-awtw.onrender.com/api').replace(/\/+$/, '')
+// VITE_API_URL is the API origin (same as the app uses), without /api
+const API = (process.env.VITE_API_URL || 'https://pawstore-awtw.onrender.com').replace(/\/+$/, '').replace(/\/api$/, '') + '/api'
 const CATS = { 'dog-care': 'Dog care', 'cat-care': 'Cat care', nutrition: 'Nutrition & food', health: 'Health & medicines', grooming: 'Grooming', training: 'Training & behaviour', livestock: 'Cattle & livestock', news: 'AnimalVeda news' }
 const esc = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const clip = (s = '', n = 158) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s)

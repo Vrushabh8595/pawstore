@@ -1,6 +1,7 @@
 // /blog-sitemap.xml: every published article, category and author page
 const SITE = 'https://animalveda.com'
-const API = (process.env.VITE_API_URL || 'https://pawstore-awtw.onrender.com/api').replace(/\/+$/, '')
+// VITE_API_URL is the API origin (same as the app uses), without /api
+const API = (process.env.VITE_API_URL || 'https://pawstore-awtw.onrender.com').replace(/\/+$/, '').replace(/\/api$/, '') + '/api'
 const CATS = ['dog-care', 'cat-care', 'nutrition', 'health', 'grooming', 'training', 'livestock', 'news']
 
 export default async function handler(req, res) {
